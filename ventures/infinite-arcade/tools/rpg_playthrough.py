@@ -34,6 +34,8 @@ with sync_playwright() as p:
                 else:
                     pg.keyboard.press("Enter"); pg.wait_for_timeout(250); pg.keyboard.press("Enter")
                 pg.wait_for_timeout(300); continue
+            if mode == "battle" and ev("(() => { const it = [...document.querySelectorAll('.bpanel .chooser:not(.cmd) .ch-item')]; return it.length > 0 && it.every(e => e.classList.contains('dis')); })()"):
+                pg.keyboard.press("Backspace"); pg.wait_for_timeout(200); continue
             if choices and ev("!!document.querySelector('.chooser.dchoice')"):
                 opts = ev("[...document.querySelectorAll('.chooser.dchoice .ch-item')].map(e => e.textContent)")
                 for c in choices:
@@ -44,6 +46,9 @@ with sync_playwright() as p:
                     else: continue
                     break
             pg.keyboard.press("Enter"); pg.wait_for_timeout(230)
+        print("     settle stuck: mode", ev("__rpg.mode"), "busy", ev("__rpg.busy"), "modal", ev("!!__rpg.G.ui.modal"), "pos", S("[S.map,S.x,S.y,S.hp]"),
+              "ui", ev("[...document.querySelectorAll('.chooser .ch-item, .dlg:not(.hidden) .dlg-text, .bmsg')].map(e=>e.textContent).join(' | ').slice(0,400)"), "errs", errs[-3:])
+        pg.screenshot(path=str(SHOTS / "_stuck.png"))
         return False
     def at(m, x, y, d):
         ev(f"__rpg.G.world.enter('{m}', {x}, {y}, '{d}')"); pg.wait_for_timeout(250)
@@ -93,6 +98,15 @@ with sync_playwright() as p:
     talk("flats", 20, 16, "down", choices=["ledger page"]); check("S.flags.toll_ledger && S.flags.p1_toll_open", "clerk opened the gate (ledger route)")
     for fx, fy in ((20, 21), (20, 24)):
         at("flats", fx, fy, "down"); step("down")
+    # The bot teleports past most roaming foes. A typical player fights most of them, so
+    # replay the skipped flats/warren fights (same groups) until level 4, resting between.
+    groups = [["brinecrab"], ["mistling"], ["brinecrab", "brinecrab"], ["skerrikite"], ["clam"], ["clam", "brinecrab"],
+              ["mistling", "mistling"], ["silteel"], ["silteel", "skerrikite"], ["brinecrab", "brinecrab"], ["mistling", "clam"]]
+    for g in groups:
+        if S("S.lvl") >= 4: break
+        ev("__rpg.G.state.heal(); window.__f = __rpg.G.main.fight(" + str(g).replace("'", '"') + ", {}); null")
+        pg.wait_for_timeout(600); assert settle(limit=600), "stuck in grind fight"
+    print("     grind fights done, level", S("S.lvl"))
     talk("flats", 18, 25, "down")  # rest at basin (A on shrine -> choose Rest)
     print("     level before boss:", S("S.lvl"), "hp", S("S.hp"), "/", S("__rpg.G.state.stats().hp"))
     at("flats", 20, 26, "down"); step("down"); step("down")
