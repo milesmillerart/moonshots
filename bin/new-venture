@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Create a venture workspace from ventures/_template.
+# Usage: bin/new-venture <slug> [--name "Name"] [--description "pitch"] [--status idea|planned|building|live]
+exec "$(dirname "$0")/moonshots" new-venture "$@"

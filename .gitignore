@@ -1,0 +1,23 @@
+# secrets: never commit
+secrets/
+*.env
+.env*
+*.pem
+*.key
+id_*
+# runtime state
+data/
+logs/
+*.db
+*.db-*
+*.sqlite*
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# venture build artifacts
+ventures/*/node_modules/
+ventures/*/dist/
+ventures/*/.cache/

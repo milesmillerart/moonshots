@@ -1,0 +1,35 @@
+# Venture manifest — the core rescans this every 60s.
+slug: __SLUG__
+name: __NAME__
+description: __DESCRIPTION__
+# idea | planned | building | live | paused | retired
+# Scheduled jobs only run when status is building or live.
+status: __STATUS__
+owner: moonshots          # brand/operator; never Don's personal name
+links: {}                 # e.g. site: https://...
+
+# Background jobs. `command` runs with bash in this folder.
+# schedule: 5-field cron (server time, UTC) or omit for manual-only.
+# approval: financial | credential | external | other  -> job is blocked until
+#           Don approves it in the dashboard (single use per run).
+jobs:
+  - name: heartbeat
+    schedule: "*/30 * * * *"
+    command: ./jobs/heartbeat.sh
+    timeout: 60
+  # - name: publish-release
+  #   command: ./jobs/publish.sh
+  #   approval: external
+
+# Where this venture deploys.
+#   none
+#   static:    {type: static, source: public, path: /__SLUG__}  -> web root subpath
+#   container: {type: container, context: app, port: 8101, container_port: 8000, memory: 256m}
+#              -> podman image + systemd --user unit, bound to 127.0.0.1:<port>
+deploy:
+  type: none
+
+# Revenue model and checkpoints; filled in during research.
+business:
+  revenue: []
+  costs: []               # anything here needs Don's explicit approval first

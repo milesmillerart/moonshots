@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Moonshots CLI wrapper
+ROOT="${MOONSHOTS_ROOT:-/srv/moonshots}"
+export MOONSHOTS_ROOT="$ROOT"
+cd "$ROOT/core" && exec "$ROOT/core/.venv/bin/python" -m moonshots.cli "$@"
