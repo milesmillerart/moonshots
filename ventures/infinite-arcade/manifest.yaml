@@ -4,7 +4,7 @@ name: Infinite Arcade
 description: AI game studio shipping a new browser game daily, growing into a TikTok-style platform to make and remix games. Public brand (placeholder) is Daycade.
 # idea | planned | building | live | paused | retired
 # Scheduled jobs only run when status is building or live.
-status: building
+status: paused
 owner: moonshots          # brand/operator; never Don's personal name
 links:
   site: https://moon.sparelimbstudios.com/arcade/
