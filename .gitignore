@@ -21,3 +21,6 @@ __pycache__/
 ventures/*/node_modules/
 ventures/*/dist/
 ventures/*/.cache/
+# venture game data is content, not runtime state
+!ventures/*/rpg/data/
+!ventures/*/public/data/

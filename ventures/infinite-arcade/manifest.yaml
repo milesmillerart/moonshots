@@ -1,10 +1,10 @@
 # Venture manifest — the core rescans this every 60s.
 slug: infinite-arcade
 name: Infinite Arcade
-description: AI game studio shipping a new browser game daily, growing into a TikTok-style platform to make and remix games. Public brand (placeholder) is Daycade.
+description: Ebbmarrow, one big original browser RPG that gets better every day (art, feel, gameplay, story). The old Daycade arcade games live on under Extras.
 # idea | planned | building | live | paused | retired
 # Scheduled jobs only run when status is building or live.
-status: paused
+status: building
 owner: moonshots          # brand/operator; never Don's personal name
 links:
   site: https://moon.sparelimbstudios.com/arcade/
@@ -19,11 +19,11 @@ jobs:
     schedule: "*/30 * * * *"
     command: ./jobs/heartbeat.sh
     timeout: 60
-  # Daily release train: rebuild + redeploy so queued games go live on their date.
-  # Stub for future "ship a new game" automation. Local only, calls no paid API.
-  - name: ship-daily
+  # Daily improvement train: rebuild (validate data + bundle) and redeploy whatever
+  # improved since yesterday. No date-locked content. Local only, calls no paid API.
+  - name: daily-improve
     schedule: "5 5 * * *"     # 05:05 UTC = 00:05 US Eastern (standard time)
-    command: ./jobs/ship-daily.sh
+    command: ./jobs/daily-improve.sh
     timeout: 300
   # - name: publish-release
   #   command: ./jobs/publish.sh

@@ -56,8 +56,8 @@ def head(title, desc, url, image, extra=""):
 def topbar(R):
     return f"""<body>
 <header class="top"><div class="wrap">
-<a class="logo" href="{R}">{LOGO}<span><b>Daycade</b></span></a>
-<nav><a href="{R}#games">Games</a><a class="hide-sm" href="{R}duality/">Daily puzzle</a></nav>
+<a class="logo" href="{R}extras/">{LOGO}<span><b>Daycade</b></span></a>
+<nav><a href="{R}">Play Ebbmarrow</a><a href="{R}extras/#games">Games</a><a class="hide-sm" href="{R}duality/">Daily puzzle</a></nav>
 </div></header>"""
 
 
@@ -184,23 +184,23 @@ def build(today, include_all=False):
         (gdir / "index.html").write_text(page)
 
     # ---------- home ----------
-    R = ""
+    R = "../"
     ft = thumb(featured["slug"])
-    fimg = f'<img src="{featured["slug"]}/thumb.jpg" alt="{E(featured["title"])} gameplay" width="800" height="450">' if ft else \
+    fimg = f'<img src="../{featured["slug"]}/thumb.jpg" alt="{E(featured["title"])} gameplay" width="800" height="450">' if ft else \
         f'<div style="position:absolute;inset:0;background:linear-gradient(135deg,{featured["accent"]},#16142b)"></div>'
     grid = "\n".join(card(g, R, today) for g in games)
     upcoming = sorted((g for g in data["games"] if dt.date.fromisoformat(g["released"]) > today), key=lambda g: g["released"])
-    soon = '<div class="card soon"><div><b>Next game drops at midnight</b>A brand-new original game lands every day.<div class="cd" id="cd">--:--:--</div></div></div>'
+    soon = ''
     home_ld = {"@context": "https://schema.org", "@type": "WebSite", "name": brand["name"], "url": base, "description": brand["description"]}
-    home = head(f"{brand['name']}: {brand['tagline']} Free browser games", brand["description"], base, base + "assets/og.jpg",
+    home = head(f"{brand['name']} arcade: free browser games", brand["description"], base + "extras/", base + "assets/og.jpg",
                 f'<script type="application/ld+json">{json.dumps(home_ld)}</script>').replace("{R}", R) + topbar(R) + f"""
 <main class="wrap">
 <section class="hero">
-<h1>{E(brand['tagline'])}</h1>
-<p>Original games you can play right away, on your phone or computer. No downloads, no sign-up.</p>
+<h1>Extras: the Daycade arcade</h1>
+<p>Five small original games from our first week. The main event is <a href="../" style="text-decoration:underline">Ebbmarrow</a>, our story RPG.</p>
 </section>
-<span class="label"><i></i> New today</span>
-<a class="feature" id="feature" href="{featured['slug']}/">
+<span class="label"><i></i> Featured</span>
+<a class="feature" id="feature" href="../{featured['slug']}/">
 <div class="art">{fimg}</div>
 <div class="info"><span class="label" style="color:var(--mute)">{E(featured['genre'])}</span>
 <h2>{E(featured['title'])}</h2><p>{E(featured['tagline'])}</p><span class="btn">▶ Play now</span></div>
@@ -212,13 +212,14 @@ def build(today, include_all=False):
 </main>
 {footer(brand)}
 <script>window.DAYCADE_CATALOG={json.dumps(catalog)};</script>
-<script src="assets/hooks.js"></script>
+<script src="../assets/hooks.js"></script>
 </body></html>
 """
-    (OUT / "index.html").write_text(home)
+    (OUT / "extras").mkdir(exist_ok=True)
+    (OUT / "extras" / "index.html").write_text(home)
 
     # ---------- sitemap ----------
-    urls = [(base, today.isoformat(), "daily", "1.0")] + [(base + g["slug"] + "/", g["released"], "weekly", "0.8") for g in games]
+    urls = [(base, today.isoformat(), "daily", "1.0"), (base + "extras/", today.isoformat(), "monthly", "0.5")] + [(base + g["slug"] + "/", g["released"], "weekly", "0.8") for g in games]
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + \
         "".join(f"  <url><loc>{E(u)}</loc><lastmod>{m}</lastmod><changefreq>{c}</changefreq><priority>{p}</priority></url>\n" for u, m, c, p in urls) + "</urlset>\n"
     (OUT / "sitemap.xml").write_text(sm)

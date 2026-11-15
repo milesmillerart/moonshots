@@ -1,0 +1,1205 @@
+{
+ "id": "ch01",
+ "number": 1,
+ "title": "The Bared Flats",
+ "sub": "The Royal Causeway",
+ "requires": "ch00_done",
+ "start": "p1_start",
+ "blurb": "An old Marrow road has surfaced on the flats, and a ghostly toll clerk still wants his toll.",
+ "recap": "Tamsin crossed the bared flats along the Royal Causeway of drowned Marrow. She met Old Pim, searching for a ring lost thirty-one years ago, and Clerk Oswin Fairweather, a ghost who still collects the causeway toll. Past his gate, at the Seal Steps, she beat Grandclaw and found the second Tide Seal already broken. Far out on a sandbar a figure in a brass diving helm raised a lamp and walked into the deep. Ama knew that helm. It belonged to Tamsin's mother, Isolde, who drowned nine years ago.",
+ "maps": {
+  "flats": {
+   "name": "The Bared Flats",
+   "music": "flats",
+   "battle": "flats",
+   "rows": [
+    "~~~~~~wwwwwwwwwwwwwwwwwwwwwww~~~~~~~~~~~",
+    "~~~~~wwwwwwwwwwwwwwwwwwwwwwwww~~~~~~~~~~",
+    "~~~~wwwwwkwwwwwwwwwwwwwwwcwwwww-~~~~~~~~",
+    "~~~wwwwwwwwww--wwwwwwwwwwwwwwwww-~~~~~~~",
+    "~~##wwwwwwww----wwwwwwxxwwwwkwwww--~~~~~",
+    "~###wwwkwwwww--wwwwwwwxxwwwwwwwwwww--~~~",
+    "####wwwwwwwwwwwwwwwwwwwwwwwwwwcwwwwww-~~",
+    "###wwwwwcwwwwwwwwwwwwwwwwwwwwwwwwwwwww~~",
+    "##wwwwwwwwwwwwkwwwww-wwwwwwwwwwwwcwwww-~",
+    "##wwwwwwwwwwwwwwww---wwwwwwwkwwwwcwwwww~",
+    "###wwwwwwkwwwwwwwww-wwwwwwwwwwwwwwwwww-~",
+    "####wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwcwww~~",
+    "#####wwwwwwwwwwwwwwSSSwwwwwwwwwwwwwww~~~",
+    "###V#wwwwwwwwww---wSSSw---wwwwwwwwww~~~~",
+    "###v#wwwwkwww-----wSSSw-----wwwwwwww~~~~",
+    "###wwwwwwwwww---~~-SSS-~~----wwwwww~~~~~",
+    "##wwwwwwwwww--~~~WWSSSWW~~~---wwwww~~~~~",
+    "##wwwwwkwwww-~~~~WSSSSSW~~~~--wwww~~~~~~",
+    "###wwwwwwwww-~~~~WSSSSSW~~~~~-wwww~~~~~~",
+    "####wwwwwwww-~~~~WWSSSWW~~~~~-wwwww~~~~~",
+    "#####wwwcwww-~~~~~-SSS-~~~~~--wwwww~~~~~",
+    "######wwwwww--~~~~-SSS-~~~~--wwwkww~~~~~",
+    "#######wwwwww-~~~~-SSS-~~~~-wwwwwww~~~~~",
+    "########wwwww-~~~~-SSS-~~~~-wwwwww~~~~~~",
+    "#########wwww--~~~-SSS-~~~--wwwww~~~~~~~",
+    "##########wwww-~~~-SSS-~~~-wwwww~~~~~~~~",
+    "###########www-~~~SSSSS~~~-wwww~~~~~~~~~",
+    "~~~~~~~~~~~~~~~~SSSSSSSSS~~~~~~~~~~~~~~~",
+    "~~~~~~~~~~~~~~~SS*SSSSS*SS~~~~~~~~~~~~~~",
+    "~~~~~~~~~~~~~~~SSSSSSSSSSS~~~~~~~~~~~~~~",
+    "~~~~~~~~~~~~~~~SSSSSSSSSSS~~~~~~~~~~~~~~",
+    "~~~~~~~~~~~~~~~WSSSS^SSSSW~~~~~~~~~~~~~~",
+    "~~~~~~~~~~~~~~~WWWWWWWWWWW~~~~~~~~~~~~~~",
+    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+   ],
+   "fill": "~",
+   "particles": "spray",
+   "entities": [
+    {
+     "type": "enemy",
+     "id": "c1",
+     "x": 14,
+     "y": 4,
+     "group": [
+      "brinecrab"
+     ],
+     "wander": 2,
+     "chase": 2,
+     "respawn": true
+    },
+    {
+     "type": "enemy",
+     "id": "m1",
+     "x": 27,
+     "y": 6,
+     "group": [
+      "mistling"
+     ],
+     "wander": 3,
+     "chase": 3,
+     "respawn": true
+    },
+    {
+     "type": "enemy",
+     "id": "c2",
+     "x": 8,
+     "y": 12,
+     "group": [
+      "brinecrab",
+      "brinecrab"
+     ],
+     "wander": 2,
+     "chase": 2,
+     "respawn": true
+    },
+    {
+     "type": "enemy",
+     "id": "k1",
+     "x": 30,
+     "y": 12,
+     "group": [
+      "skerrikite"
+     ],
+     "wander": 3,
+     "chase": 4,
+     "respawn": true
+    },
+    {
+     "type": "enemy",
+     "id": "cl1",
+     "x": 6,
+     "y": 18,
+     "group": [
+      "clam"
+     ],
+     "wander": 0
+    },
+    {
+     "type": "enemy",
+     "id": "cl2",
+     "x": 31,
+     "y": 20,
+     "group": [
+      "clam",
+      "brinecrab"
+     ],
+     "wander": 1,
+     "chase": 2
+    },
+    {
+     "type": "enemy",
+     "id": "m2",
+     "x": 20,
+     "y": 14,
+     "group": [
+      "mistling",
+      "mistling"
+     ],
+     "wander": 1,
+     "chase": 3
+    },
+    {
+     "type": "enemy",
+     "id": "e1",
+     "x": 20,
+     "y": 22,
+     "group": [
+      "silteel"
+     ],
+     "wander": 1,
+     "chase": 2
+    },
+    {
+     "type": "enemy",
+     "id": "e2",
+     "x": 20,
+     "y": 25,
+     "group": [
+      "silteel",
+      "skerrikite"
+     ],
+     "wander": 1,
+     "chase": 2
+    },
+    {
+     "type": "enemy",
+     "id": "boss",
+     "x": 20,
+     "y": 29,
+     "group": [
+      "grandclaw"
+     ],
+     "wander": 1,
+     "chase": 3,
+     "boss": true,
+     "flag": "p1_grandclaw",
+     "after": "gc_after",
+     "intro": "The sand heaves. GRANDCLAW, keeper of the Seal Steps, rises!"
+    },
+    {
+     "type": "npc",
+     "id": "pim",
+     "x": 9,
+     "y": 7,
+     "look": "pim",
+     "dialog": [
+      {
+       "if": "ring_returned",
+       "d": "pim_done"
+      },
+      {
+       "if": "item:ring",
+       "d": "pim_ring"
+      },
+      {
+       "if": "quest:q_ring",
+       "d": "pim_wait"
+      },
+      {
+       "d": "pim_1"
+      }
+     ],
+     "mark": "!quest:q_ring !done:q_ring"
+    },
+    {
+     "type": "npc",
+     "id": "clerk",
+     "x": 20,
+     "y": 17,
+     "look": "clerk",
+     "dialog": [
+      {
+       "if": "p1_toll_open",
+       "d": "clerk_after"
+      },
+      {
+       "d": "clerk"
+      }
+     ],
+     "mark": "item:ledger !toll_ledger",
+     "fixed": true
+    },
+    {
+     "type": "block",
+     "id": "g1",
+     "x": 19,
+     "y": 19,
+     "sprite": "gate",
+     "when": "!p1_toll_open",
+     "dialog": "gate"
+    },
+    {
+     "type": "block",
+     "id": "g2",
+     "x": 20,
+     "y": 19,
+     "sprite": "gate",
+     "when": "!p1_toll_open",
+     "dialog": "gate"
+    },
+    {
+     "type": "block",
+     "id": "g3",
+     "x": 21,
+     "y": 19,
+     "sprite": "gate",
+     "when": "!p1_toll_open",
+     "dialog": "gate"
+    },
+    {
+     "type": "trigger",
+     "id": "toll",
+     "x": 19,
+     "y": 16,
+     "w": 3,
+     "h": 1,
+     "dialog": "toll_enter"
+    },
+    {
+     "type": "trigger",
+     "id": "steps",
+     "x": 16,
+     "y": 27,
+     "w": 9,
+     "h": 1,
+     "dialog": "steps_enter"
+    },
+    {
+     "type": "trigger",
+     "id": "flats_in",
+     "x": 6,
+     "y": 1,
+     "w": 23,
+     "h": 1,
+     "dialog": "flats_in"
+    },
+    {
+     "type": "chest",
+     "id": "trap",
+     "x": 33,
+     "y": 7,
+     "item": "trap",
+     "style": "trap",
+     "flag": "trap_found",
+     "dialog": "found_trap"
+    },
+    {
+     "type": "chest",
+     "id": "pearl1",
+     "x": 12,
+     "y": 21,
+     "item": "pearl",
+     "style": "glint"
+    },
+    {
+     "type": "chest",
+     "id": "sh1",
+     "x": 27,
+     "y": 3,
+     "shells": 12,
+     "style": "glint"
+    },
+    {
+     "type": "chest",
+     "id": "box1",
+     "x": 24,
+     "y": 4,
+     "item": "salve"
+    },
+    {
+     "type": "shrine",
+     "id": "basin1",
+     "x": 24,
+     "y": 10
+    },
+    {
+     "type": "shrine",
+     "id": "basin2",
+     "x": 18,
+     "y": 26
+    },
+    {
+     "type": "sign",
+     "id": "ms",
+     "x": 18,
+     "y": 12,
+     "text": "A Marrow milestone, crusted with barnacles. The carving reads: ROYAL CAUSEWAY. MARROW, 2 LEAGUES. TOLL AHEAD."
+    },
+    {
+     "type": "prop",
+     "id": "seal2",
+     "x": 20,
+     "y": 31,
+     "sprite": "none",
+     "dialog": [
+      {
+       "if": "p1_seal2",
+       "d": "seal2_after"
+      },
+      {
+       "if": "!p1_grandclaw",
+       "d": "seal2_guarded"
+      },
+      {
+       "d": "seal2"
+      }
+     ]
+    },
+    {
+     "type": "light",
+     "id": "l1",
+     "x": 20,
+     "y": 31,
+     "r": 50
+    },
+    {
+     "type": "exit",
+     "id": "tocove",
+     "x": 6,
+     "y": 0,
+     "w": 23,
+     "h": 1,
+     "to": "cove",
+     "tx": 17,
+     "ty": 28,
+     "dir": "up"
+    },
+    {
+     "type": "exit",
+     "id": "towarren",
+     "x": 3,
+     "y": 14,
+     "to": "warren",
+     "tx": 5,
+     "ty": 18,
+     "dir": "up"
+    }
+   ],
+   "tint": "rgba(200,230,255,0.05)",
+   "phases": [
+    {
+     "when": "p1_seal2",
+     "tint": "rgba(150,170,230,0.12)",
+     "dark": 0.15
+    }
+   ]
+  },
+  "warren": {
+   "name": "The Crab Warren",
+   "music": "cave",
+   "battle": "cave",
+   "rows": [
+    "VVVVVVVVVVVVVVVVVVVVVVVVVV",
+    "VVvvvvvVVVVVVVVVVvvvvvvVVV",
+    "Vvv--vvvVVVVVVVVvvv--vvvVV",
+    "Vvv---vvvvvvvvvvvvv---vvVV",
+    "Vvvv-vvvVVVVVVVVvvvv-vvvVV",
+    "VVvvvvvVVVVVVVVVVvvvvvvVVV",
+    "VVVVvVVVVVVVVVVVVVVvvVVVVV",
+    "VVVVvVVVVVVVVVVVVVVvvVVVVV",
+    "VVVvvvvvvVVVVVVVVvvvvvvVVV",
+    "VVvvv--vvvvvvvvvvvvv-vvvVV",
+    "VVvv----vvvVVVVVvvvvvvvvVV",
+    "VVvvv--vvvVVVVVVVVvvvvvVVV",
+    "VVVvvvvvvVVVVVVVVVVvvVVVVV",
+    "VVVVVvVVVVVVVVVVVVVvvVVVVV",
+    "VVVVVvVVVVVVVVVVVVvvvvVVVV",
+    "VVVVvvvvVVVVVVVVVvvvvvvVVV",
+    "VVVvvvvvvvvvvvvvvvvv--vVVV",
+    "VVVVvvvvVVVVVVVVVvvvvvvVVV",
+    "VVVVVvVVVVVVVVVVVVVVVVVVVV",
+    "VVVVVvVVVVVVVVVVVVVVVVVVVV"
+   ],
+   "fill": "V",
+   "particles": "drips",
+   "dark": 0.78,
+   "playerLight": 56,
+   "entities": [
+    {
+     "type": "enemy",
+     "id": "w1",
+     "x": 5,
+     "y": 9,
+     "group": [
+      "silteel"
+     ],
+     "wander": 2,
+     "chase": 3
+    },
+    {
+     "type": "enemy",
+     "id": "w2",
+     "x": 19,
+     "y": 16,
+     "group": [
+      "brinecrab",
+      "brinecrab"
+     ],
+     "wander": 2,
+     "chase": 2
+    },
+    {
+     "type": "enemy",
+     "id": "w3",
+     "x": 20,
+     "y": 4,
+     "group": [
+      "silteel",
+      "brinecrab"
+     ],
+     "wander": 1,
+     "chase": 3
+    },
+    {
+     "type": "enemy",
+     "id": "w4",
+     "x": 4,
+     "y": 3,
+     "group": [
+      "mistling",
+      "clam"
+     ],
+     "wander": 1,
+     "chase": 2
+    },
+    {
+     "type": "enemy",
+     "id": "w5",
+     "x": 13,
+     "y": 3,
+     "group": [
+      "brinecrab"
+     ],
+     "wander": 2,
+     "chase": 2,
+     "respawn": true
+    },
+    {
+     "type": "chest",
+     "id": "ledger",
+     "x": 21,
+     "y": 2,
+     "item": "ledger",
+     "flag": "ledger_found",
+     "dialog": "found_ledger"
+    },
+    {
+     "type": "chest",
+     "id": "ring",
+     "x": 3,
+     "y": 2,
+     "item": "ring",
+     "flag": "ring_found",
+     "dialog": "found_ring"
+    },
+    {
+     "type": "chest",
+     "id": "p2",
+     "x": 6,
+     "y": 10,
+     "item": "pearl",
+     "style": "glint"
+    },
+    {
+     "type": "chest",
+     "id": "p3",
+     "x": 22,
+     "y": 9,
+     "item": "pearl",
+     "style": "glint"
+    },
+    {
+     "type": "chest",
+     "id": "b2",
+     "x": 21,
+     "y": 16,
+     "item": "breathdrop",
+     "n": 2
+    },
+    {
+     "type": "light",
+     "id": "lp1",
+     "x": 4,
+     "y": 3,
+     "r": 40
+    },
+    {
+     "type": "light",
+     "id": "lp2",
+     "x": 5,
+     "y": 10,
+     "r": 40
+    },
+    {
+     "type": "light",
+     "id": "lp3",
+     "x": 20,
+     "y": 3,
+     "r": 40
+    },
+    {
+     "type": "light",
+     "id": "lp4",
+     "x": 20,
+     "y": 16,
+     "r": 36
+    },
+    {
+     "type": "exit",
+     "id": "out",
+     "x": 5,
+     "y": 19,
+     "to": "flats",
+     "tx": 3,
+     "ty": 15,
+     "dir": "down"
+    },
+    {
+     "type": "trigger",
+     "id": "win",
+     "x": 5,
+     "y": 18,
+     "dialog": "warren_in"
+    }
+   ]
+  }
+ },
+ "dialogs": {
+  "p1_start": [
+   {
+    "s": "ama",
+    "t": "Take these. Kelp cakes. Mags will tell you they're for emergencies. Everything out there is an emergency."
+   },
+   {
+    "do": [
+     [
+      "give",
+      "kelpcake",
+      3
+     ]
+    ]
+   },
+   {
+    "s": "ama",
+    "t": "Out past where the reef used to be, there's a road. Stone, straight as a ruler, running south into nothing. The Royal Causeway of Marrow. I can see it from here."
+   },
+   {
+    "s": "ama",
+    "t": "Wherever that voice came from, that road goes there. I'm too old to walk the seabed, {name}. You aren't."
+   },
+   {
+    "c": [
+     {
+      "t": "I'll go.",
+      "go": [
+       {
+        "s": "ama",
+        "t": "Of course you will. You're your mother's daughter."
+       }
+      ]
+     },
+     {
+      "t": "What if the sea comes back while I'm out there?",
+      "go": [
+       {
+        "s": "ama",
+        "t": "Then run uphill, and fast. But I don't think it will. Not today. Something is holding it out."
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "s": "ama",
+    "t": "Cobb was jabbering about a trap he lost out there. And mind the old basins of Marrow stone. Rest at one and the sea seems to remember you."
+   },
+   {
+    "do": [
+     [
+      "quest",
+      "q_cause"
+     ]
+    ]
+   }
+  ],
+  "ama_p1": [
+   {
+    "s": "ama",
+    "t": "The causeway runs south across the flats, below the village. Rest at the old basins when you find them. And {name}? Come back."
+   }
+  ],
+  "ama_p1_end": [
+   {
+    "s": "me",
+    "t": "Ama. The second seal was already broken. And someone was out there, on a sandbar, in a brass diving helm. With a lamp."
+   },
+   "Ama's hands go still on her cane.",
+   {
+    "s": "ama",
+    "t": "A brass helm with a green glass window. A lamp on a chain."
+   },
+   {
+    "s": "me",
+    "t": "...How do you know that?"
+   },
+   {
+    "s": "ama",
+    "t": "Because I polished that helm every spring for twelve years. It was your mother's."
+   },
+   {
+    "if": "toll_ledger",
+    "then": [
+     {
+      "s": "me",
+      "t": "The ghost at the toll-house had her name in his ledger. In fresh ink. Three weeks old."
+     },
+     {
+      "s": "ama",
+      "t": "...Three weeks."
+     }
+    ],
+    "else": [
+     {
+      "s": "me",
+      "t": "The ghost at the toll-house said a woman in a brass helm paid his toll this month. In new coin of the old mint."
+     }
+    ]
+   },
+   {
+    "s": "ama",
+    "t": "Nine years we've mourned her. Nine years, and all that time she's been down there, breaking seals."
+   },
+   {
+    "s": "ama",
+    "t": "Five seals left. If they all break, the sea won't come back slowly, {name}. It will come back all at once."
+   },
+   {
+    "c": [
+     {
+      "t": "Then I'll find her before she breaks another.",
+      "go": [
+       {
+        "s": "ama",
+        "t": "Yes. Find her. And ask her why."
+       }
+      ]
+     },
+     {
+      "t": "Maybe she has a reason.",
+      "go": [
+       {
+        "s": "ama",
+        "t": "Isolde always had a reason. That was always the trouble with her."
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "do": [
+     [
+      "flag",
+      "p1_done"
+     ],
+     [
+      "chapterEnd",
+      "ch01"
+     ]
+    ]
+   }
+  ],
+  "ama_p1_post": [
+   {
+    "s": "ama",
+    "t": "Rest, child. The sea is still going out. Whatever's down there, it gets a little closer every night."
+   }
+  ],
+  "flats_in": [
+   "The wet sand gives under your boots. Rock pools steam in the early sun. Stranded fish flip and gasp, and the seabirds are having the best day of their lives.",
+   "Far to the south, the grey line of the causeway runs out toward the horizon."
+  ],
+  "pim_1": [
+   {
+    "s": "pim",
+    "t": "Morning, Vey girl. Don't mind me. I'm looking for something I dropped."
+   },
+   {
+    "s": "pim",
+    "t": "Thirty-one years ago my Merriam's ring went over the side in a squall, right about... here. Or there. The sea has taken plenty from me since. Maybe today it'll give something back."
+   },
+   {
+    "c": [
+     {
+      "t": "I'll keep an eye out for it.",
+      "go": [
+       {
+        "s": "pim",
+        "t": "Silver, thin as a fishbone. Says 'P & M, always' inside. You're a kind girl."
+       },
+       {
+        "do": [
+         [
+          "quest",
+          "q_ring"
+         ]
+        ]
+       }
+      ]
+     },
+     {
+      "t": "Thirty-one years? It could be anywhere.",
+      "go": [
+       {
+        "s": "pim",
+        "t": "Aye. Anywhere shiny. And you know what loves shiny? Crabs. There's a whole warren of them in the west rocks, pouring out like they're guarding something."
+       },
+       {
+        "do": [
+         [
+          "quest",
+          "q_ring"
+         ]
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "pim_wait": [
+   {
+    "s": "pim",
+    "t": "Silver ring, 'P & M, always'. The crabs in the west-rock warren hoard anything that glints. Mind the eels in there. They bite like tax collectors."
+   }
+  ],
+  "pim_ring": [
+   {
+    "s": "me",
+    "t": "Pim. Is this it?"
+   },
+   "Old Pim takes the ring in both hands. For a long moment he doesn't say anything at all.",
+   {
+    "s": "pim",
+    "t": "...She'd have laughed at me. Crying on a beach over a bit of silver."
+   },
+   {
+    "s": "pim",
+    "t": "Here. This was Merriam's hook. She could gaff a cod out of a hurricane. It's no good to me now, and it'll do more good in your hands than on my wall."
+   },
+   {
+    "do": [
+     [
+      "take",
+      "ring"
+     ],
+     [
+      "flag",
+      "ring_returned"
+     ],
+     [
+      "give",
+      "pimhook"
+     ]
+    ]
+   }
+  ],
+  "pim_done": [
+   {
+    "s": "pim",
+    "t": "I'm going to sit here a while and watch the sea not come back. You go on. Merriam's hook knows the way."
+   }
+  ],
+  "found_trap": [
+   {
+    "s": "me",
+    "t": "Cobb's crab trap! Willow, with a blue cord. There's a very offended crab inside. I'll let it go."
+   }
+  ],
+  "toll_enter": [
+   {
+    "s": "clerk",
+    "t": "HALT. Ahem. Halt, please. Kindly halt."
+   },
+   {
+    "s": "me",
+    "t": "...You're a ghost."
+   },
+   {
+    "s": "clerk",
+    "t": "I am Oswin Fairweather, Junior Clerk, Marrow Revenue Office, Causeway Toll-House Number Four. Whether I am also a ghost is a matter for the Office of Records, which I believe has drowned."
+   },
+   {
+    "s": "clerk",
+    "t": "The landing toll for foot traffic on the Royal Causeway is three tide pearls, payable in advance. No exceptions without a ledger exemption."
+   },
+   {
+    "do": [
+     [
+      "flag",
+      "p1_toll_seen"
+     ]
+    ]
+   }
+  ],
+  "gate": [
+   {
+    "if": "p1_toll_open",
+    "then": [
+     "The gate stands open."
+    ],
+    "else": [
+     "A red-and-white toll bar, swollen with three centuries of seawater. It's locked. Somehow."
+    ]
+   }
+  ],
+  "clerk": [
+   {
+    "s": "clerk",
+    "t": "Three tide pearls, or a ledger exemption. Procedure is procedure."
+   },
+   {
+    "c": [
+     {
+      "t": "Pay three tide pearls.",
+      "if": "item:pearl>=3",
+      "go": "clerk_pay"
+     },
+     {
+      "t": "I found your ledger page.",
+      "if": "item:ledger",
+      "go": "clerk_ledger"
+     },
+     {
+      "t": "The kingdom drowned. Surely the tolls lapsed?",
+      "if": "!clerk_told",
+      "go": "clerk_argue"
+     },
+     {
+      "t": "Where do I find tide pearls?",
+      "go": "clerk_pearls"
+     },
+     {
+      "t": "Never mind.",
+      "go": [
+       {
+        "s": "clerk",
+        "t": "Toll-House Four will be here. It has very little choice in the matter."
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "clerk_argue": [
+   {
+    "s": "clerk",
+    "t": "Lapsed? Madam, the Revenue Office does not lapse. It accrues."
+   },
+   {
+    "s": "clerk",
+    "t": "...Although. My ledger is missing its final page. The exemptions page. It was torn out in the Flood and carried off by crabs, if you can believe it. CRABS. Into the warren in the western rocks."
+   },
+   {
+    "s": "clerk",
+    "t": "If you were to bring it back, I could check whether you are exempt. Most people are not. But procedure is procedure."
+   },
+   {
+    "do": [
+     [
+      "flag",
+      "clerk_told"
+     ],
+     [
+      "quest",
+      "q_ledger"
+     ]
+    ]
+   }
+  ],
+  "clerk_pearls": [
+   {
+    "s": "clerk",
+    "t": "Pearl clams grow fat on the open flats. And the crabs of the western warren hoard anything that shines. Bring three, and the Crown thanks you."
+   },
+   {
+    "do": [
+     [
+      "flag",
+      "clerk_told"
+     ],
+     [
+      "quest",
+      "q_ledger"
+     ]
+    ]
+   }
+  ],
+  "clerk_pay": [
+   {
+    "do": [
+     [
+      "take",
+      "pearl",
+      3
+     ],
+     [
+      "flag",
+      "toll_paid"
+     ],
+     [
+      "flag",
+      "p1_toll_open"
+     ],
+     [
+      "sfx",
+      "door"
+     ]
+    ]
+   },
+   {
+    "s": "clerk",
+    "t": "Three pearls, received and recorded. Toll-House Four thanks you for your custom."
+   },
+   {
+    "s": "clerk",
+    "t": "Odd. You're the second traveller this month. The first paid in coin of the old mint, freshly struck. She wore a brass helm and carried a lamp, and she did not stop to chat."
+   },
+   {
+    "s": "me",
+    "t": "A brass helm..."
+   }
+  ],
+  "clerk_ledger": [
+   {
+    "do": [
+     [
+      "take",
+      "ledger"
+     ],
+     [
+      "flag",
+      "toll_ledger"
+     ],
+     [
+      "flag",
+      "p1_toll_open"
+     ],
+     [
+      "sfx",
+      "door"
+     ]
+    ]
+   },
+   {
+    "s": "clerk",
+    "t": "My page! Oh, my beautiful columns."
+   },
+   {
+    "s": "clerk",
+    "t": "Exemptions, exemptions... The household of the Keeper of Seals, exempt in perpetuity. And then... hm."
+   },
+   {
+    "s": "clerk",
+    "t": "'Isolde Vey, and heirs, exempt by order of the Keeper.' Vey. Are you a Vey?"
+   },
+   {
+    "s": "me",
+    "t": "...Isolde Vey was my mother. She drowned nine years ago."
+   },
+   {
+    "s": "clerk",
+    "t": "Did she? How very peculiar. This entry is in fresh ink. It's dated three weeks ago."
+   },
+   "The ghost's spectacles fog up. For a moment he looks almost alive.",
+   {
+    "s": "clerk",
+    "t": "The gate is open to you, Miss Vey. In perpetuity."
+   }
+  ],
+  "clerk_after": [
+   {
+    "if": "item:ledger !toll_ledger",
+    "then": "clerk_ledger",
+    "else": [
+     {
+      "s": "clerk",
+      "t": "Do mind the steps beyond. Something large lives at the end of the causeway. It has never once paid its toll."
+     }
+    ]
+   }
+  ],
+  "found_ledger": [
+   {
+    "s": "me",
+    "t": "A soggy page of tiny, perfect handwriting. EXEMPTIONS, it says at the top. The clerk will want this."
+   }
+  ],
+  "found_ring": [
+   {
+    "s": "me",
+    "t": "A thin silver ring in a nest of crab-hoarded junk. Inside it says: 'P & M, always'. Pim's ring!"
+   }
+  ],
+  "warren_in": [
+   "Water drips in the dark. The walls click and shift: crabs, hundreds of them, backing into cracks as your lamplight finds them. Something glints deeper in."
+  ],
+  "steps_enter": [
+   "The causeway ends in a wide plaza of carved stone: the Seal Steps. At the far end a round stone glows under the sand.",
+   "In the middle of the plaza sits a mound of barnacles the size of a cottage.",
+   "It's breathing."
+  ],
+  "gc_after": [
+   "Grandclaw sinks into the sand with a long, rattling hiss, its great shell cracked across.",
+   "Something tumbles from between its claws: a curved shard of green bronze.",
+   {
+    "do": [
+     [
+      "give",
+      "shard"
+     ]
+    ]
+   }
+  ],
+  "seal2_guarded": [
+   "The great crab shifts its bulk between you and the seal. It won't let you near."
+  ],
+  "seal2": [
+   "The second seal is already broken, split clean down the middle. The glow inside flickers like a dying candle.",
+   {
+    "do": [
+     [
+      "music",
+      null
+     ],
+     [
+      "sfx",
+      "seal"
+     ],
+     [
+      "flash",
+      "rgba(127,240,224,0.8)",
+      600
+     ],
+     [
+      "shake",
+      10
+     ],
+     [
+      "wait",
+      900
+     ],
+     [
+      "sfx",
+      "bell"
+     ]
+    ]
+   },
+   "BOOM. The bell again, closer now. It's under your feet.",
+   "Far out across the bare seabed, on a sandbar, a figure stands holding a lamp.",
+   {
+    "do": [
+     [
+      "sfx",
+      "bell"
+     ]
+    ]
+   },
+   "A brass diving helm catches the light. The figure raises the lamp once, as if in greeting...",
+   "...then turns, and walks down into the deep water at the edge of the world.",
+   {
+    "s": "me",
+    "t": "Wait! WAIT!"
+   },
+   "The light goes under. Far off, the sea sighs and draws back another hundred paces.",
+   {
+    "do": [
+     [
+      "flag",
+      "p1_seal2"
+     ],
+     [
+      "refresh"
+     ],
+     [
+      "music",
+      "ruin"
+     ]
+    ]
+   },
+   {
+    "s": "me",
+    "t": "...Ama. I have to tell Ama."
+   }
+  ],
+  "seal2_after": [
+   "The broken seal is dark now. Under your hand the stone is warm, like something that was alive a moment ago."
+  ]
+ },
+ "quests": {
+  "q_cause": {
+   "title": "The Royal Causeway",
+   "main": true,
+   "desc": "An old Marrow road has surfaced on the flats. Wherever the voice came from, the road goes there.",
+   "steps": [
+    {
+     "text": "Follow the causeway south to the old toll-house.",
+     "flag": "p1_toll_seen"
+    },
+    {
+     "text": "Get past the toll gate: three tide pearls, or find another way.",
+     "flag": "p1_toll_open"
+    },
+    {
+     "text": "Find what waits at the end of the causeway.",
+     "flag": "p1_grandclaw"
+    },
+    {
+     "text": "Examine the second Tide Seal.",
+     "flag": "p1_seal2"
+    },
+    {
+     "text": "Return to Ama in Kettle Cove.",
+     "flag": "p1_done"
+    }
+   ]
+  },
+  "q_trap": {
+   "title": "Gran's Crab Trap",
+   "desc": "Cobb's trap washed out to the far side of the flats.",
+   "steps": [
+    {
+     "text": "Find Cobb's trap on the east side of the flats.",
+     "flag": "any:trap_found,trap_returned"
+    },
+    {
+     "text": "Bring it back to Cobb on the beach.",
+     "flag": "trap_returned"
+    }
+   ]
+  },
+  "q_ring": {
+   "title": "P & M, Always",
+   "desc": "Old Pim lost his wife's ring overboard thirty-one years ago. Maybe the ebb will give it back.",
+   "steps": [
+    {
+     "text": "Search the crab warren in the western rocks.",
+     "flag": "any:ring_found,ring_returned"
+    },
+    {
+     "text": "Bring the ring to Old Pim on the flats.",
+     "flag": "ring_returned"
+    }
+   ]
+  },
+  "q_ledger": {
+   "title": "Procedure Is Procedure",
+   "desc": "The ghostly clerk lost the exemptions page of his ledger to crabs.",
+   "steps": [
+    {
+     "text": "Find the ledger page in the crab warren (western rocks).",
+     "flag": "any:ledger_found,toll_ledger"
+    },
+    {
+     "text": "Return it to Clerk Fairweather.",
+     "flag": "toll_ledger"
+    }
+   ]
+  }
+ }
+}

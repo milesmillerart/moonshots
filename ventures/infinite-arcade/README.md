@@ -1,11 +1,41 @@
-# Infinite Arcade (public brand: Daycade, placeholder)
+# Infinite Arcade → Ebbmarrow
 
-An AI game studio that ships an original browser game every day, growing toward a
-"TikTok of games" feed where people play, create and remix. v1 is a static arcade
-with five launch games, served at https://moon.sparelimbstudios.com/arcade/.
+**Now:** one big original browser RPG, **Ebbmarrow**, at
+https://moon.sparelimbstudios.com/arcade/, improved a little every day (graphics, feel,
+gameplay experiments, story). The original five Daycade games are kept under
+**Extras** at https://moon.sparelimbstudios.com/arcade/extras/.
+
+- Game bible (starting point, not a fixed plan): `docs/game-bible.md`
+- Living improvement backlog: `docs/roadmap.md`
+- Daily job: `jobs/daily-improve.sh` (rebuild + deploy only, no paid APIs)
+
+## Ebbmarrow layout
+
+```
+rpg/engine/NN-*.js      vanilla JS engine, concatenated in order (core, art, audio, state,
+                        world, script, battle, ui, main)
+rpg/web/                index.html template, style.css, icon.svg
+rpg/data/core.json      tiles, items, skills, player curve, enemies, looks, music
+rpg/data/chapters/      story Parts (maps, entities, dialogs, quests); start by flag, no dates
+rpg/data/changelog.json in-game "What's new"
+tools/build_rpg.py      validate data + bundle -> public/index.html, public/game, public/data
+tools/rpg_test.py       Playwright smoke test, desktop + mobile, screenshots
+tools/rpg_playthrough.py  story bot: plays prologue + Part 1 to the end
+```
+
+```
+python3 tools/build.py && python3 tools/build_rpg.py      # build both (order matters)
+python3 tools/build_rpg.py --check                         # validate data only
+python3 tools/rpg_test.py http://127.0.0.1:8777/arcade/
+python3 tools/rpg_playthrough.py http://127.0.0.1:8777/arcade/
+```
+
+---
+
+## Extras: the original Daycade arcade
 
 Brand note: "Infinite Arcade" is already used by a web3 gaming company (Coda Labs,
-infinitearcade.com), so the public site uses the placeholder **Daycade**. That is a
+infinitearcade.com), so the arcade used the placeholder **Daycade**. That is a
 quick web check only, not a trademark search; clear it before buying a domain.
 
 ## Layout
@@ -17,13 +47,13 @@ src/kit.js              shared runtime (canvas stage, input, WebAudio synth, ove
 src/games/<slug>/       game.js (+ body.html / style.css for DOM games)
 src/shell/              site.css, icon.svg, hooks.js (share, fullscreen, game events)
 src/thumbs/             gameplay thumbnails + OG images (made by tools/shots.py)
-tools/build.py          src -> public/ (home, game pages, play bundles, sitemap.xml)
+tools/build.py          src -> public/ (extras/ home, game pages, play bundles, sitemap.xml)
 tools/smoke_test.py     Playwright: load, inputs, console errors, screenshots
 tools/shots.py          regenerate thumbnails / OG images
 tools/package.py        zip each play/ bundle into dist/ for portal upload
-jobs/ship-daily.sh      daily release train (rebuild + deploy), stub for game generation
+jobs/daily-improve.sh   daily rebuild + deploy of Ebbmarrow and Extras
 research/               market + portal compliance notes
-public/                 build output, deployed to /arcade by `bin/moonshots deploy`
+public/                 build output (RPG at root, arcade at extras/), deployed to /arcade
 ```
 
 ## Games (launch set, 2026-11-15)
@@ -48,8 +78,8 @@ python3 tools/smoke_test.py http://127.0.0.1:8765/arcade/
 /srv/moonshots/bin/moonshots deploy infinite-arcade
 ```
 
-To queue tomorrow's game: add `src/games/<slug>/game.js` and a games.json entry with
-`"released": "YYYY-MM-DD"`. The `ship-daily` job (05:05 UTC) releases it on that date.
+Adding arcade games still works the same way (a games.json entry with a `released`
+date); `daily-improve` rebuilds daily so dated games go live. The focus is now Ebbmarrow.
 
 ## Hooks for later
 
