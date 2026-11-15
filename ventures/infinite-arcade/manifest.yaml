@@ -1,12 +1,14 @@
 # Venture manifest — the core rescans this every 60s.
 slug: infinite-arcade
 name: Infinite Arcade
-description: AI game studio shipping a new browser game daily, growing into a TikTok-style platform to make and remix games
+description: AI game studio shipping a new browser game daily, growing into a TikTok-style platform to make and remix games. Public brand (placeholder) is Daycade.
 # idea | planned | building | live | paused | retired
 # Scheduled jobs only run when status is building or live.
-status: planned
+status: building
 owner: moonshots          # brand/operator; never Don's personal name
-links: {}                 # e.g. site: https://...
+links:
+  site: https://moon.sparelimbstudios.com/arcade/
+  repo: https://github.com/milesmillerart/moonshots/tree/main/ventures/infinite-arcade
 
 # Background jobs. `command` runs with bash in this folder.
 # schedule: 5-field cron (server time, UTC) or omit for manual-only.
@@ -17,6 +19,12 @@ jobs:
     schedule: "*/30 * * * *"
     command: ./jobs/heartbeat.sh
     timeout: 60
+  # Daily release train: rebuild + redeploy so queued games go live on their date.
+  # Stub for future "ship a new game" automation. Local only, calls no paid API.
+  - name: ship-daily
+    schedule: "5 5 * * *"     # 05:05 UTC = 00:05 US Eastern (standard time)
+    command: ./jobs/ship-daily.sh
+    timeout: 300
   # - name: publish-release
   #   command: ./jobs/publish.sh
   #   approval: external
@@ -33,5 +41,7 @@ deploy:
 
 # Revenue model and checkpoints; filled in during research.
 business:
-  revenue: []
+  revenue:
+    - CrazyGames / Poki revenue share once games are accepted (accounts owned by Don, under the brand)
+    - Display ads on the arcade site later (hook in place, no network chosen; needs approval)
   costs: []               # anything here needs Don's explicit approval first

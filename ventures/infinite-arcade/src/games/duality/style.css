@@ -1,0 +1,26 @@
+html body{overflow:auto;background:radial-gradient(circle at 50% 20%,#2a2160,#0b0b1a 70%) fixed}
+#app{max-width:440px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px;box-sizing:border-box;min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;padding-right:48px}
+.top h1{margin:0;font-size:34px;letter-spacing:.5px;background:linear-gradient(90deg,#ffd23f,#b9a8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:.65;font-weight:700}
+.timer{font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;opacity:.9}
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;background:rgba(255,255,255,.06);padding:8px;border-radius:18px;aspect-ratio:1}
+.cell{position:relative;border:0;border-radius:12px;background:rgba(255,255,255,.08);display:grid;place-items:center;cursor:pointer;padding:0;transition:transform .08s,background .15s;color:#fff}
+.cell:active{transform:scale(.94)}
+.cell.given{background:rgba(255,255,255,.17);cursor:default}
+.cell.err{background:rgba(255,70,110,.35);animation:shk .25s}
+.cell:focus{outline:none}
+.cell.cur{outline:3px solid #7ef9c8;outline-offset:-3px}
+.cell svg{width:66%;height:66%;animation:pop .18s ease-out}
+.cell.given svg{filter:drop-shadow(0 0 0 transparent);opacity:.95}
+.board.win .cell{animation:wave .6s ease-out both}
+@keyframes pop{from{transform:scale(.4)}to{transform:none}}
+@keyframes shk{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@keyframes wave{50%{transform:scale(1.12);background:rgba(126,249,200,.35)}}
+.rules{font-size:14px;line-height:1.45;opacity:.8;margin:14px 2px}
+.rules .s{color:#ffd23f}.rules .m{color:#b9a8ff}
+.bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.b{border:0;border-radius:12px;padding:12px 6px;background:rgba(255,255,255,.1);color:#fff;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.b small{opacity:.6;font-weight:600}
+.b:active{transform:translateY(1px)}
+.share{display:block;width:100%;margin-top:10px;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font:inherit;font-weight:700;cursor:pointer}

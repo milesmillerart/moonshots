@@ -1,0 +1,72 @@
+{
+  "brand": {
+    "name": "Daycade",
+    "tagline": "A new game every day.",
+    "description": "Daycade is a free arcade of original browser games, with a new one dropping every day. No downloads, no sign-up. Play on your phone or computer.",
+    "base_url": "https://moon.sparelimbstudios.com/arcade/",
+    "path": "/arcade/"
+  },
+  "games": [
+    {
+      "slug": "stackfall",
+      "title": "Stackfall",
+      "tagline": "Stack slabs into the sky. Perfect drops chain combos.",
+      "description": "Tap to drop each sliding slab onto the tower. Anything hanging over the edge gets sliced off, so your tower narrows unless you land perfect drops, which chain combos and grow it back. Climb past the clouds into orbit.",
+      "genre": "Arcade",
+      "tags": ["one-tap", "stacking", "casual"],
+      "controls": "Tap, click, Space or Enter to drop.",
+      "orientation": "portrait",
+      "released": "2026-11-15",
+      "accent": "#7ef9c8"
+    },
+    {
+      "slug": "polarity",
+      "title": "Polarity Run",
+      "tagline": "One tap flips gravity. How far can you get?",
+      "description": "A neon endless runner where your only move is flipping gravity. Snap between the floor and the ceiling to dodge spike runs, grab gold orbs for bonus points, and hold on as the speed keeps climbing.",
+      "genre": "Runner",
+      "tags": ["one-tap", "endless", "reflex"],
+      "controls": "Tap, click, Space or Up to flip gravity.",
+      "orientation": "landscape",
+      "released": "2026-11-15",
+      "accent": "#ff3df2"
+    },
+    {
+      "slug": "nova-merge",
+      "title": "Nova Merge",
+      "tagline": "Drop stars, fuse twins, trigger cosmic chain reactions.",
+      "description": "Drop numbered stars into five columns. When matching stars touch they fuse into one worth double, and chain reactions multiply your score. Plan your drops to keep the board clear and build the biggest star in the galaxy.",
+      "genre": "Puzzle",
+      "tags": ["merge", "numbers", "strategy"],
+      "controls": "Tap a column, or use Left/Right and Space, or keys 1 to 5.",
+      "orientation": "portrait",
+      "released": "2026-11-15",
+      "accent": "#b9a8ff"
+    },
+    {
+      "slug": "neon-siege",
+      "title": "Neon Siege",
+      "tagline": "Outlast the swarm. Stack upgrades. Survive.",
+      "description": "An arena survivor in neon. Your ship fires on its own, so your job is to move, collect shards, and pick upgrades each level: split shots, piercing rounds, orbit blades and shockwaves. The swarm grows every second and an elite arrives each minute.",
+      "genre": "Action",
+      "tags": ["survivor", "roguelite", "upgrades"],
+      "controls": "WASD or arrow keys, or drag anywhere to steer. Esc to pause. 1 to 3 to pick upgrades.",
+      "orientation": "landscape",
+      "released": "2026-11-15",
+      "accent": "#ffd23f"
+    },
+    {
+      "slug": "duality",
+      "title": "Duality",
+      "tagline": "The daily sun and moon logic puzzle.",
+      "description": "A fresh logic puzzle every day, the same for everyone. Fill the grid with suns and moons so every row and column has three of each and no three match in a line. Keep your streak alive, share your time, and play unlimited practice puzzles.",
+      "genre": "Daily puzzle",
+      "tags": ["daily", "logic", "brain"],
+      "controls": "Tap a cell to cycle it, or use the arrow keys and Space. 1 for sun, 2 for moon, Z to undo.",
+      "orientation": "portrait",
+      "released": "2026-11-15",
+      "accent": "#ffb347",
+      "daily": true
+    }
+  ]
+}
