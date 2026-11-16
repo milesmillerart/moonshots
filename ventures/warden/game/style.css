@@ -527,12 +527,12 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
 .skd-req .ok b::before { content: "\2713  "; color: #6fe39b; } .skd-req .no b::before { content: "\2717  "; color: var(--red); }
 .skd-req em { font-style: normal; } .skd-req em.gold { color: var(--gold); font-weight: 700; }
 .skd-why { font-size: 12px; color: var(--gold); border: 1px dashed rgba(255, 181, 71, 0.35); padding: 7px 10px; }
-.sk-learn { position: relative; overflow: hidden; padding: 14px; border: 1px solid var(--bc); background: color-mix(in srgb, var(--bc) 8%, transparent); color: var(--ink); letter-spacing: 0.2em; text-transform: uppercase; font-size: 12px; font-weight: 600; touch-action: none; --k: 0; }
+.sk-learn { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -8px 14px rgba(5, 7, 11, 0.9); overflow: hidden; padding: 14px; border: 1px solid var(--bc); background: color-mix(in srgb, var(--bc) 12%, #0a0d13); color: var(--ink); letter-spacing: 0.2em; text-transform: uppercase; font-size: 12px; font-weight: 600; touch-action: none; white-space: nowrap; text-overflow: ellipsis; --k: 0; }
 .sk-learn .fill { position: absolute; inset: 0; background: var(--bc); transform-origin: left; transform: scaleX(var(--k)); opacity: 0.55; }
 .sk-learn span { position: relative; }
 .sk-learn.armed { background: var(--bc); color: #07090d; animation: skarmed 0.7s ease-in-out infinite alternate; }
 @keyframes skarmed { to { box-shadow: 0 0 22px var(--bc); } }
-.sk-learn[disabled] { border-color: var(--line); color: var(--dim); background: none; cursor: default; }
+.sk-learn[disabled] { border-color: var(--line); color: var(--dim); background: #0a0d13; cursor: default; }
 .skd-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; font-size: 11px; line-height: 1.4; }
 .sk-respec { background: none; border: 1px solid var(--line); color: var(--dim); padding: 8px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
 .sk-respec:not([disabled]) { color: var(--gold); border-color: rgba(255, 181, 71, 0.4); }
@@ -553,7 +553,7 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
   .skd-d { font-size: 11px; line-height: 1.35; }
   .skd-fx > div { padding: 5px 7px; } .skd-fx b { font-size: 11px; } .skd-fx span, .skd-req span { font-size: 8px; }
   .skd-req { font-size: 10px; gap: 4px; } .skd-why { font-size: 10px; padding: 5px 7px; }
-  .sk-learn { padding: 11px 6px; font-size: 10px; letter-spacing: 0.1em; }
+  .sk-learn { padding: 12px 4px; font-size: 10px; letter-spacing: 0.04em; }
   .skd-foot .muted { display: none; } .sk-respec { padding: 8px 4px; font-size: 9px; letter-spacing: 0.05em; }
   html.touch .sk-lbl { font-size: 17px; } html.touch .sk-rk { font-size: 14px; } html.touch .sk-bs { display: none; } html.touch .sk-bl { font-size: 18px; }
 }

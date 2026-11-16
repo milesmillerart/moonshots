@@ -103,8 +103,9 @@ def main():
         G("g.gainXp(500)")
         pg.keyboard.press("k"); settle(0.6)
         for pid in ["keen_edge", "capacitor", "overload", "plated"]:
-            btn = pg.query_selector(f"[data-act=perk][data-id={pid}]")
-            if btn and btn.is_enabled(): btn.click(); settle(0.2)
+            if "locked" in pg.get_attribute(f".nd[data-perk={pid}]", "class"): continue
+            pg.click(f".nd[data-perk={pid}] .hex", force=True); settle(0.2); pg.click(f".nd[data-perk={pid}] .hex", force=True); settle(0.2)
+            if pg.query_selector(".sk-learn.armed"): pg.click(".sk-learn"); settle(0.6)
         pg.screenshot(path=str(OUT / "09-skills.png"))
         perks = G("return g.save.perks"); print("perks:", perks)
         assert perks.get("keen_edge") == 1 and perks.get("overload") == 1

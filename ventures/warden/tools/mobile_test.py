@@ -109,7 +109,9 @@ def run(p, devname, tag, full):
     if full: pg.screenshot(path=str(OUT / f"{tag}-05-armory.png"))
     tap_el("#panel [data-tab=skills]"); time.sleep(0.6)
     assert G("return g.ui.screen") == "skills"
-    tap_el("#panel button[data-act=perk]:not([disabled])"); time.sleep(0.4)
+    G("g.ui.skills.sel = null"); tap_el("#panel .nd.avail .hex"); time.sleep(0.4)  # select (or arm if already selected)
+    if not G("return g.ui.skills.armed"): tap_el("#panel .nd.sel .hex"); time.sleep(0.4)  # tap again arms
+    tap_el("#panel .sk-learn.armed"); time.sleep(0.6)
     learned = G("return Object.values(g.save.perks).reduce((a,b)=>a+b,0)")
     assert learned >= 1, "could not learn a perk by tapping"
     if full: pg.screenshot(path=str(OUT / f"{tag}-06-skills.png"))

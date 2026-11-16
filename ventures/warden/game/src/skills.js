@@ -5,12 +5,12 @@ import { PERKS, BRANCHES, TIER_REQ } from './data.js';
 import { audio } from './audio.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const VB = { all: [0, 0, 1020, 600] };
-const ROWS = { blade: 125, bulwark: 300, circuit: 475 };
+const VB = { all: [0, 0, 1020, 660] };
+const ROWS = { blade: 135, bulwark: 335, circuit: 535 };
 const COLS = [255, 425, 595, 765, 935];
-const ZIG = [0, -30, 20, -26, 4];
-const ROOT = [88, 300];
-for (const b of BRANCHES) VB[b.id] = [150, ROWS[b.id] - 120, 860, 235];
+const ZIG = [0, -16, 12, -14, 0];
+const ROOT = [88, 335];
+for (const b of BRANCHES) VB[b.id] = [150, ROWS[b.id] - 120, 860, 245];
 const HOLD_MS = 650;
 
 // Exact effect per rank (keeps data.js balance; numbers mirror items.js / game.js / player.js).
@@ -54,7 +54,7 @@ const G = {
 const glyph = (id, s = 40, x = -s / 2, y = -s / 2) => `<svg class="gl" x="${x}" y="${y}" width="${s}" height="${s}" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${G[id] || G.root}</svg>`;
 
 export const branchOf = (id) => BRANCHES.find((b) => b.id === id);
-const pos = (p) => [COLS[p.tier], ROWS[p.branch] + ZIG[p.tier] * (p.branch === 'bulwark' ? -1 : 1)];
+const pos = (p) => [COLS[p.tier], ROWS[p.branch] + ZIG[p.tier]];
 
 export class SkillTree {
   constructor(ui) { this.ui = ui; this.g = ui.g; this.sel = null; this.view = 'all'; this.armed = false; this.just = null; this.vb = null; this.hold = null; this.keys = false; }
@@ -100,7 +100,7 @@ export class SkillTree {
       // branch label + rail
       const y = ROWS[b.id];
       bg += `<path d="M ${COLS[0] - 60} ${y + 62} H ${COLS[4] + 50}" stroke="${b.color}" stroke-opacity=".08" stroke-width="1" stroke-dasharray="2 6"/>`;
-      bg += `<text class="sk-bl" x="${COLS[0] - 58}" y="${y - 66}" fill="${b.color}">${b.name.toUpperCase()}</text><text class="sk-bs" x="${COLS[0] - 58}" y="${y - 50}">${esc(b.sub)} · ${spent}/${this.total(b.id)}</text>`;
+      bg += `<text class="sk-bl" x="${COLS[0] - 58}" y="${y - 84}" fill="${b.color}">${b.name.toUpperCase()}</text><text class="sk-bs" x="${COLS[0] - 58}" y="${y - 67}">${esc(b.sub)} · ${spent}/${this.total(b.id)}</text>`;
       let prev = ROOT;
       for (const p of ps) {
         const [x, yy] = pos(p), open = spent >= TIER_REQ[p.tier], r = sv.perks[p.id] || 0;
@@ -132,8 +132,7 @@ export class SkillTree {
       const pt = (a) => `${(Math.cos(a) * rr).toFixed(1)} ${(Math.sin(a) * rr).toFixed(1)}`;
       segs.push(p.max === 1 ? `<circle r="${rr}" class="pip ${i < r ? 'f' : ''}"/>` : `<path class="pip ${i < r ? 'f' : ''}" d="M ${pt(a0)} A ${rr} ${rr} 0 ${large} 1 ${pt(a1)}"/>`);
     }
-    const above = y < ROWS[p.branch] - 5 || (p.tier % 2 === 1 && p.branch !== 'bulwark');
-    const ly = above ? -R - 22 : R + 32;
+    const above = false, ly = R + 30;
     return `<g class="nd ${st} ${this.sel === p.id ? 'sel' : ''} ${this.just === p.id ? 'just' : ''}" data-perk="${p.id}" transform="translate(${x} ${y})" style="--bc:${b.color}">
       <circle r="${R + 16}" class="hit"/>
       ${this.sel === p.id ? `<circle r="${R + 15}" class="selring"/>` : ''}
@@ -156,7 +155,7 @@ export class SkillTree {
     if (r >= p.max) why = 'Mastered. Every rank is yours.';
     else if (!open) why = `Locked: invest ${need - spent} more point${need - spent === 1 ? '' : 's'} in ${b.name}.`;
     else if (!sv.points) why = 'No skill points. You earn one each level.';
-    const holdLbl = this.armed ? `Confirm: learn ${esc(p.name)}` : `${this.T ? 'Hold' : 'Hold'} to learn${r ? ` rank ${r + 1}` : ''} · 1 point`;
+    const holdLbl = this.armed ? `Confirm: learn ${esc(p.name)}` : `Hold to learn${r ? ` rank ${r + 1}` : ''}${this.T ? '' : ' · 1 point'}`;
     return `<div class="skd" style="--bc:${b.color}">
       <div class="skd-h"><div class="skd-ic ${st}">${`<svg viewBox="-30 -30 60 60" width="56" height="56">${glyph(p.id, 38)}</svg>`}</div>
         <div><div class="skd-n">${esc(p.name)}</div><div class="skd-b">${b.name} · Tier ${p.tier + 1}${p.id === 'overload' ? ' · Active ability' : ''}</div>
@@ -193,7 +192,7 @@ export class SkillTree {
     }
     if (this.just) {
       const pts = document.getElementById('skpts'); pts?.classList.add('bump');
-      clearTimeout(this.justT); this.justT = setTimeout(() => { this.just = null; this.justOpened = null; document.querySelector('.nd.just')?.classList.remove('just'); document.querySelectorAll('.tr.charge').forEach((e) => e.classList.remove('charge')); }, 1400);
+      clearTimeout(this.justT); this.justT = setTimeout(() => { this.just = null; this.justOpened = null; document.querySelector('.nd.just')?.classList.remove('just'); document.querySelectorAll('.tr.charge').forEach((e) => e.classList.remove('charge')); }, 2600);
     }
     if (!this.keys) { this.keys = true; addEventListener('keydown', (e) => this.onKey(e)); }
   }

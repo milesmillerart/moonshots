@@ -11,6 +11,7 @@ You are the Warden of Hallowmere's Ninth Ward: unapologetic, ruthless, fair, pro
   - `src/game.js` states, story, waves, combat resolution, loot, autosave triggers
   - `src/save.js` save slots, schema + migration, backups, export/import codes
   - `src/inventory.js` Armory screen; `src/preview.js` live 3D paper-doll; `src/icons.js` procedural item icons
+  - `src/skills.js` skill tree screen (SVG constellation, perk glyphs, hold-to-learn, Forge respec)
   - `src/player.js` movement, stamina, dodge, combo, procedural animation + arm IK
   - `src/enemies.js` Husk, Skitter, Bile Spitter, the Bellwright, projectiles
   - `src/world.js` the district, rain, height fog, neon, lights
@@ -21,6 +22,7 @@ You are the Warden of Hallowmere's Ninth Ward: unapologetic, ruthless, fair, pro
   - `vendor/` three.js bundle (MIT)
 - `tools/build.py` copies `game/` to `public/` and cache-busts module URLs
 - `tools/shots.py` headless Chromium smoke test + screenshots
+- `tools/save_test.py`, `tools/inventory_test.py`, `tools/skills_test.py`, `tools/mobile_test.py` save, Armory, skill tree and phone (touch) tests
 - `jobs/daily-improve.sh` nightly rebuild + deploy
 - `docs/roadmap.md` prioritized daily backlog, `docs/bible.md` world and tone
 

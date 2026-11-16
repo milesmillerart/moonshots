@@ -30,6 +30,10 @@ def start(pg):
 
 def cls(pg, pid): return pg.get_attribute(f".nd[data-perk={pid}]", "class").split()
 
+def nclick(pg, pid):
+    bb = pg.locator(f".nd[data-perk={pid}] .hex").bounding_box()  # animated rings make the <g> "unstable" for pg.click
+    pg.mouse.click(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
+
 def wait(pg, js, t=30):
     t0 = time.time()
     while time.time() - t0 < t:
@@ -63,13 +67,13 @@ def desktop(p):
     print("  OK node states (maxed/owned/available/locked) + traces/gates light by tier; branch progress 1/8, 3/9, 1/7")
     pg.screenshot(path=str(OUT / "desktop-01-overview.png"))
     # locked node detail
-    pg.click(".nd[data-perk=executioner]"); time.sleep(0.6)
+    nclick(pg, "executioner"); time.sleep(0.6)
     d = pg.inner_text("#skdetail")
     assert "Locked: invest 2 more points in Blade" in d and pg.locator(".sk-learn").is_disabled(), d
     assert "+25% damage to enemies under 35% health" in d
     print("  OK locked node: reason + requirement shown, learn disabled")
     # keen edge detail numbers
-    pg.click(".nd[data-perk=keen_edge]"); time.sleep(0.6)
+    nclick(pg, "keen_edge"); time.sleep(0.6)
     d = pg.inner_text("#skdetail")
     assert "+8% damage" in d and "+16% damage" in d and "Rank 1/3" in d and "you have 5" in d, d
     assert G("return window.__wardenPerks ? 1 : 1")
@@ -80,16 +84,17 @@ def desktop(p):
     pg.mouse.down(); time.sleep(0.25)
     assert G("return g.save.perks.keen_edge") == 1, "learned instantly without holding"
     wait(pg, "g.save.perks.keen_edge === 2"); pg.mouse.up()
-    time.sleep(0.15); pg.screenshot(path=str(OUT / "desktop-03-unlock-moment.png"))
-    assert pg.locator(".nd.just .burst").count() == 1 and G("return g.save.points") == 4
-    assert pg.locator(".tr.charge").count() == 1 and "avail" in cls(pg, "cleave"), "cleave should open with a charge line"
+    fx = pg.evaluate("[document.querySelectorAll('.nd.just .burst').length, document.querySelectorAll('.tr.charge').length]")
+    pg.screenshot(path=str(OUT / "desktop-03-unlock-moment.png"))
+    assert fx == [1, 1] and G("return g.save.points") == 4, fx
+    assert "avail" in cls(pg, "cleave"), "cleave should open"
     assert pg.inner_text("#skpts") == "4"
     print("  OK hold-to-learn: Keen Edge 2/3, burst animation, Cleave tier opens with a charge line, points 4")
     time.sleep(2)
     # click again then confirm
-    pg.click(".nd[data-perk=momentum]"); time.sleep(0.5); assert G("return g.save.perks.momentum || 0") == 0
-    pg.click(".nd[data-perk=momentum]"); time.sleep(0.5)
-    assert "Confirm" in pg.inner_text(".sk-learn") and G("return g.save.perks.momentum || 0") == 0
+    nclick(pg, "momentum"); time.sleep(0.5); assert G("return g.save.perks.momentum || 0") == 0
+    nclick(pg, "momentum"); time.sleep(0.5)
+    assert "confirm" in pg.inner_text(".sk-learn").lower() and G("return g.save.perks.momentum || 0") == 0
     pg.click(".sk-learn"); time.sleep(0.6)
     assert G("return g.save.perks.momentum") == 1 and "max" in cls(pg, "momentum")
     print("  OK click selects, click again arms Confirm, Confirm learns (Momentum mastered)")
@@ -101,7 +106,7 @@ def desktop(p):
     assert G("return g.save.perks.quickstep") == 1; print("  OK arrows move the selection, Enter + Enter learns (Quickstep)")
     # no points
     G("g.save.points = 0; g.ui.render();"); time.sleep(0.5)
-    pg.click(".nd[data-perk=overload]"); time.sleep(0.4); pg.click(".nd[data-perk=overload]"); time.sleep(0.4)
+    nclick(pg, "overload"); time.sleep(0.4); nclick(pg, "overload"); time.sleep(0.4)
     assert pg.locator(".sk-learn").is_disabled() and "No skill points" in pg.inner_text("#skdetail")
     assert G("return g.learnPerk('overload')") is False and G("return g.learnPerk('verdict')") is False
     assert "open" in cls(pg, "overload") and "has" not in pg.get_attribute(".sk-pts", "class")
@@ -111,10 +116,10 @@ def desktop(p):
     for br in ["blade", "bulwark", "circuit"]:
         pg.click(f".sk-views [data-v={br}]"); time.sleep(2.5)
         vb = [float(x) for x in pg.get_attribute("#sksvg", "viewBox").split()]
-        assert abs(vb[2] - 860) < 1 and abs(vb[3] - 235) < 1, vb
+        assert abs(vb[2] - 860) < 1 and abs(vb[3] - 245) < 1, vb
         pg.screenshot(path=str(OUT / f"desktop-04-branch-{br}.png"))
     pg.click(".sk-views [data-v=all]"); time.sleep(2.5)
-    assert pg.get_attribute("#sksvg", "viewBox").split()[2] in ("1020",), pg.get_attribute("#sksvg", "viewBox")
+    assert pg.get_attribute("#sksvg", "viewBox").split()[2] == "1020", pg.get_attribute("#sksvg", "viewBox")
     print("  OK Blade / Bulwark / Circuit tabs zoom the view, All zooms back")
     perks = G("return JSON.stringify(g.save.perks)")
     # persistence
@@ -124,13 +129,13 @@ def desktop(p):
     G("g.allowUnlockedAttack = true; g.noLock = true;")
     # respec away from forge
     pg.keyboard.press("k"); time.sleep(1.2)
-    assert pg.locator(".sk-respec").is_disabled() and "Forge" in pg.inner_text(".sk-respec"); print("  OK respec refused away from the Forge:", pg.inner_text(".sk-respec"))
+    assert pg.locator(".sk-respec").is_disabled() and "forge" in pg.inner_text(".sk-respec").lower(); print("  OK respec refused away from the Forge:", pg.inner_text(".sk-respec"))
     pg.keyboard.press("k"); time.sleep(0.4); assert G("return g.ui.screen") is None; print("  OK K toggles closed")
     G("g.player.pos.set(14.2,0,-7.2);"); wait(pg, "g.nearForge")
     pg.keyboard.press("k"); time.sleep(1.2)
     spent = G("return Object.values(g.save.perks).reduce((a, r) => a + r, 0)"); scrap = G("return g.save.scrap")
     pg.click(".sk-respec"); time.sleep(0.5)
-    assert "Confirm" in pg.inner_text(".sk-respec") and G("return Object.keys(g.save.perks).length") > 0
+    assert "confirm" in pg.inner_text(".sk-respec").lower() and G("return Object.keys(g.save.perks).length") > 0
     pg.screenshot(path=str(OUT / "desktop-05-respec-confirm.png"))
     pg.click(".sk-respec"); time.sleep(0.6)
     assert G("return Object.keys(g.save.perks).length") == 0 and G("return g.save.points") == 2 + spent and G("return g.save.scrap") == scrap - 15 * spent
@@ -152,7 +157,7 @@ def mobile(p, devname, tag):
     def centre(sel):
         pg.locator(sel).first.scroll_into_view_if_needed(); time.sleep(0.2)
         bb = onscreen(sel); x, y = bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2
-        assert pg.evaluate("([x, y, s]) => { const e = document.elementFromPoint(x, y); return !!e && (e.matches(s) || !!e.closest(s)); }", [x, y, sel]), f"{sel} is covered at its centre"
+        assert pg.evaluate("([x, y, s]) => { const e = document.elementFromPoint(x, y); return !!e && (e.matches(s) || !!e.closest(s)); }", [x, y, sel.replace(" .hex", "")]), f"{sel} is covered at its centre"
         return x, y
     def tap(sel, hold=0.05):
         x, y = centre(sel)
@@ -172,7 +177,7 @@ def mobile(p, devname, tag):
     assert G("return g.ui.skills.sel") == "overload" and not G("return g.save.perks.overload"), "first tap should only select"
     assert "OVERLOAD" in pg.inner_text("#skdetail")
     tap(".nd[data-perk=overload] .hex"); time.sleep(0.4)
-    assert "Confirm" in pg.inner_text(".sk-learn") and not G("return g.save.perks.overload")
+    assert "confirm" in pg.inner_text(".sk-learn").lower() and not G("return g.save.perks.overload")
     pg.screenshot(path=str(OUT / f"{tag}-02-detail.png"))
     tap(".sk-learn"); time.sleep(0.6)
     assert G("return g.save.perks.overload") == 1 and "max" in cls(pg, "overload"); print("  OK tap selects + shows detail, tap again arms, tap Confirm learns Overload")

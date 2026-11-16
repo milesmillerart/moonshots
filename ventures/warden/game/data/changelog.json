@@ -1,6 +1,21 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.7",
+    "title": "The skill tree, rebuilt: a glowing constellation of Blade, Bulwark and Circuit",
+    "items": [
+      "A new Skills screen [K] / SKILLS: all three branches grow out of the Warden's Oath as one glowing circuit-constellation. Blade burns red, Bulwark steel, Circuit teal.",
+      "Every perk is a forged hex node with its own icon and rank segments around it. You can tell at a glance what is locked, open, ready to learn (it pulses), owned, or mastered (solid and glowing).",
+      "Traces between perks light up as you invest, and the tier gates show exactly how many points open the next perk. When a new tier opens, a charge of light runs down the line to it.",
+      "Select any perk to see what it does, your rank, the exact number now and at the next rank, what it needs, what it costs and what it leads to.",
+      "Learn a perk by holding the button (it fills up), or tap the perk again and press Confirm. Unlocking it bursts the node with sparks, flashes the branch colour and sounds a new chime. Mastering a perk adds a bright extra note.",
+      "Your skill points sit big and gold at the top, with how far you have gone in each branch. Branch tabs zoom the view in on Blade, Bulwark or Circuit, and arrow keys plus Enter work on a keyboard.",
+      "Respec at the Forge: unlearn every perk and get every point back for 15 scrap per point (it asks for a confirm tap).",
+      "Built for phones too: the whole tree fits a landscape phone, nothing needs hover, and the Learn button always stays on screen. Your saves carry over untouched."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.6",
     "title": "The Armory, rebuilt: see your Warden, compare everything, manage your pack",
     "items": [
