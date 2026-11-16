@@ -2,6 +2,7 @@
 // listed in assets/manifest.json. Anything missing or failing to load falls back to the procedural models, so the
 // game always runs. Characters may be skinned + animated (Mixamo-style clips); see docs/assets.md.
 import * as THREE from '../vendor/three-warden.r187-09.min.js';
+import { pbrMaterial, PBR_SETS } from './pbr.js';
 
 // Logical clip names the game asks for, and the source names we accept for each (Mixamo, Meshy, Blender exports).
 export const CLIP_ALIASES = {
@@ -61,6 +62,7 @@ export const Assets = {
         if (m.type === 'char' || m.type === 'enemy' || /^(char|enemy)_/.test(id)) o.material = Array.isArray(o.material) ? o.material.map((x) => x.clone()) : o.material.clone(); // per-instance flashes
         o.castShadow = m.castShadow !== false; o.receiveShadow = true;
         if (o.isSkinnedMesh) o.frustumCulled = false; // animated bounds lag the bind pose
+        if (m.materials) applyMaterials(o, m.materials);
         if (o.material && o.material.envMapIntensity !== undefined) o.material.envMapIntensity = m.envMapIntensity ?? 1;
       }
     });
@@ -74,6 +76,35 @@ export const Assets = {
     return hit;
   },
 };
+
+// Manifest "materials": [{ match: "regex on mesh/material name" | "*", pbr: "metal_plate", tint: "#2a2c31", rough, metal, scale }].
+// This is how untextured models (e.g. Meshy free-plan downloads) get Warden's CC0 PBR surfaces. Meshes without UVs
+// get box-projected UVs in metres, so tiling textures still land at a sensible size.
+const matCache = new Map();
+function applyMaterials(o, rules) {
+  const name = `${o.name} ${[].concat(o.material).map((x) => x?.name || '').join(' ')}`;
+  const r = rules.find((x) => x.match === '*' || new RegExp(x.match, 'i').test(name)); if (!r) return;
+  if (r.pbr && !PBR_SETS.includes(r.pbr)) { console.warn('[assets] unknown pbr set', r.pbr); return; }
+  if (!o.geometry.attributes.uv) boxUV(o.geometry, r.scale ?? 0.5);
+  const key = JSON.stringify(r);
+  if (!matCache.has(key)) {
+    const tint = r.tint ? new THREE.Color(r.tint).getHex() : 0xffffff;
+    matCache.set(key, r.pbr ? pbrMaterial(r.pbr, { tint, rough: r.rough ?? 1, metal: r.metal ?? 0, normal: r.normal ?? 1 })
+      : new THREE.MeshStandardMaterial({ color: tint, roughness: r.rough ?? 0.8, metalness: r.metal ?? 0 }));
+  }
+  const mat = matCache.get(key);
+  o.material = Array.isArray(o.material) ? o.material.map(() => mat.clone()) : mat.clone();
+}
+function boxUV(geo, metres) {
+  if (!geo.attributes.normal) geo.computeVertexNormals();
+  const p = geo.attributes.position, n = geo.attributes.normal, uv = new Float32Array(p.count * 2);
+  for (let i = 0; i < p.count; i++) {
+    const ax = Math.abs(n.getX(i)), ay = Math.abs(n.getY(i)), az = Math.abs(n.getZ(i));
+    const [u, v] = ax >= ay && ax >= az ? [p.getZ(i), p.getY(i)] : ay >= az ? [p.getX(i), p.getZ(i)] : [p.getX(i), p.getY(i)];
+    uv[i * 2] = u / metres; uv[i * 2 + 1] = v / metres;
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
 
 // map logical clip names -> AnimationClip, honoring explicit manifest names first, then aliases, then fallbacks
 export function mapClips(anims, explicit = {}) {

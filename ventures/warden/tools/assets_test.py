@@ -86,6 +86,8 @@ def main():
         ok(True, "husk death clip")
         props = E("let n = 0; g.scene.traverse((o) => { if (o.userData?.assetId === 'prop_testcrate') n++; }); return n;")
         ok(props >= 1, f"manifest placements spawn props ({props})")
+        pm = E("let r = null; g.scene.traverse((o) => { if (!r && o.userData?.assetId === 'prop_testcrate') o.traverse((m) => { if (!r && m.isMesh) r = { map: !!m.material.map, nor: !!m.material.normalMap, uv: !!m.geometry.attributes.uv }; }); }); return r;")
+        ok(pm and pm["map"] and pm["nor"] and pm["uv"], f"manifest 'materials' applies CC0 PBR to an untextured-style model {pm}")
         E("""for (const e of g.enemies) e.dispose(); g.enemies = []; const T = window.__warden.THREE, p = g.player; g.ui.hud.classList.add('hidden');
           g.cine = { pos: p.pos.clone().add(new T.Vector3(1.4, 1.7, 3.4)), look: p.pos.clone().add(new T.Vector3(0, 0.9, 0)) }; g._lastCine = null;""")
         time.sleep(3); pg.screenshot(path=str(OUT / f"{'mobile' if MOBILE else 'desktop'}-assets-testbot.png"))

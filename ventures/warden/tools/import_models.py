@@ -26,6 +26,14 @@ TOOLS = ROOT / "tools" / "three-bundle"
 OUT = ROOT / "game" / "assets" / "models"
 MANIFEST = ROOT / "game" / "assets" / "manifest.json"
 NAME = re.compile(r"^(char|enemy|weapon|prop|bldg)_([a-z0-9]+)(?:_([a-z0-9]+))?_v(\d+)\.glb$")
+# Surfaces for models that arrive without textures (ids from game/src/pbr.js PBR_SETS).
+DEFAULT_PBR = {
+    "char": {"pbr": "metal_plate", "tint": "#3a3c42", "rough": 0.7, "metal": 0.6},
+    "enemy": {"pbr": "brown_leather", "tint": "#4a3a36", "rough": 0.85, "metal": 0.0},
+    "weapon": {"pbr": "metal_plate", "tint": "#9aa0aa", "rough": 0.35, "metal": 1.0},
+    "prop": {"pbr": "rusty_metal_02", "tint": "#8a7a70", "rough": 0.8, "metal": 0.4},
+    "bldg": {"pbr": "dark_brick_wall", "tint": "#6a6a70", "rough": 0.9, "metal": 0.0},
+}
 # Budgets (docs/assets.md). tex = max texture edge; tris = warning threshold for the desktop file.
 BUDGET = {
     "char":   {"tex": 2048, "texLow": 1024, "tris": 60000, "trisLow": 20000, "ratioLow": 0.4},
@@ -130,6 +138,10 @@ def main():
             if t in ("char", "enemy") and info["animations"]:
                 missing = [k for k in ("idle", "walk", "run", "attack", "dodge", "hit", "death") if k not in clips]
                 if missing: warn.append("missing clips (fallbacks used): " + ", ".join(missing))
+            materials = prev.get("materials")
+            if materials is None and not ihi["textures"]:  # untextured (e.g. Meshy free plan): use Warden's CC0 PBR surfaces
+                materials = [{"match": "*", **DEFAULT_PBR[t]}]
+                warn.append(f"no textures: using PBR set {DEFAULT_PBR[t]['pbr']} (edit 'materials' in the manifest to change)")
             src_meta = {"name": f.name, "sha1": h, "imported": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
             if f.name in index: src_meta.update({k: index[f.name].get(k) for k in ("id", "modifiedTime", "webViewLink") if index[f.name].get(k)})
             entry = {**prev, "type": t, "version": ver, "file": f"models/{lid}.glb", "fileLow": f"models/{lid}.lo.glb", "scale": scale,
@@ -137,6 +149,7 @@ def main():
                      "textures": [f"{x['w']}x{x['h']}" for x in ihi["textures"]], "texturesLow": [f"{x['w']}x{x['h']}" for x in ilo["textures"]],
                      "bytes": (OUT / f"{lid}.glb").stat().st_size, "bytesLow": (OUT / f"{lid}.lo.glb").stat().st_size,
                      "animations": info["animations"], "clips": clips, "bones": info["bones"], "warnings": warn}
+            if materials is not None: entry["materials"] = materials
             man["assets"][lid] = entry
             report.append({"id": lid, "file": f.name, "status": "imported", "triangles": ihi["triangles"], "trianglesLow": ilo["triangles"],
                            "kb": round(entry["bytes"] / 1024), "kbLow": round(entry["bytesLow"] / 1024), "warnings": warn})

@@ -66,6 +66,15 @@
           "z": 40,
           "ry": 0.5
         }
+      ],
+      "materials": [
+        {
+          "match": "*",
+          "pbr": "rusty_metal_02",
+          "tint": "#8a7a70",
+          "rough": 0.8,
+          "metal": 0.4
+        }
       ]
     }
   }

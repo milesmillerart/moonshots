@@ -162,7 +162,7 @@ export function installHeightFog() {
     #endif
     gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
     float mist = (1.0 - exp(-vFogDepth * 0.075)) * exp(-max(vFogWorld.y, 0.0) * 0.55);
-    gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3(0.105, 0.118, 0.145), clamp(mist * 0.78, 0.0, 1.0) );
+    gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3(0.098, 0.124, 0.138), clamp(mist * 0.86, 0.0, 1.0) );
   #endif`;
 }
 
@@ -171,8 +171,8 @@ export function buildWorld(scene, renderer, opts = {}) {
   installHeightFog();
   const W = { lights: [], flicker: [], smoke: [], fogCards: [], signs: [], glows: [], update: null };
   colliders.length = 0;
-  scene.background = new THREE.Color(0x07090d);
-  scene.fog = new THREE.FogExp2(0x0a0d12, 0.017);
+  scene.background = new THREE.Color(0x0a0f12);
+  scene.fog = new THREE.FogExp2(0x0c1215, 0.019); // teal-grey haze like the cover
 
   // Environment for wet reflections: a dark dome with neon panels.
   const envScene = new THREE.Scene();
@@ -206,7 +206,7 @@ export function buildWorld(scene, renderer, opts = {}) {
   // Ground
   const cb = cobbleCanvases();
   const rep = 210; // the CC0 set covers 2 m x 2 m
-  const groundMat = pbrMaterial('cobblestone_floor_08', { rx: rep, tint: 0x5c6068, rough: 0.78, normal: 1.25, ao: 1 });
+  const groundMat = pbrMaterial('cobblestone_floor_08', { rx: rep, tint: 0x4a5056, rough: 0.86, normal: 1.0, ao: 1 });
   groundMat.metalness = 0.05;
   const puddle = tex(cb.rough, 1, 1, false); puddle.repeat.set(1, 1);
   groundMat.onBeforeCompile = (sh) => { // world-space puddle mask: big dark mirror patches like the cover's wet street
@@ -216,7 +216,7 @@ export function buildWorld(scene, renderer, opts = {}) {
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         float pud = 1.0 - smoothstep(0.08, 0.3, texture2D(uPuddle, vWXZ / 23.0).g);
         pud = max(pud, 0.55 * (1.0 - smoothstep(0.1, 0.32, texture2D(uPuddle, vWXZ / 9.0 + 0.37).g)));
-        roughnessFactor = mix(roughnessFactor * 0.62, 0.035, pud);`)
+        roughnessFactor = mix(roughnessFactor * 0.8, 0.035, pud);`)
       .replace('#include <color_fragment>', '#include <color_fragment>\n float pud0 = 1.0 - smoothstep(0.08, 0.3, texture2D(uPuddle, vWXZ / 23.0).g); diffuseColor.rgb *= mix(1.0, 0.35, pud0);');
   };
   groundMat.customProgramCacheKey = () => 'ground-puddle-v1';
@@ -314,9 +314,19 @@ export function buildWorld(scene, renderer, opts = {}) {
   building(0, 72, 16, 10, 48, 'gothic', [0, -1]);
 
   // Distant skyline silhouettes (unfogged, layered greys like the poster).
-  const skyMat = (l) => new THREE.MeshBasicMaterial({ color: new THREE.Color(l, l * 1.05, l * 1.18), fog: false });
+  // Towers fade from dark tops into the street haze, with sparse teal windows like the cover's skyline.
+  const TR = mulberry32(77); // own RNG so the world layout's sequence is unchanged
+  const towerTex = new THREE.CanvasTexture(canvas(64, 256, (g) => {
+    const grd = g.createLinearGradient(0, 0, 0, 256); grd.addColorStop(0, '#2a2f33'); grd.addColorStop(0.6, '#4b5357'); grd.addColorStop(1, '#8c9a9e');
+    g.fillStyle = grd; g.fillRect(0, 0, 64, 256);
+    for (let y = 6; y < 250; y += 7) for (let x = 3; x < 62; x += 6) {
+      const r = TR(); if (r < 0.05) { g.fillStyle = r < 0.04 ? '#3fe6e0' : '#ff4a6a'; g.globalAlpha = 0.5 + TR() * 0.5; g.fillRect(x, y, 3, 3); g.globalAlpha = 1; }
+    }
+  }));
+  towerTex.colorSpace = THREE.SRGBColorSpace;
+  const skyMat = (l) => new THREE.MeshBasicMaterial({ color: new THREE.Color(l * 2.2, l * 2.45, l * 2.6), map: towerTex, fog: false });
   for (let ring = 0; ring < 2; ring++) {
-    const mat = skyMat(ring ? 0.035 : 0.055);
+    const mat = skyMat(ring ? 0.022 : 0.03);
     for (let i = 0; i < 46; i++) {
       const a = (i / 46) * Math.PI * 2 + R() * 0.1, rad = ring ? 230 : 160;
       const x = Math.sin(a) * rad, z = Math.cos(a) * rad, h = rr(30, ring ? 110 : 80), w = rr(10, 24);
@@ -326,7 +336,7 @@ export function buildWorld(scene, renderer, opts = {}) {
     }
   }
   // The Tribunal: a colossal spire far north with a red beacon.
-  const tri = skyMat(0.05);
+  const tri = skyMat(0.026);
   addMesh(box, tri, 0, 60, -200, 30, 120, 30);
   addMesh(cone4, tri, 0, 150, -200, 20, 60, 20, Math.PI / 4);
   const beacon = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.3, 0.5), fog: false }));
