@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-build="{{BUILD}}"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WARDEN: keep the law of the Ninth Ward</title>
+<meta name="description" content="WARDEN is a free cyber-medieval action RPG in your browser. Pass judgment, wield the synthblade, purge the abominations of the Rot. Improved every day.">
+<meta name="theme-color" content="#07090d">
+<meta property="og:title" content="WARDEN">
+<meta property="og:description" content="A cyber-medieval action RPG in your browser. The rain has not stopped in eleven years. Keep the law.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css?v={{BUILD}}">
+<link rel="modulepreload" href="vendor/three-warden.r187.min.js">
+</head><body>
+<canvas id="cv"></canvas>
+<div id="boot"><div class="bt">W A R D E N</div><div class="bs">Forging the Ward…</div></div>
+<div id="vignette"></div>
+<div id="nums"></div>
+<div id="title" class="hidden">
+  <div class="logo"><h1>WARDEN</h1><div class="tag">KEEP THE LAW OF THE NINTH WARD</div></div>
+  <div id="menu"></div>
+  <div class="foot">Free browser action RPG · improved every day · <a href="/arcade/">Ebbmarrow &amp; the arcade</a></div>
+</div>
+<div id="hud" class="hidden">
+  <div class="tl">
+    <div id="pname"></div><div id="plevel"></div>
+    <div class="bar hp"><div id="hp-fill"></div><span id="hp-txt"></span></div>
+    <div class="bar sta"><div id="sta-fill"></div></div>
+    <div class="bar chg" id="chg"><div id="chg-fill"></div><span>CHARGE</span></div>
+    <div class="bar xp"><div id="xp-fill"></div></div>
+    <div class="res"><span>⬢ <b id="scrap">0</b> scrap</span><span>✚ <b id="stims">3</b> stims [R]</span></div>
+    <div id="pts" class="gold"></div>
+  </div>
+  <div id="objective"></div>
+  <div id="lock" class="hidden">LOCKED [Q]</div>
+  <div id="prompt" class="hidden"></div>
+  <div id="boss" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill"></div></div></div>
+  <div class="keys">LMB light · RMB heavy · Space dodge · Q lock · R stim · I armory · K skills · Esc pause</div>
+  <div class="cross"></div>
+</div>
+<div id="toasts"></div>
+<div id="banner"></div>
+<div id="dialogue" class="hidden"></div>
+<div id="panel" class="panel hidden"></div>
+<div id="fade"></div>
+<script type="module" src="src/main.js?v={{BUILD}}"></script>
+</body></html>

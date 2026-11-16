@@ -24,3 +24,6 @@ ventures/*/.cache/
 # venture game data is content, not runtime state
 !ventures/*/rpg/data/
 !ventures/*/public/data/
+!ventures/*/game/data/
+# warden public/ is a build output (tools/build.py)
+ventures/warden/public/

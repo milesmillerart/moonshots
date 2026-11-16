@@ -1,0 +1,34 @@
+# Venture manifest — the core rescans this every 60s.
+slug: warden
+name: "Warden"
+description: "WARDEN: a cyber-medieval 3D third-person action-RPG in the browser (Three.js). Improved every day, graphics a little at a time."
+# idea | planned | building | live | paused | retired
+# Scheduled jobs only run when status is building or live.
+status: building
+owner: moonshots          # brand/operator; never Don's personal name
+links:
+  site: https://moon.sparelimbstudios.com/warden/
+  repo: https://github.com/milesmillerart/moonshots/tree/main/ventures/warden
+
+jobs:
+  - name: heartbeat
+    schedule: "*/30 * * * *"
+    command: ./jobs/heartbeat.sh
+    timeout: 60
+  # Daily improvement train: rebuild game/ -> public/ (cache-busted) and redeploy whatever
+  # improved since yesterday (see docs/roadmap.md). Local only, no paid APIs, nothing to approve.
+  - name: daily-improve
+    schedule: "15 5 * * *"    # 05:15 UTC = 00:15 US Eastern (standard time)
+    command: ./jobs/daily-improve.sh
+    timeout: 300
+
+# game/ is the source; tools/build.py writes public/ (gitignored); deploy copies it to /warden.
+deploy:
+  type: static
+  source: public
+  path: /warden
+
+business:
+  revenue:
+    - None yet. Goal for now is a really good game. Later options (each needs Don's approval) include CrazyGames/Poki revenue share, a paid "supporter" cosmetic pack, or a Steam/itch desktop build.
+  costs: []               # anything here needs Don's explicit approval first
