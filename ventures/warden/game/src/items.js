@@ -1,5 +1,5 @@
 // Gear generation, upgrading, Cores, and the derived stat sheet.
-import { RARITIES, SLOTS, BASES, PREFIXES, SOVEREIGN_NAMES, AFFIXES, CORES, CORE_GRADES, PERKS, TRAITS } from './data.js';
+import { RARITIES, SLOTS, BASES, PREFIXES, EXALTED_NAMES, AFFIXES, CORES, CORE_GRADES, EXALTED_BUFF, PERKS, TRAITS } from './data.js';
 import { pick, randi, rand, uid } from './util.js';
 
 export const MAX_UPGRADE = 10;
@@ -19,7 +19,7 @@ export function makeCore(type, grade = 1) {
 export function makeItem(slot, rarity, ilvl, opts = {}) {
   const rid = RARITIES[rarity].id;
   const base = pick(BASES[slot]);
-  let name = rarity === 4 ? pick(SOVEREIGN_NAMES[slot]) : `${pick(PREFIXES[rid])} ${base}`;
+  let name = rarity === 4 ? pick(EXALTED_NAMES[slot]) : `${pick(PREFIXES[rid])} ${base}`;
   if (opts.name) name = opts.name;
   const affixes = [];
   const pool = [...AFFIXES];
@@ -29,7 +29,7 @@ export function makeItem(slot, rarity, ilvl, opts = {}) {
   }
   const item = {
     uid: uid(), kind: 'gear', slot, rarity, ilvl: Math.max(1, ilvl), name, base,
-    upgrade: 0, affixes, cores: [], sockets: RARITIES[rarity].sockets,
+    upgrade: 0, affixes, cores: [], sockets: RARITIES[rarity].slots, // effect slots (field name kept for save compatibility)
     got: Date.now(), seen: false, fav: false,
   };
   // High-rarity drops can arrive with Cores already installed.
@@ -57,12 +57,16 @@ export function starterGear() {
   for (const k in g) g[k].seen = true;
   return g;
 }
-// Destiny-style power: item level, Temper and tier of everything worn.
-export function powerOf(it) { return it ? Math.round(it.ilvl * 10 + it.upgrade * 6 + effectiveRarity(it) * 12) : 0; }
+// Destiny-style power: item level, Temper and BASE rarity of everything worn (Cores never count as tiers).
+export function powerOf(it) { return it ? Math.round(it.ilvl * 10 + it.upgrade * 6 + it.rarity * 12) : 0; }
 export function gearPower(equip) { return Math.round(SLOTS.reduce((a, s) => a + powerOf(equip[s.id]), 0) / SLOTS.length); }
 
-// Each installed Core raises the item one tier (capped at Sovereign).
-export const effectiveRarity = (it) => (it.kind === 'core' ? Math.min(4, it.grade + 1) : Math.min(4, it.rarity + it.cores.length));
+// Display tier for colours/sorting. Gear: its own rarity, always (0.8: Cores no longer promote rarity).
+// Cores have no rarity; their frame colour follows the grade (Mk I/II/III) for readability only.
+export const tierOf = (it) => (it.kind === 'core' ? Math.min(4, it.grade + 1) : it.rarity);
+// Effect slots on a gear item: the rarity's count, never fewer than the Cores already installed
+// (older saves may hold Cores on Base/Uncommon gear; those are preserved).
+export const slotCount = (rarity, installed = 0) => Math.max(RARITIES[rarity]?.slots ?? 0, installed);
 
 export function baseStat(it) {
   const m = RARITIES[it.rarity].mult * (1 + 0.1 * it.upgrade);
@@ -84,6 +88,11 @@ export function itemLines(it) {
   const out = [it.slot === 'blade' ? `${baseStat(it)} damage` : `${baseStat(it)} armor`];
   for (const a of it.affixes) out.push(AFFIXES.find((x) => x.id === a.id).label(a.v));
   return out;
+}
+export function rarityNote(it) {
+  if (it.kind !== 'gear') return '';
+  if (it.rarity === 4) return EXALTED_BUFF.label;
+  return '';
 }
 export function itemName(it) {
   if (it.kind === 'core') return `${CORES[it.core].name} ${CORE_GRADES[it.grade - 1]}`;

@@ -1,7 +1,7 @@
 // Procedural SVG item icons. Dark forged metal shapes outlined in the item's tier colour;
 // small variations come from the item's base name so a Sallet and a Greathelm read differently.
 import { RARITIES, CORES } from './data.js';
-import { effectiveRarity } from './items.js';
+import { tierOf } from './items.js';
 
 const h = (s) => { let x = 7; for (const c of String(s)) x = (x * 31 + c.charCodeAt(0)) >>> 0; return x; };
 const METAL = '<defs><linearGradient id="ICM" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a3f4a"/><stop offset=".55" stop-color="#16181d"/><stop offset="1" stop-color="#0b0c0f"/></linearGradient></defs>';
@@ -47,7 +47,7 @@ export function itemIcon(it, size = 48) {
       ${Array.from({ length: it.grade }, (_, i) => `<rect x="${18 + i * 5}" y="38.5" width="3" height="3" fill="${c}"/>`).join('')}
     </svg>`;
   }
-  const c = RARITIES[effectiveRarity(it)].color;
+  const c = RARITIES[tierOf(it)].color;
   return `<svg class="icon" viewBox="0 0 48 48" width="${size}" height="${size}" aria-hidden="true">${METAL}${SHAPES[it.slot](h(it.base || it.name) % 3, c)}</svg>`;
 }
 export function slotIcon(slot, size = 40) {

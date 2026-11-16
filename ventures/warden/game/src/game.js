@@ -9,7 +9,7 @@ import { UI } from './ui.js';
 import { TouchControls, detectTouch } from './touch.js';
 import { audio } from './audio.js';
 import { STORY, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
-import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, effectiveRarity, upgradeCost, salvageValue, MAX_UPGRADE } from './items.js';
+import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, tierOf, upgradeCost, salvageValue, MAX_UPGRADE } from './items.js';
 import { angleDiff, clamp, damp, dampAngle, rand, randi, pick } from './util.js';
 
 import * as Save from './save.js';
@@ -90,7 +90,6 @@ export class Game {
   refreshStats() {
     this.stats = computeStats(this.save);
     this.player.hp = Math.min(this.player.hp, this.stats.hp);
-    this.bladeRarity = this.save.equip.blade ? effectiveRarity(this.save.equip.blade) : 0;
   }
   xpNeed() { return Math.round(60 * Math.pow(this.save.level, 1.45)); }
   overloadCost() { return this.perk('overclock') ? 50 : 100; }
@@ -389,8 +388,8 @@ export class Game {
     if (this.levelled) { this.levelled = false; this.persist('level'); }
   }
   dropAt(pos, item, restored = false) {
-    const col = item.kind === 'core' ? CORES[item.core].color : RARITIES[effectiveRarity(item)].color;
-    const m = buildLoot(col, item.kind === 'core', item.kind === 'core' ? 2 : effectiveRarity(item));
+    const col = item.kind === 'core' ? CORES[item.core].color : RARITIES[tierOf(item)].color;
+    const m = buildLoot(col, item.kind === 'core', item.kind === 'core' ? 2 : tierOf(item));
     pos.y = 0; if (!walkable(pos.x, pos.z, 0.5)) pos.copy(this.player.pos);
     m.position.copy(pos); this.scene.add(m);
     this.loot.push({ m, item, t: restored ? 1 : 0 });
@@ -398,9 +397,9 @@ export class Game {
   pickup(l) {
     const sv = this.save;
     l.item.got = Date.now(); l.item.seen = false; sv.bag.push(l.item); this.scene.remove(l.m);
-    const col = l.item.kind === 'core' ? CORES[l.item.core].color : RARITIES[effectiveRarity(l.item)].color;
+    const col = l.item.kind === 'core' ? CORES[l.item.core].color : RARITIES[tierOf(l.item)].color;
     this.ui.toast(`${itemName(l.item)}`, 'loot', col);
-    audio.pickup(effectiveRarity(l.item));
+    audio.pickup(tierOf(l.item));
     this.persist('pickup');
   }
   // ---- inventory actions ---------------------------------------------------------
@@ -436,10 +435,8 @@ export class Game {
   socket(uid, coreUid) {
     const it = this.findGear(uid), sv = this.save, ci = sv.bag.findIndex((x) => x.uid === coreUid);
     if (!it || ci < 0 || it.cores.length >= it.sockets) return;
-    const before = effectiveRarity(it);
     it.cores.push(sv.bag.splice(ci, 1)[0]); this.refreshStats(); this.persist('forge'); audio.zap(); audio.forge();
-    const after = effectiveRarity(it);
-    this.ui.toast(after > before ? `${it.name} rose to ${RARITIES[after].name}` : `Core installed in ${it.name}`, 'loot', RARITIES[after].color);
+    this.ui.toast(`Core installed in ${it.name}`, 'loot', RARITIES[it.rarity].color);
   }
   extract(uid, i) {
     const it = this.findGear(uid); if (!it || !it.cores[i]) return;

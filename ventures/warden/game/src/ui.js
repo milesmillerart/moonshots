@@ -1,6 +1,6 @@
 // DOM UI: title, naming, dialogue, HUD, Armory, Forge, Skills, pause, changelog.
 import { RARITIES, SLOTS, CORES, PERKS, BRANCHES, TIER_REQ, TRAITS } from './data.js';
-import { itemLines, itemName, effectiveRarity, upgradeCost, salvageValue, MAX_UPGRADE, computeStats } from './items.js';
+import { itemLines, itemName, tierOf, rarityNote, upgradeCost, salvageValue, MAX_UPGRADE, computeStats } from './items.js';
 import { audio } from './audio.js';
 import { fmt } from './util.js';
 import * as Save from './save.js';
@@ -10,7 +10,7 @@ import { itemIcon } from './icons.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const rc = (it) => RARITIES[effectiveRarity(it)].color;
+const rc = (it) => RARITIES[tierOf(it)].color;
 
 export class UI {
   constructor(game) {
@@ -230,7 +230,7 @@ export class UI {
     if (s === 'skills') this.skills.afterRender();
   }
   itemCard(it, where) {
-    const r = effectiveRarity(it);
+    const r = tierOf(it);
     const col = it.kind === 'core' ? CORES[it.core].color : rc(it);
     return `<div class="item r${r} ${this.sel === it.uid || this.forgeSel === it.uid ? 'sel' : ''}" data-item="${it.uid}" data-where="${where}" style="--rc:${col}">
       <span class="ic">${itemIcon(it, 26)}</span><span class="nm">${esc(itemName(it))}</span>
@@ -243,17 +243,18 @@ export class UI {
   }
   detailHtml(it, actions = true) {
     if (!it) return '<div class="detail empty">Hover or select an item.</div>';
-    const r = effectiveRarity(it);
+    const r = tierOf(it);
     const col = it.kind === 'core' ? CORES[it.core].color : rc(it);
     const sv = this.g.save;
     const equipped = it.kind === 'gear' && sv.equip[it.slot]?.uid === it.uid;
     const cmp = it.kind === 'gear' && !equipped ? sv.equip[it.slot] : null;
     return `<div class="detail" style="--rc:${col}">
       <div class="dn">${esc(itemName(it))}</div>
-      <div class="dr">${it.kind === 'core' ? 'Core' : `${RARITIES[r].name} ${SLOTS.find((x) => x.id === it.slot).name}`}${it.kind === 'gear' && r !== it.rarity ? ` <span class="muted">(base ${RARITIES[it.rarity].name}, raised by Cores)</span>` : ''}</div>
+      <div class="dr">${it.kind === 'core' ? 'Core' : `${RARITIES[r].name} ${SLOTS.find((x) => x.id === it.slot).name}`}</div>
+      ${rarityNote(it) ? `<div class="muted xbuff">${esc(rarityNote(it))}</div>` : ''}
       ${it.kind === 'gear' ? `<div class="muted">Item level ${it.ilvl} · Upgrade +${it.upgrade}/${MAX_UPGRADE}</div>` : ''}
       <ul>${itemLines(it).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
-      ${it.kind === 'gear' ? `<div class="cores">${it.cores.map((c) => `<div class="core" style="color:${CORES[c.core].color}">◆ ${esc(itemName(c))}: ${esc(CORES[c.core].desc(c.grade))}</div>`).join('')}${'<div class="core empty">◇ Empty socket</div>'.repeat(it.sockets - it.cores.length)}</div>` : ''}
+      ${it.kind === 'gear' ? `<div class="cores">${it.cores.map((c) => `<div class="core" style="color:${CORES[c.core].color}">◆ ${esc(itemName(c))}: ${esc(CORES[c.core].desc(c.grade))}</div>`).join('')}${'<div class="core empty">◇ Empty effect slot</div>'.repeat(it.sockets - it.cores.length)}</div>` : ''}
       ${cmp ? `<div class="cmp">Equipped: ${esc(itemName(cmp))} · ${esc(itemLines(cmp)[0])}</div>` : ''}
       ${actions ? `<div class="acts">
         ${it.kind === 'gear' && !equipped ? `<button data-act="equip" data-uid="${it.uid}" class="primary">Equip</button>` : ''}
@@ -289,8 +290,8 @@ export class UI {
           ${it.upgrade >= MAX_UPGRADE ? '<p class="muted">Fully tempered.</p>' : `<button data-act="upgrade" class="primary" ${sv.scrap < cost ? 'disabled' : ''}>Temper to +${it.upgrade + 1} · ${fmt(cost)} scrap</button><p class="muted">+10% base ${it.slot === 'blade' ? 'damage' : 'armor'} per level.</p>`}
           <p class="muted">You have ${fmt(sv.scrap)} scrap. Stims refilled: ${sv.stims}/3.</p>
         </div></div>
-      <div class="col"><h3>Install a Core <span class="muted">${free} free socket${free === 1 ? '' : 's'}</span></h3>
-        <p class="muted">Each Core adds its effect and raises the item one rarity tier. Installed Cores are permanent (extract to break them for scrap).</p>
+      <div class="col"><h3>Install a Core <span class="muted">${free} free effect slot${free === 1 ? '' : 's'}</span></h3>
+        <p class="muted">${it && !it.sockets ? 'Base and Uncommon gear has no effect slots. Rare has 1, Legendary 2, Exalted 3.' : 'A Core adds its effect in one of the item\'s effect slots. It does not change the item\'s rarity.'} Installed Cores are permanent (break them for scrap).</p>
         <div class="bag">${cores.length ? cores.map((c) => `<div class="item core-pick" style="--rc:${CORES[c.core].color}"><span class="ic">◆</span><span class="nm">${esc(itemName(c))}<br><small>${esc(CORES[c.core].desc(c.grade))}</small></span><button data-act="socket" data-uid="${c.uid}" ${free ? '' : 'disabled'}>Install</button></div>`).join('') : '<p class="muted">No Cores in your pack.</p>'}</div>
         ${it.cores.length ? `<h3>Installed</h3>${it.cores.map((c, i) => `<div class="core" style="color:${CORES[c.core].color}">◆ ${esc(itemName(c))} <button data-act="extract" data-i="${i}">Break (+${5 * c.grade} scrap)</button></div>`).join('')}` : ''}
       </div></div>`;

@@ -1,13 +1,18 @@
 // Game data: rarities, gear, Cores, perks, enemies, story. Tweak freely; the daily
 // improvement pass mostly lives here.
 
+// Rarity (approved design v1.0, docs/lore.md): baseline quality + potential. Independent of synth,
+// Tempering and Cores; nothing installed raises it. slots = effect slots (0/0/1/2/3). Until status
+// effects are designed, effect slots hold Cores (provisional). Exalted also grants a buff while
+// equipped; that buff is not designed yet (placeholder, see EXALTED_BUFF).
 export const RARITIES = [
-  { id: 'issued', name: 'Issued', color: '#a3a8ad', mult: 1.0, sockets: 1, affixes: 0 },
-  { id: 'forged', name: 'Forged', color: '#6fd38a', mult: 1.12, sockets: 1, affixes: 1 },
-  { id: 'tempered', name: 'Tempered', color: '#4aa8ff', mult: 1.26, sockets: 2, affixes: 2 },
-  { id: 'relic', name: 'Relic', color: '#b874ff', mult: 1.42, sockets: 2, affixes: 3 },
-  { id: 'sovereign', name: 'Sovereign', color: '#ffb547', mult: 1.62, sockets: 3, affixes: 4 },
+  { id: 'base', name: 'Base', color: '#c4cad3', mult: 1.0, slots: 0, affixes: 0 },
+  { id: 'uncommon', name: 'Uncommon', color: '#4aa3ff', mult: 1.12, slots: 0, affixes: 1 },
+  { id: 'rare', name: 'Rare', color: '#a66bff', mult: 1.26, slots: 1, affixes: 2 },
+  { id: 'legendary', name: 'Legendary', color: '#f2c447', mult: 1.42, slots: 2, affixes: 3 },
+  { id: 'exalted', name: 'Exalted', color: '#ff8a1f', mult: 1.62, slots: 3, affixes: 4 },
 ];
+export const EXALTED_BUFF = { placeholder: true, label: 'Exalted buff (while equipped): not designed yet' };
 
 export const SLOTS = [
   { id: 'blade', name: 'Synthblade', icon: '†' },
@@ -28,20 +33,27 @@ export const BASES = {
 };
 
 export const PREFIXES = {
-  issued: ['Ward-Issue', 'Ninth Ward', 'Gaol-Iron'],
-  forged: ['Forged', 'Blackglass', 'Sodium-Lit', 'Rivetbound'],
-  tempered: ['Tempered', 'Conduit', 'Tribunal', 'Cathedral'],
-  relic: ['Hallowed', 'Old Kingdom', 'Ossuary', 'Saint-Wired'],
-  sovereign: ['Sovereign'],
+  base: ['Ward-Issue', 'Ninth Ward', 'Gaol-Iron'],
+  uncommon: ['Forged', 'Blackglass', 'Sodium-Lit', 'Rivetbound'],
+  rare: ['Quenched', 'Conduit', 'Tribunal', 'Spire-Wrought'],
+  legendary: ['Hallowed', 'Elder-Wrought', 'Ossuary', 'Lattice-Wired'],
+  exalted: ['Exalted'],
 };
 
-export const SOVEREIGN_NAMES = {
-  blade: ["The Last Statute", "Mercy's End", "Saint Ossery's Verdict", 'Rainbreaker'],
-  helm: ['Crown of the Unblinking', 'The Ninth Eye'],
-  cuirass: ['Hearthplate of King Vael', 'The Iron Oath'],
+// Unique names for Exalted drops. 0.8: placeholder royal/saint titles removed per Don's direction
+// (no King; "Saint" reviewed one by one). Named people (Ossery, Vael) keep unresolved identities.
+export const EXALTED_NAMES = {
+  blade: ["The Last Statute", "Mercy's End", "Ossery's Verdict", 'Rainbreaker'],
+  helm: ['Visor of the Unblinking', 'The Ninth Eye'],
+  cuirass: ["Vael's Hearthplate", 'The Iron Oath'],
   gauntlets: ["Hangman's Grasp", 'Hands of the Tribunal'],
   greaves: ['Gate-Walkers', 'The Long Patrol'],
   mantle: ['Shroud of the Drowned Bell', 'Banner of Hallowmere'],
+};
+// Save migration (schema 4): old placeholder names -> 0.8 names. Exact names first, then prefixes.
+export const RENAMES = {
+  exact: { "Saint Ossery's Verdict": "Ossery's Verdict", 'Hearthplate of King Vael': "Vael's Hearthplate", 'Crown of the Unblinking': 'Visor of the Unblinking' },
+  prefix: { 'Tempered ': 'Quenched ', 'Cathedral ': 'Spire-Wrought ', 'Old Kingdom ': 'Elder-Wrought ', 'Saint-Wired ': 'Lattice-Wired ', 'Sovereign ': 'Exalted ' },
 };
 
 // Random stat lines rolled onto non-Issued gear.
@@ -55,7 +67,8 @@ export const AFFIXES = [
   { id: 'leech', label: (v) => `${v}% life drain`, roll: [1, 3] },
 ];
 
-// Cores: slottable chips. Each installed Core raises the item one rarity tier.
+// Cores: provisional technological modules that occupy an item's effect slots. They add their effect
+// and never change rarity (Don, 2026-11-16).
 export const CORES = {
   arc: { name: 'Arc Core', color: '#46f0e0', desc: (g) => `${8 + 4 * g}% chance for hits to arc lightning to a nearby enemy` },
   ember: { name: 'Ember Core', color: '#ff6a2a', desc: (g) => `Hits set enemies burning for ${15 + 10 * g}% damage over 3s` },

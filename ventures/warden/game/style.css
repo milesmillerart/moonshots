@@ -559,3 +559,7 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
   html.touch .sk-lbl { font-size: 17px; } html.touch .sk-rk { font-size: 14px; } html.touch .sk-bs { display: none; } html.touch .sk-bl { font-size: 18px; }
 }
 @media (max-height: 360px) { .sk-views button { padding: 7px 6px; } .skd-d { display: none; } .sk-head { gap: 5px; } }
+
+/* 0.8: Exalted equipped-buff placeholder line + rarity legend */
+.xbuff { color: #ff8a1f; opacity: 0.85; font-style: italic; }
+.rlegend span { color: var(--dim); font-size: 0.9em; }

@@ -4,7 +4,7 @@ import * as THREE from '../vendor/three-warden.r187.min.js';
 import { buildWarden } from './models.js';
 import { posePoster } from './player.js';
 import { RARITIES } from './data.js';
-import { effectiveRarity } from './items.js';
+import { tierOf } from './items.js';
 
 export class WardenPreview {
   constructor(lowPower) {
@@ -43,11 +43,11 @@ export class WardenPreview {
   // reflect current gear: cape tint from the mantle, ring + rim from the blade, visor brightness from the helm
   dress(equip) {
     if (!this.ok) return;
-    const col = (it) => new THREE.Color(RARITIES[it ? effectiveRarity(it) : 0].color);
-    const m = equip.mantle; this.capeMat.color.copy(this.capeBase).lerp(col(m), m ? 0.12 + 0.05 * effectiveRarity(m) : 0);
-    const b = equip.blade, br = b ? effectiveRarity(b) : 0;
+    const col = (it) => new THREE.Color(RARITIES[it ? tierOf(it) : 0].color);
+    const m = equip.mantle; this.capeMat.color.copy(this.capeBase).lerp(col(m), m ? 0.12 + 0.05 * tierOf(m) : 0);
+    const b = equip.blade, br = b ? tierOf(b) : 0;
     this.ring.material.color.copy(col(b)); this.rim2.color.copy(col(b)); this.rim2.intensity = 4 + br * 2;
-    const h = equip.helm, vm = this.model.userData.visorMat; if (vm?.color) vm.color.setRGB(2.0 + (h ? effectiveRarity(h) : 0) * 0.35, 0.07, 0.11);
+    const h = equip.helm, vm = this.model.userData.visorMat; if (vm?.color) vm.color.setRGB(2.0 + (h ? tierOf(h) : 0) * 0.35, 0.07, 0.11);
   }
   mount(host) {
     if (!this.ok || !host) return false;

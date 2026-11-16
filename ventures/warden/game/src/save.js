@@ -4,9 +4,10 @@
 //   warden.slot.<n>.bak  the previous good write (used if the current one is unreadable)
 //   warden.meta          { last: <slot>, v1Done: [<created> of each migrated 0.4 Warden] }
 //   warden.save.v1       the single 0.1-0.4 save. Migrated into a slot once, then left in place as a backup.
-import { starterGear } from './items.js';
+import { starterGear, slotCount } from './items.js';
+import { RENAMES } from './data.js';
 
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 export const SLOTS = 3;
 const LEGACY_KEY = 'warden.save.v1', META_KEY = 'warden.meta';
 const slotKey = (n) => `warden.slot.${n}`;
@@ -28,8 +29,17 @@ const validItem = (it) => it && typeof it === 'object' && typeof it.uid === 'str
 function fixGear(it) {
   it.fav = !!it.fav; if (typeof it.got !== 'number') it.got = 0; if (it.seen == null) it.seen = true;
   if (it.kind !== 'gear') return it;
-  it.upgrade = num(it.upgrade, 0, 0, 99); it.sockets = num(it.sockets, 0, 0, 6);
+  it.upgrade = num(it.upgrade, 0, 0, 99);
+  // 0.8 (schema 4): rarity keeps its position (Issued/Forged/Tempered/Relic/Sovereign ->
+  // Base/Uncommon/Rare/Legendary/Exalted); 'sockets' now means effect slots (0/0/1/2/3).
+  // Installed Cores are never removed: an item keeps at least as many slots as it has Cores.
+  it.rarity = num(Math.round(it.rarity), 0, 0, 4);
   it.cores = Array.isArray(it.cores) ? it.cores.filter(validItem) : [];
+  it.sockets = slotCount(it.rarity, it.cores.length);
+  if (typeof it.name === 'string') {
+    if (RENAMES.exact[it.name]) it.name = RENAMES.exact[it.name];
+    for (const [a, b] of Object.entries(RENAMES.prefix)) if (it.name.startsWith(a)) { it.name = b + it.name.slice(a.length); break; }
+  } else it.name = String(it.base || 'Gear');
   return it;
 }
 
@@ -68,6 +78,7 @@ export function migrate(raw) {
   if (s.trait != null && !['dread', 'measure', 'inquest'].includes(s.trait)) s.trait = null;
   if (!Array.isArray(s.pos) || s.pos.length < 2 || !s.pos.every(Number.isFinite)) delete s.pos;
   if (s.hp != null) s.hp = num(s.hp, 0, 0);
+  if (from < 4) s.migratedRarity = true; // 0.8: tiers renamed by position, Cores stop promoting rarity
   return s;
 }
 
