@@ -17,7 +17,7 @@ export class UI {
     this.g = game; this.screen = null; this.sel = null; this.forgeSel = null;
     this.hud = $('#hud'); this.panel = $('#panel'); this.dlg = $('#dialogue');
     this.panel.addEventListener('click', (e) => this.onClick(e));
-    this.panel.addEventListener('change', (e) => { if (e.target.id === 'impfile') this.readImportFile(e.target); });
+    this.panel.addEventListener('change', (e) => { if (e.target.id === 'impfile') this.readImportFile(e.target); if (e.target.dataset?.set === 'quality') { this.g.applySetting('quality', e.target.value); this.render(); } });
     this.armory = new Armory(this);
     this.skills = new SkillTree(this);
     this.panel.addEventListener('mouseover', (e) => {
@@ -314,6 +314,7 @@ export class UI {
         <label><input type="checkbox" data-set="mute" ${audio.muted ? 'checked' : ''}> Mute${T ? '' : ' [M]'}</label>
         <label>${T ? 'Look' : 'Mouse'} sensitivity <input type="range" min="0.3" max="2.5" step="0.1" value="${st.sens}" data-set="sens"></label>
         <label>Render scale <input type="range" min="0.5" max="1.5" step="0.05" value="${st.scale}" data-set="scale"></label>
+        <label>Graphics <select data-set="quality">${Object.values(g.tiers).map((t) => `<option value="${t.name}" ${st.quality === t.name ? 'selected' : ''}>${t.label}</option>`).join('')}</select>${st.quality !== g.tierNow ? ' <b class="gold">reload to apply</b>' : ''}</label>
       </div>
       ${T && document.fullscreenEnabled ? `<button data-act="fullscreen">${document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'}</button>` : ''}
       </div></div></div>`;
@@ -394,6 +395,7 @@ export class UI {
     if (this.screen === 'armory' && !e.target.closest('[data-act],[data-set]') && this.armory.onClick(e)) { audio.ui(); return; }
     if (this.screen === 'skills' && this.skills.onClick(e)) return;
     const set = e.target.closest('[data-set]');
+    if (set && set.tagName === 'SELECT') return;
     if (set) { g.applySetting(set.dataset.set, set.type === 'checkbox' ? set.checked : parseFloat(set.value)); return; }
     const act = e.target.closest('[data-act]');
     if (act) {

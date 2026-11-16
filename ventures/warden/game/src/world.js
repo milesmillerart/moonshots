@@ -1,7 +1,10 @@
 // Hallowmere, capital of the Ninth Ward: procedural cyber-medieval streets (Statute Plaza, Lantern Street,
 // Cutpurse Alley, the Grave Gate court). The Ward itself is province-sized; this map is a few capital sites.
-import * as THREE from '../vendor/three-warden.r187.min.js';
+import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { canvas, mulberry32 } from './util.js';
+import { Q } from './quality.js';
+import { pbrMaterial, pbrMaps } from './pbr.js';
+import { Assets } from './assets.js';
 
 const R = mulberry32(9);
 const rr = (a, b) => a + R() * (b - a);
@@ -166,7 +169,7 @@ export function installHeightFog() {
 // ---- build --------------------------------------------------------------
 export function buildWorld(scene, renderer, opts = {}) {
   installHeightFog();
-  const W = { lights: [], flicker: [], smoke: [], fogCards: [], signs: [], update: null };
+  const W = { lights: [], flicker: [], smoke: [], fogCards: [], signs: [], glows: [], update: null };
   colliders.length = 0;
   scene.background = new THREE.Color(0x07090d);
   scene.fog = new THREE.FogExp2(0x0a0d12, 0.017);
@@ -180,16 +183,21 @@ export function buildWorld(scene, renderer, opts = {}) {
   };
   panel(0x1fd8c8, 8, 3, 2, 3, 6); panel(0xff1f5a, -8, 4, -3, 2, 5); panel(0xffa050, 2, 2, -9, 5, 2);
   panel(0x303a50, 0, 10, 0, 20, 20); panel(0x0c4b52, -5, 2, 8, 6, 2); panel(0x9a1030, 6, 1.5, -6, 3, 2);
+  if (Q.hdriTex) { // CC0 night-street HDRI as the base of the reflection environment, dimmed to Hallowmere's night
+    Q.hdriTex.mapping = THREE.EquirectangularReflectionMapping;
+    envScene.background = Q.hdriTex; envScene.backgroundIntensity = 0.32;
+  }
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(envScene, 0.03).texture;
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = Q.hdriTex ? 0.6 : 0.55;
+  W.envMap = scene.environment;
 
   // Lights
   scene.add(new THREE.HemisphereLight(0x2a3a55, 0x090909, 0.55));
   const moon = new THREE.DirectionalLight(0x8fa6d8, 0.55);
   moon.position.set(-20, 40, 15);
   moon.castShadow = !!opts.shadows;
-  moon.shadow.mapSize.set(opts.mobile ? 512 : 1024, opts.mobile ? 512 : 1024);
+  moon.shadow.mapSize.set(Q.shadowMap, Q.shadowMap); moon.shadow.radius = Q.softShadows ? 3 : 1; moon.shadow.normalBias = 0.03;
   const sc = moon.shadow.camera; sc.left = -18; sc.right = 18; sc.top = 18; sc.bottom = -18; sc.near = 1; sc.far = 90;
   moon.shadow.bias = -0.0008;
   scene.add(moon, moon.target);
@@ -197,21 +205,31 @@ export function buildWorld(scene, renderer, opts = {}) {
 
   // Ground
   const cb = cobbleCanvases();
-  const rep = 70;
-  const groundMat = new THREE.MeshStandardMaterial({
-    map: tex(cb.color, rep, rep), bumpMap: tex(cb.bump, rep, rep, false), bumpScale: 1.6,
-    roughnessMap: tex(cb.rough, rep, rep, false), roughness: 1, metalness: 0.15, color: 0xb8c0cc,
-  });
+  const rep = 210; // the CC0 set covers 2 m x 2 m
+  const groundMat = pbrMaterial('cobblestone_floor_08', { rx: rep, tint: 0x5c6068, rough: 0.78, normal: 1.25, ao: 1 });
+  groundMat.metalness = 0.05;
+  const puddle = tex(cb.rough, 1, 1, false); puddle.repeat.set(1, 1);
+  groundMat.onBeforeCompile = (sh) => { // world-space puddle mask: big dark mirror patches like the cover's wet street
+    sh.uniforms.uPuddle = { value: puddle };
+    sh.vertexShader = 'varying vec2 vWXZ;\n' + sh.vertexShader.replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n vWXZ = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    sh.fragmentShader = 'uniform sampler2D uPuddle; varying vec2 vWXZ;\n' + sh.fragmentShader
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        float pud = 1.0 - smoothstep(0.08, 0.3, texture2D(uPuddle, vWXZ / 23.0).g);
+        pud = max(pud, 0.55 * (1.0 - smoothstep(0.1, 0.32, texture2D(uPuddle, vWXZ / 9.0 + 0.37).g)));
+        roughnessFactor = mix(roughnessFactor * 0.62, 0.035, pud);`)
+      .replace('#include <color_fragment>', '#include <color_fragment>\n float pud0 = 1.0 - smoothstep(0.08, 0.3, texture2D(uPuddle, vWXZ / 23.0).g); diffuseColor.rgb *= mix(1.0, 0.35, pud0);');
+  };
+  groundMat.customProgramCacheKey = () => 'ground-puddle-v1';
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(420, 420), groundMat);
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
-  scene.add(ground);
+  scene.add(ground); W.ground = ground;
 
   // Building materials (shared textures, cloned per repeat).
   const facades = [1, 2, 3].map((s) => tex(facadeCanvas(s)));
   const windows = [11, 12, 13].map((s) => tex(windowCanvas(s), 1, 1, true));
-  const darkMetal = new THREE.MeshStandardMaterial({ color: 0x1b1d22, metalness: 0.7, roughness: 0.45 });
-  const rust = new THREE.MeshStandardMaterial({ color: 0x2a1d18, metalness: 0.5, roughness: 0.7 });
-  const stone = new THREE.MeshStandardMaterial({ color: 0x24262c, roughness: 0.85 });
+  const darkMetal = pbrMaterial('metal_plate', { tint: 0x3a3d44, rough: 0.9, metal: 0.8, normal: 0.8 });
+  const rust = pbrMaterial('rusty_metal_02', { tint: 0x6a5a52, rough: 1, metal: 0.6 });
+  const stone = pbrMaterial('castle_wall_slates', { rx: 2, tint: 0x4a4d55, rough: 1, normal: 1.1 });
   const box = new THREE.BoxGeometry(1, 1, 1);
   const cyl = new THREE.CylinderGeometry(1, 1, 1, 12);
   const cone4 = new THREE.ConeGeometry(1, 1, 4);
@@ -225,7 +243,10 @@ export function buildWorld(scene, renderer, opts = {}) {
     const fi = Math.floor(R() * 3);
     const f = facades[fi].clone(); f.repeat.set(Math.max(1, w / 6), Math.max(1, h / 6)); f.needsUpdate = true;
     const e = windows[fi].clone(); e.repeat.set(Math.max(1, w / 4), Math.max(1, h / 4)); e.needsUpdate = true;
-    const mat = new THREE.MeshStandardMaterial({ map: f, emissiveMap: e, emissive: 0xffffff, emissiveIntensity: 0.75, roughness: 0.8, metalness: 0.1 });
+    const set = fi === 1 ? 'dark_brick_wall' : 'castle_wall_slates', t = pbrMaps(set, Math.max(1, w / 4), Math.max(1, h / 4));
+    void f;
+    const mat = new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.normalMap, roughnessMap: t.arm, aoMap: t.arm, color: fi === 1 ? 0x3c3e44 : 0x44474f,
+      emissiveMap: e, emissive: 0xffffff, emissiveIntensity: 0.75, roughness: 1, metalness: 0.05 });
     const b = addMesh(box, mat, cx, h / 2, cz, w, h, d);
     b.receiveShadow = true;
     // Ground-floor plinth / arcade
@@ -331,7 +352,7 @@ export function buildWorld(scene, renderer, opts = {}) {
     ['NO PASSAGE', '#ff2f6d', -17.9, 8, -70, 1, false], ['ROT', '#3ff0e0', 17.9, 9, -80, -1, true],
     ['FORGE', '#ffb35a', 21.9, 6, -8.5, -1, false], ['TRIBUNAL', '#3ff0e0', -21.9, 9, 8, 1, false],
   ];
-  const signLights = new Set([0, 3, 6, 10]);
+  const signLights = new Set([0, 3, 6, 10].slice(0, Q.signLights));
   signs.forEach(([text, col, x, y, z, side, vert], i) => {
     const c = signCanvas(text, col, vert);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -343,10 +364,11 @@ export function buildWorld(scene, renderer, opts = {}) {
     const back = addMesh(box, darkMetal, x, y, z, 0.15, c.height * sc + 0.2, c.width * sc + 0.2); back.rotation.y = 0;
     if (side === 0) back.rotation.y = 0;
     if (Math.random() < 0.35) W.flicker.push({ mat, base: 1.5, t: Math.random() * 10 });
-    if (signLights.has(i) && !opts.lowLights) {
+    if (signLights.has(i)) {
       const L = new THREE.PointLight(new THREE.Color(col), 18, 16, 1.8);
       L.position.set(x + side * 1.5, y - 1, z); scene.add(L); W.lights.push(L);
     }
+    W.glows.push({ p: new THREE.Vector3(x + side * 0.3, y, z), col: new THREE.Color(col), size: 1.6, streak: 0.9 });
     W.signs.push(m);
   });
 
@@ -359,9 +381,10 @@ export function buildWorld(scene, renderer, opts = {}) {
     addMesh(box, darkMetal, x - side * 0.5, 5, z, 1.1, 0.08, 0.08);
     addMesh(box, lampMat, x - side * 1.0, 4.85, z, 0.25, 0.3, 0.25);
     colliders.push({ x, z, r: 0.25 });
-    if (li % 3 === 0 && !opts.lowLights) {
+    if (li % Q.lampLightEvery === 0) {
       const L = new THREE.PointLight(0xff9a50, 14, 14, 1.8); L.position.set(x - side * 1.0, 4.4, z); scene.add(L); W.lights.push(L);
     }
+    W.glows.push({ p: new THREE.Vector3(x - side * 1.0, 4.75, z), col: new THREE.Color(1, 0.6, 0.32), size: 1.1, streak: 1, shaft: true });
     li++;
   }
 
@@ -423,8 +446,11 @@ export function buildWorld(scene, renderer, opts = {}) {
     addMesh(box, R() < 0.5 ? rust : darkMetal, x, s / 2, z, s, s, s, rr(0, 1));
   }
 
+  addAtmosphere(scene, W);
+  placeManifestAssets(scene);
+
   // ---- rain (GPU-animated line drops) --------------------------------
-  const N = opts.lowRain ? 2200 : 6000, AREA = 44, HGT = 26;
+  const N = Q.rain, AREA = 44, HGT = 26;
   const pos = new Float32Array(N * 2 * 3), seed = new Float32Array(N * 2 * 3), endA = new Float32Array(N * 2);
   for (let i = 0; i < N; i++) {
     const sx = Math.random() * AREA, sy = Math.random() * HGT, sz = Math.random() * AREA;
@@ -466,6 +492,7 @@ export function buildWorld(scene, renderer, opts = {}) {
   }
 
   W.update = (dt, t, cam, focus) => {
+    if (W.atmo) W.atmo(t, cam);
     rainMat.uniforms.uTime.value = t; rainMat.uniforms.uCenter.value.copy(cam.position);
     for (const f of W.flicker) {
       f.t -= dt;
@@ -490,3 +517,61 @@ export function buildWorld(scene, renderer, opts = {}) {
   return W;
 }
 function rand(a, b) { return a + Math.random() * (b - a); }
+
+// ---- atmosphere: volumetric-feel lamp shafts, halos in the mist, wet-street light streaks -----------------
+function addAtmosphere(scene, W) {
+  const halo = new THREE.CanvasTexture(softCanvas(128, 'rgba(255,255,255,0.85)'));
+  const streakTex = new THREE.CanvasTexture(canvas(32, 256, (g) => {
+    const v = g.createLinearGradient(0, 0, 0, 256); v.addColorStop(0, 'rgba(255,255,255,0)'); v.addColorStop(0.25, 'rgba(255,255,255,0.55)'); v.addColorStop(0.55, 'rgba(255,255,255,0.3)'); v.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = v; g.fillRect(0, 0, 32, 256);
+    const h = g.createLinearGradient(0, 0, 32, 0); h.addColorStop(0, 'rgba(0,0,0,1)'); h.addColorStop(0.5, 'rgba(0,0,0,0)'); h.addColorStop(1, 'rgba(0,0,0,1)');
+    g.globalCompositeOperation = 'destination-out'; g.fillStyle = h; g.fillRect(0, 0, 32, 256);
+  }));
+  // light shaft: an open cone, brightest at the lamp, fading with distance and at grazing angles (fake volumetrics)
+  const shaftMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+    uniforms: { uColor: { value: new THREE.Color(1, 0.62, 0.34) }, uI: { value: 0.16 } },
+    vertexShader: `varying float vY; varying vec3 vN, vV; void main(){ vY = uv.y; vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uI; varying float vY; varying vec3 vN, vV;
+      void main(){ float edge = pow(abs(dot(vN, vV)), 1.6); float a = uI * vY * vY * edge; gl_FragColor = vec4(uColor * a, 1.0); }`,
+  });
+  const shaftGeo = new THREE.CylinderGeometry(0.12, 2.1, 4.7, 20, 1, true); shaftGeo.translate(0, -2.35, 0);
+  const streakGeo = new THREE.PlaneGeometry(1, 1); streakGeo.rotateX(-Math.PI / 2); streakGeo.translate(0, 0, -0.5);
+  const items = [];
+  for (const gl of W.glows) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: gl.col.clone().multiplyScalar(0.55), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    s.position.copy(gl.p); s.scale.setScalar(gl.size * 2.6); scene.add(s);
+    if (gl.shaft && Q.shafts) { const m = new THREE.Mesh(shaftGeo, shaftMat); m.position.copy(gl.p); m.renderOrder = 2; scene.add(m); }
+    let st = null;
+    if (Q.streaks) {
+      st = new THREE.Mesh(streakGeo, new THREE.MeshBasicMaterial({ map: streakTex, color: gl.col.clone().multiplyScalar(0.42 * gl.streak), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
+      st.position.set(gl.p.x, 0.025, gl.p.z); st.renderOrder = 1; scene.add(st);
+    }
+    items.push({ gl, st });
+  }
+  // streaks: the reflection of a light on a wet street smears toward the viewer
+  W.atmo = (t, cam) => {
+    for (const { gl, st } of items) {
+      if (!st) continue;
+      const dx = cam.position.x - gl.p.x, dz = cam.position.z - gl.p.z, d = Math.hypot(dx, dz) || 1;
+      st.rotation.y = Math.atan2(-dx, -dz);
+      const len = Math.min(9, 2.5 + gl.p.y * 1.3 + d * 0.05);
+      st.scale.set(0.55 + gl.size * 0.25, 1, len);
+      st.material.opacity = 0.75 + 0.25 * Math.sin(t * 3 + gl.p.z);
+    }
+  };
+}
+
+// Any manifest entry with "placements" ([{x, z, y?, ry?, s?}]) is spawned in the world (Don's props / buildings).
+function placeManifestAssets(scene) {
+  for (const id of Assets.list()) {
+    const meta = Assets.manifest.assets[id];
+    for (const pl of meta.placements || []) {
+      const inst = Assets.instance(id); if (!inst) continue;
+      inst.root.position.set(pl.x, pl.y || 0, pl.z); inst.root.rotation.y = pl.ry || 0;
+      if (pl.s) inst.root.scale.multiplyScalar(pl.s);
+      scene.add(inst.root);
+      if (pl.r) colliders.push({ x: pl.x, z: pl.z, r: pl.r });
+    }
+  }
+}

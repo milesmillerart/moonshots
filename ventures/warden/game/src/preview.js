@@ -1,6 +1,6 @@
 // Armory paper-doll: a live, slowly turning render of the Warden in a small second WebGL canvas.
 // Built once and reused (the canvas is re-attached on every panel render, so the GL context survives).
-import * as THREE from '../vendor/three-warden.r187.min.js';
+import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { buildWarden } from './models.js';
 import { posePoster } from './player.js';
 import { RARITIES } from './data.js';

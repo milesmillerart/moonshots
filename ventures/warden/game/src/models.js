@@ -1,7 +1,8 @@
 // Procedural models, v2 (build 0.4 graphics pass). Everything is still built in code, no assets:
 // sculpted lathe / shell / tube / noise-displaced shapes are authored as many small meshes, then
 // baked into ONE mesh per material per animated bone so draw calls stay low (phones included).
-import * as THREE from '../vendor/three-warden.r187.min.js';
+import * as THREE from '../vendor/three-warden.r187-09.min.js';
+import { pbrMaps } from './pbr.js';
 import { canvas } from './util.js';
 import { detectTouch } from './touch.js';
 
@@ -160,8 +161,8 @@ const glow = (r, g, b) => { const m = new THREE.MeshBasicMaterial({ color: new T
 export const MAT = {
   plate: () => patch(new THREE.MeshStandardMaterial({ color: 0x0d0e11, metalness: 0.9, roughness: 0.55, roughnessMap: grunge(), side: THREE.DoubleSide, envMapIntensity: 1.25 }), { rim: [0.1, 0.13, 0.2], power: 3.0 }),
   trim: () => patch(new THREE.MeshStandardMaterial({ color: 0x1c1e23, metalness: 1, roughness: 0.3, side: THREE.DoubleSide, envMapIntensity: 1.2 }), { rim: [0.07, 0.09, 0.13], power: 3.0 }),
-  plateDull: () => patch(new THREE.MeshStandardMaterial({ color: 0x131417, metalness: 0.45, roughness: 0.7, side: THREE.DoubleSide }), { rim: [0.06, 0.08, 0.12] }),
-  leather: () => new THREE.MeshStandardMaterial({ color: 0x1a1411, roughness: 0.82, metalness: 0.05 }),
+  plateDull: () => { const t = pbrMaps('metal_plate', 2, 2); const m = new THREE.MeshStandardMaterial({ color: 0x2a2c31, map: t.map, normalMap: t.normalMap, roughnessMap: t.arm, metalness: 0.5, roughness: 0.85, side: THREE.DoubleSide }); m.normalScale.set(0.5, 0.5); return patch(m, { rim: [0.06, 0.08, 0.12] }); },
+  leather: () => { const t = pbrMaps('brown_leather', 2, 2); const m = new THREE.MeshStandardMaterial({ color: 0x3a2d26, map: t.map, normalMap: t.normalMap, roughnessMap: t.arm, roughness: 0.95, metalness: 0.05 }); m.normalScale.set(0.8, 0.8); return m; },
   cloth: () => new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.95, side: THREE.DoubleSide }),
   visor: () => glow(1.0, 0.01, 0.03),
 };

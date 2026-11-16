@@ -1,5 +1,5 @@
 // Combat feedback: sparks, blade trail, lightning, rings, damage numbers.
-import * as THREE from '../vendor/three-warden.r187.min.js';
+import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { softCanvas } from './world.js';
 import { detectTouch } from './touch.js';
 

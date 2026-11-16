@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "note": "Logical asset ids -> optimized GLB files (made by tools/import_models.py from Don's Drive 'models' folder). Missing ids fall back to the procedural models. See docs/assets.md.",
+  "assets": {}
+}

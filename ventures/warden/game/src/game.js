@@ -1,5 +1,5 @@
 // Game orchestration: states, story, waves, combat resolution, loot, saving.
-import * as THREE from '../vendor/three-warden.r187.min.js';
+import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { buildWorld, POI, walkable } from './world.js';
 import { buildWarden, buildPerson, buildLoot } from './models.js';
 import { Player, posePoster } from './player.js';
@@ -13,6 +13,7 @@ import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, ti
 import { angleDiff, clamp, damp, dampAngle, rand, randi, pick } from './util.js';
 
 import * as Save from './save.js';
+import { Q, TIERS } from './quality.js';
 
 const SET_KEY = 'warden.settings.v1';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -22,11 +23,12 @@ export class Game {
     Object.assign(this, { renderer, composer, bloom, scene, camera });
     this.isTouch = detectTouch();
     // phones default to a lighter render scale; saved settings always win
-    this.settings = Object.assign({ bloom: true, shadows: true, invertY: false, sens: 1, scale: this.isTouch ? 0.85 : 1, mute: false }, JSON.parse(localStorage.getItem(SET_KEY) || '{}'));
+    this.settings = Object.assign({ bloom: true, shadows: true, invertY: false, sens: 1, scale: this.isTouch ? 0.85 : 1, mute: false, quality: Q.name }, JSON.parse(localStorage.getItem(SET_KEY) || '{}'));
     audio.setMuted(this.settings.mute);
     bloom.enabled = this.settings.bloom;
     renderer.shadowMap.enabled = this.settings.shadows;
-    this.world = buildWorld(scene, renderer, { shadows: this.settings.shadows, lowRain: this.isTouch, mobile: this.isTouch });
+    this.world = buildWorld(scene, renderer, { shadows: this.settings.shadows, mobile: this.isTouch, tier: Q });
+    this.tiers = TIERS; this.tierNow = Q.name;
     this.fx = new FX(scene, camera);
     this.ui = new UI(this);
     this.player = new Player(this);

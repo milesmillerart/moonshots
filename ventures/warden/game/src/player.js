@@ -1,5 +1,5 @@
 // The Warden: movement, stamina, dodge, synthblade combo, procedural animation.
-import * as THREE from '../vendor/three-warden.r187.min.js';
+import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { buildWarden } from './models.js';
 import { moveCircle } from './world.js';
 import { angleDiff, clamp, damp, dampAngle, smooth } from './util.js';
