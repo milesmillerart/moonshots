@@ -189,7 +189,7 @@ export function areaAt(x, z) {
 }
 export function chapterOf(s) {
   const f = s.flags || {};
-  if (f.boss) return 'The Ward holds · hunting the Rot';
+  if (f.boss) return 'The capital holds · hunting abominations';
   if (f.waveC) return 'At the Grave Gate';
   if (f.waveB) return 'Plaza held · clearing Lantern Street';
   if (f.waveA) return 'Pushing into Statute Plaza';

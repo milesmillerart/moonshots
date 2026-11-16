@@ -123,9 +123,10 @@ export const TRAITS = {
 
 export const STORY = {
   intro: [
-    { who: '', text: 'HALLOWMERE. THE NINTH WARD.' },
-    { who: '', text: 'The rain has not stopped in eleven years. Past the Grave Gate, the Rot breeds things that were once people.' },
-    { who: '', text: 'Between the Rot and the city stands a wall of humming pylons, a code of law older than the wall, and one Warden.' },
+    { who: '', text: 'THE NINTH WARD. HALLOWMERE, ITS CAPITAL.' },
+    { who: '', text: 'The Ward runs from these streets out to ruins, buried depths and far country. Its law is yours to keep.' },
+    { who: '', text: 'The rain has not stopped in eleven years. Past the Grave Gate, abominations stir. The street calls it the Rot. Some swear the things were people once.' },
+    { who: '', text: 'Between them and the capital stands a wall of humming pylons, a code of law older than the wall, and one Warden.' },
   ],
   judgment: [
     { who: 'Gaoler Brann', text: 'Warden {name}. Caught this one stripping a power cell out of the east pylon. That stretch of the Wall is dark now.' },
@@ -158,12 +159,12 @@ export const STORY = {
     },
   ],
   breach: [
-    { who: '', text: 'Somewhere north, a bell begins to toll. The dark stretch of Wall has let the Rot in.' },
-    { who: 'Gaoler Brann', text: 'The Grave Gate! They are in the Ward!' },
+    { who: '', text: 'Somewhere north, a bell begins to toll. The dark stretch of Wall has let them in.' },
+    { who: 'Gaoler Brann', text: 'The Grave Gate! They are in the capital!' },
   ],
-  bossIntro: [{ who: '', text: 'It was a bell-ringer once. Now it is the bell.' }],
+  bossIntro: [{ who: '', text: 'They say it was a bell-ringer once. Now it is the bell.' }],
   victory: [
-    { who: '', text: 'The Bellwright falls silent. For tonight, the Ninth Ward holds.' },
-    { who: '', text: 'The Rot will send more. Hunt what remains, temper your steel, and keep the law.' },
+    { who: '', text: 'The Bellwright falls silent. For tonight, Hallowmere holds.' },
+    { who: '', text: 'More will come through the Gate. Hunt what remains, temper your steel, and keep the law of the Ward.' },
   ],
 };

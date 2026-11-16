@@ -1,4 +1,4 @@
-// Abominations of the Rot: Husk, Skitter, Bile Spitter, and the Bellwright.
+// Abominations (street slang: "the Rot"; their origin is unknown in canon): Husk, Skitter, Bile Spitter, the Bellwright.
 import * as THREE from '../vendor/three-warden.r187.min.js';
 import { buildEnemy } from './models.js';
 import { ENEMIES } from './data.js';

@@ -1,4 +1,5 @@
-// Hallowmere, Ninth Ward: procedural cyber-medieval district.
+// Hallowmere, capital of the Ninth Ward: procedural cyber-medieval streets (Statute Plaza, Lantern Street,
+// Cutpurse Alley, the Grave Gate court). The Ward itself is province-sized; this map is a few capital sites.
 import * as THREE from '../vendor/three-warden.r187.min.js';
 import { canvas, mulberry32 } from './util.js';
 
@@ -394,7 +395,7 @@ export function buildWorld(scene, renderer, opts = {}) {
   const forgeLight = new THREE.PointLight(0xff7a2a, 20, 12, 1.6); forgeLight.position.set(fp.x + 0.8, 1.6, fp.z); scene.add(forgeLight);
   W.lights.push(forgeLight); W.flicker.push({ light: forgeLight, base: 20, t: 0, fire: true });
 
-  // Grave Gate: towers + broken arch, Rot glow beyond.
+  // Grave Gate: towers + broken arch, the teal glow beyond (what the street calls the Rot).
   for (const x of [-11, 11]) {
     addMesh(box, stone, x, 14, -89, 7, 28, 6);
     addMesh(cone4, stone, x, 32, -89, 5, 8, 5, Math.PI / 4);

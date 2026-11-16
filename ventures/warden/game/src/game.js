@@ -38,7 +38,6 @@ export class Game {
     this.keys = {}; this.edge = {}; this.state = 'title'; this.started = false;
     this.lockTarget = null; this.combatOn = false; this.save = null;
     this.stats = computeStats({ equip: {}, perks: {}, level: 1 });
-    this.bladeRarity = 0;
     // Soft cool fill that follows the lens so black plate still reads against the night.
     this.fill = new THREE.PointLight(0x9fb6e0, 4, 9, 1.6); scene.add(this.fill);
     this.rim = new THREE.PointLight(0xff3060, 2.2, 6, 2); scene.add(this.rim);
@@ -138,7 +137,7 @@ export class Game {
     for (const g of sv.ground || []) this.dropAt(new THREE.Vector3(g.x, 0, g.z), g.item, true);
     this.area = Save.areaAt(this.player.pos.x, this.player.pos.z);
     this.resumeProgress();
-    this.ui.toast(`Welcome back, Warden ${sv.name}. ${sv.area || this.area}.`);
+    this.ui.toast(`Welcome back, Warden ${sv.name}. Hallowmere, ${sv.area || this.area}.`);
   }
   // test/debug: load a save object directly into a slot
   importToSlot(slot, sv) { return Save.writeSlot(slot, sv); }
@@ -194,7 +193,7 @@ export class Game {
   // ---- waves & objectives --------------------------------------------------
   resumeProgress() {
     const f = this.save.flags;
-    if (f.boss) { this.hunts = true; this.objective = 'Hunt the Rot. Temper your gear at the <b>Forge</b>.'; return; }
+    if (f.boss) { this.hunts = true; this.objective = 'Hunt the abominations. Temper your gear at the <b>Forge</b>.'; return; }
     if (f.waveC) { this.objective = 'Enter the <b>Grave Gate</b> court'; return; }
     if (f.waveB) { this.spawnWave('C'); return; }
     if (f.waveA) { this.objective = 'Purge <b>Statute Plaza</b>'; return; }
@@ -230,7 +229,7 @@ export class Game {
     if (this.wave === 'C' && !this.waveAlive('C') && !f.waveC) { f.waveC = true; this.persist('progress'); this.objective = 'Enter the <b>Grave Gate</b> court'; }
     if (f.waveC && !f.boss && !this.boss && p.z < -58) { this.spawnWave('BOSS'); this.ui.say(STORY.bossIntro).then(() => { this.boss.aggro = true; }); this.ui.banner('THE BELLWRIGHT', 'Abomination of the Sump'); audio.bell(); }
     if (this.boss && !this.boss.dead && !this.boss.phase2 && this.boss.hp < this.boss.maxHp * 0.5) {
-      this.boss.phase2 = true; this.ui.toast('The Bellwright tolls. More Rot answers.', 'red'); audio.bell();
+      this.boss.phase2 = true; this.ui.toast('The Bellwright tolls. More of them answer.', 'red'); audio.bell();
       for (const x of [-5, 5]) { const e = new Enemy(this, 'skitter', new THREE.Vector3(x, 0, -84), this.save.level); e.aggro = true; e.wave = 'BOSS'; this.enemies.push(e); }
     }
     if (this.hunts) {
@@ -346,6 +345,7 @@ export class Game {
     this.enemies = this.enemies.filter((e) => { if (!e.elite && e.wave === 'BOSS') { e.dispose(); return false; } return true; });
     if (this.boss && !this.boss.dead) { this.boss.aggro = false; }
     this.ui.close(); this.persist('respawn');
+    this.ui.banner('SYNCHRONIZATION RESTORED', 'Resumed from your last checkpoint');
   }
   onEnemyKilled(e) {
     const sv = this.save, p = this.player, s = this.stats;
@@ -369,7 +369,7 @@ export class Game {
       this.dropAt(e.pos.clone().add(new THREE.Vector3(-1.2, 0, 0.5)), makeItem('blade', Math.random() < 0.35 ? 4 : 3, sv.level + 1));
       this.dropAt(e.pos.clone().add(new THREE.Vector3(0, 0, 1.4)), makeCore(null, 2));
       sv.flags.boss = true; this.persist('boss');
-      setTimeout(async () => { this.ui.banner('THE WARD HOLDS', 'For tonight'); await this.ui.say(STORY.victory); this.hunts = true; this.objective = 'Hunt the Rot. Temper your gear at the <b>Forge</b>.'; }, 1500);
+      setTimeout(async () => { this.ui.banner('HALLOWMERE HOLDS', 'For tonight'); await this.ui.say(STORY.victory); this.hunts = true; this.objective = 'Hunt the abominations. Temper your gear at the <b>Forge</b>.'; }, 1500);
     } else {
       const r = Math.random();
       if (r < 0.26) this.dropAt(e.pos.clone(), randomGear(sv.level, 0));

@@ -195,15 +195,23 @@ const yOf = (u) => B0 + u * (TIPY - B0);
 function backX(u) { const b = (v) => -BW * 0.5 * (1 - 0.12 * v); return u < 0.9 ? b(u) : b(0.9) + (TIPX - b(0.9)) * ((u - 0.9) / 0.1); }
 export function edgeX(u) { const e = (v) => BW * 0.5 * (1 - 0.16 * v); return u < 0.78 ? e(u) : e(0.78) + (TIPX - e(0.78)) * Math.pow((u - 0.78) / 0.22, 1.4); }
 const thick = (u) => BT * (1 - 0.55 * u);
-// cross-section, back (0) to edge (1): flat spine, a fuller groove, then the long bevel to the edge
-const PROF = [[0, 0.5], [0.1, 0.5], [0.2, 0.2], [0.34, 0.2], [0.44, 0.47], [0.6, 0.43], [1, 0], [0.6, -0.43], [0.44, -0.47], [0.34, -0.2], [0.2, -0.2], [0.1, -0.5], [0, -0.5]];
+// cross-section, back (0) to edge (1): flat spine, a fuller groove, a squared wall, then the edge.
+// Approved design (docs/lore.md): a real metal longsword with an INSET CHANNEL along its one synth
+// edge. Along most of the blade the steel past the wall (fx >= 0.6) is cut down to a thin web: that
+// recess is the channel. At the guard and the tip the steel is full (the metal "notches" in Don's
+// concept art), so the silhouette never changes between Dormant and Awakened.
+const PROF = [[0, 0.5], [0.1, 0.5], [0.2, 0.2], [0.34, 0.2], [0.44, 0.47], [0.58, 0.45], [0.6, 0.43], [1, 0], [0.6, -0.43], [0.58, -0.45], [0.44, -0.47], [0.34, -0.2], [0.2, -0.2], [0.1, -0.5], [0, -0.5]];
+const CH_IN = 0.6, CH_FLOOR = 0.11, CH_U0 = 0.045, CH_U1 = 0.885; // channel inner wall (fraction), web half-thickness, start/end along blade
+const chDepth = (u) => c01((u - CH_U0) / 0.03) * c01((CH_U1 - u) / 0.035); // 0 = full steel, 1 = channel
+const chZ = (u) => CH_FLOOR * thick(u) + 0.0009; // barrier sits just above the web, inside the recess
 function bladeGeo() {
-  const S = LOW ? 12 : 22, n = PROF.length, rings = [];
+  const S = LOW ? 16 : 30, n = PROF.length, rings = [];
   for (let i = 0; i <= S; i++) {
-    const u = i / S, xb = backX(u), xe = edgeX(u), t = thick(u), y = yOf(u), ring = [];
+    const u = i / S, xb = backX(u), xe = edgeX(u), t = thick(u), y = yOf(u), ring = [], d = chDepth(u);
     for (const [fx, fz0] of PROF) {
       let fz = fz0;
       if (fx > 0.15 && fx < 0.4) fz = Math.sign(fz0) * (Math.abs(fz0) + (0.47 - Math.abs(fz0)) * c01((u - 0.6) / 0.15)); // fuller runs out
+      if (fx >= CH_IN) fz = Math.sign(fz0) * (Math.abs(fz0) + (Math.max(CH_FLOOR * (fx === 1 ? 0.4 : 1), 0) - Math.abs(fz0)) * d); // cut the channel
       ring.push([xb + (xe - xb) * fx, y, fz * t]);
     }
     rings.push(ring);
@@ -221,15 +229,26 @@ function bladeGeo() {
   g.computeVertexNormals(); // non-indexed: crisp flat facets on the steel
   return g;
 }
-// A strip that hugs the edge line. plane 'xy' spreads across the blade plane, 'z' stands across it.
-function edgeRibbon(plane, wIn, wOut, off = 0.003) {
-  const S = LOW ? 14 : 28, pos = [], uv = [], idx = [];
+// The synth barrier: two thin sheets that exactly fill the channel (one per face) plus a hairline
+// strip standing on the edge itself. uv.x runs inner wall (0) -> edge (1), uv.y along the channel.
+function barrierGeo() {
+  const S = LOW ? 16 : 34, pos = [], uv = [], idx = [];
+  let v = 0;
+  for (const side of [1, -1]) {
+    for (let i = 0; i <= S; i++) {
+      const u = CH_U0 + 0.012 + (i / S) * (CH_U1 - CH_U0 - 0.03), xb = backX(u), xe = edgeX(u), y = yOf(u), z = side * chZ(u);
+      const xi = xb + (xe - xb) * CH_IN + 0.0015;
+      pos.push(xi, y, z, xe - 0.0008, y, z * 0.4);
+      uv.push(0, i / S, 1, i / S);
+      if (i < S) { const q = v + i * 2; idx.push(q, q + 1, q + 2, q + 1, q + 3, q + 2); }
+    }
+    v += (S + 1) * 2;
+  }
+  // edge hairline (stands across the blade plane, within the web's thickness)
   for (let i = 0; i <= S; i++) {
-    const u = 0.015 + (i / S) * 0.975, x = edgeX(u) + off, y = yOf(u), taper = 1 - 0.6 * Math.pow(u, 3);
-    if (plane === 'xy') pos.push(x - wIn * taper, y, 0, x + wOut * taper, y, 0);
-    else pos.push(x, y, -wOut * taper, x, y, wOut * taper);
-    uv.push(0, u, 1, u);
-    if (i < S) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    const u = CH_U0 + 0.012 + (i / S) * (CH_U1 - CH_U0 - 0.03), xe = edgeX(u) + 0.0006, y = yOf(u), w = chZ(u) * 0.55;
+    pos.push(xe, y, -w, xe, y, w); uv.push(0.94, i / S, 1, i / S);
+    if (i < S) { const q = v + i * 2; idx.push(q, q + 1, q + 2, q + 1, q + 3, q + 2); }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -238,30 +257,36 @@ function edgeRibbon(plane, wIn, wOut, off = 0.003) {
   return g;
 }
 const EDGE_VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const EDGE_FS = `uniform float uTime, uHeat, uOpacity, uWide; uniform vec3 uColor, uHot; varying vec2 vUv;
+// Contained barrier: deep red fill, a hot pink-white seam at the edge, slow drifting veins. Everything
+// is drawn inside the channel; uAwake fades it to nothing (Dormant = dark channel).
+const EDGE_FS = `uniform float uTime, uHeat, uAwake; uniform vec3 uColor, uHot; varying vec2 vUv;
 float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }
 void main(){
-  float a = vUv.y, x = abs(vUv.x * 2.0 - 1.0);
-  float flow = n(vec2(a * 16.0 - uTime * 5.0, uTime * 1.3)) * 0.6 + n(vec2(a * 41.0 - uTime * 11.0, uTime * 3.7)) * 0.4;
-  float flick = 0.84 + 0.16 * sin(uTime * 57.0 + a * 23.0) * sin(uTime * 13.0 + 1.7);
-  float core = uWide > 0.5 ? exp(-x * x * 3.5) * (1.0 - x) : exp(-x * x * 9.0);
-  float tipFade = smoothstep(1.0, 0.86, a) * smoothstep(0.0, 0.05, a);
-  vec3 col = mix(uColor, uHot, clamp(pow(core, 3.0) * (0.45 + 0.75 * flow) + uHeat * 0.35, 0.0, 1.0));
-  float I = core * (0.5 + 0.8 * flow) * flick * tipFade * (1.0 + uHeat * 1.6);
-  if (uWide > 0.5) I *= uOpacity * (0.55 + 0.45 * flow);
+  if (uAwake < 0.004) discard;
+  float a = vUv.y, x = vUv.x;
+  float flow = n(vec2(a * 14.0 - uTime * 3.0, x * 3.0 + uTime * 0.9)) * 0.6 + n(vec2(a * 37.0 - uTime * 8.0, x * 7.0)) * 0.4;
+  float flick = 0.88 + 0.12 * sin(uTime * 47.0 + a * 19.0) * sin(uTime * 11.0 + 1.3);
+  float seam = exp(-pow((1.0 - x) * 9.0, 2.0));                 // hot line along the edge
+  float wall = exp(-pow(x * 14.0, 2.0)) * 0.35;                  // faint line where it meets the steel wall
+  float vein = smoothstep(0.82, 0.98, n(vec2(a * 60.0 - uTime * 6.0, x * 9.0 + uTime * 2.0))) * 0.9;
+  float ends = smoothstep(0.0, 0.035, a) * smoothstep(1.0, 0.965, a);
+  float fill = 0.42 + 0.35 * flow;
+  float hot = clamp(seam * 0.95 + vein * 0.7 + uHeat * 0.3, 0.0, 1.0);
+  vec3 col = mix(uColor, uHot, hot);
+  float I = (fill + seam * 1.3 + wall + vein) * flick * ends * uAwake * (1.0 + uHeat * 0.9);
   gl_FragColor = vec4(col * I, 1.0);
 }`;
-function edgeMaterial(U, wide) {
+function edgeMaterial(U) {
   const m = new THREE.ShaderMaterial({
-    uniforms: { uTime: U.uTime, uHeat: U.uHeat, uColor: U.uColor, uHot: U.uHot, uOpacity: { value: 0.35 }, uWide: { value: wide ? 1 : 0 } },
+    uniforms: { uTime: U.uTime, uHeat: U.uHeat, uAwake: U.uAwake, uColor: U.uColor, uHot: U.uHot },
     vertexShader: EDGE_VS, fragmentShader: EDGE_FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
   });
   m.userData.noShadow = true;
   return m;
 }
-// World-space motes (red mist + embers) shed by the edge. Added to the scene by the Player.
+// World-space embers shed by the awakened edge. Added to the scene by the Player.
 function makeMotes(n, size) {
   const g = new THREE.BufferGeometry();
   const pos = new Float32Array(n * 3).fill(-999), col = new Float32Array(n * 3);
@@ -272,13 +297,17 @@ function makeMotes(n, size) {
   return { pts, pos, col, vel: new Float32Array(n * 3), life: new Float32Array(n), max: new Float32Array(n).fill(1), n, i: 0, acc: 0 };
 }
 
+// Synthblade. ud.setAwake(k) 0..1: 0 = Dormant (channel dark, gems dark, no light, no arcs), 1 = Awakened
+// (contained barrier in the channel). Shape and size never change. Statues are always Dormant stone.
 export function buildSword({ statue = false, stone = null } = {}) {
   const g = new THREE.Group();
   const steel = stone || new THREE.MeshStandardMaterial({ color: 0x17191e, metalness: 1, roughness: 0.3, roughnessMap: grunge(), envMapIntensity: 1.5 });
+  const web = stone || new THREE.MeshStandardMaterial({ color: 0x0b0c0f, metalness: 0.85, roughness: 0.5, envMapIntensity: 0.8 });
   const dark = stone || MAT.plate(), trim = stone || MAT.trim();
   const leather = stone || new THREE.MeshStandardMaterial({ color: 0x120d0b, roughness: 0.9 });
   const wrap = stone || new THREE.MeshStandardMaterial({ color: 0x241a14, roughness: 0.75, metalness: 0.1 });
-  const gem = glow(3, 0.3, 0.42);
+  const GEM_ON = new THREE.Color(3, 0.12, 0.2), GEM_OFF = new THREE.Color(0.09, 0.02, 0.025);
+  const gem = statue ? (stone || steel) : glow(3, 0.12, 0.2);
   // grip, leather wraps, faceted pommel with a synth gem
   mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.3, 10), leather, 0, 0, 0, g);
   for (let k = 0; k < 7; k++) put(mesh(new THREE.TorusGeometry(0.029, 0.0055, 4, 10), wrap, 0, -0.13 + k * 0.043, 0, g), Math.PI / 2, 0, 0.2);
@@ -292,96 +321,91 @@ export function buildSword({ statue = false, stone = null } = {}) {
     mesh(new THREE.SphereGeometry(0.026, 8, 6), trim, s * 0.205, 0.228, 0, g);
   }
   for (const z of [-1, 1]) mesh(new THREE.SphereGeometry(0.019, 8, 6), gem, 0, 0.198, z * 0.036, g);
-  // ricasso collar + synth vents along the spine
+  // ricasso collar + engraved vents along the spine (dark steel; they no longer glow)
   mesh(rbox(0.088, 0.05, 0.032), trim, -0.002, 0.262, 0, g);
-  for (let k = 0; k < 3; k++) mesh(rbox(0.012, 0.024, 0.024), statue ? steel : gem, backX(0.05) + 0.012, 0.31 + k * 0.045, 0, g);
-  // the blade itself
+  for (let k = 0; k < 3; k++) mesh(rbox(0.012, 0.024, 0.024), trim, backX(0.05) + 0.012, 0.31 + k * 0.045, 0, g);
+  // the blade itself (steel body with the channel cut into its edge side) + the dark web at the channel floor
   mesh(bladeGeo(), steel, 0, 0, 0, g);
-  // emissive edge: hot core strips + a soft wide glow sheath, all one animated energy shader
-  const U = { uTime: { value: 0 }, uHeat: { value: 0 }, uColor: { value: new THREE.Color(2.0, 0.05, 0.32) }, uHot: { value: new THREE.Color(4.0, 1.3, 2.1) } };
-  const edgeMat = edgeMaterial(U, false), glowMat = edgeMaterial(U, true);
+  void web;
+  // the synth barrier: one animated shader confined to the channel
+  const U = { uTime: { value: 0 }, uHeat: { value: 0 }, uAwake: { value: statue ? 0 : 1 }, uColor: { value: new THREE.Color(1.9, 0.03, 0.09) }, uHot: { value: new THREE.Color(4.2, 1.15, 1.75) } };
+  const edgeMat = edgeMaterial(U);
   const keep = (m) => { m.userData.keep = true; m.castShadow = false; return m; };
-  keep(mesh(edgeRibbon('xy', 0.006, 0.012), edgeMat, 0, 0, 0, g));
-  keep(mesh(edgeRibbon('z', 0, 0.008), edgeMat, 0, 0, 0, g));
-  let glowMeshes = [];
-  if (!statue) {
-    glowMeshes = [keep(mesh(edgeRibbon('xy', 0.012, 0.075, 0.03), glowMat, 0, 0, 0, g)), keep(mesh(edgeRibbon('z', 0, 0.05, 0.016), glowMat, 0, 0, 0, g))];
-  }
+  const barrier = statue ? null : keep(mesh(barrierGeo(), edgeMat, 0, 0, 0, g));
   bake(g, [g], !statue);
-  // crackling lightning (1px lines + bloom read as arcs)
-  const MAXV = LOW ? 56 : 168;
+  // lightning: short jagged bolts that crawl INSIDE the channel (never fork out into the air)
+  const MAXV = LOW ? 48 : 140;
   const arcGeo = new THREE.BufferGeometry();
   arcGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXV * 3), 3));
-  const arcs = new THREE.LineSegments(arcGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(5, 1.4, 2.8), transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  const arcMat = new THREE.LineBasicMaterial({ color: new THREE.Color(4.5, 1.6, 2.6), transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const arcs = new THREE.LineSegments(arcGeo, arcMat);
   arcs.frustumCulled = false; arcs.visible = !statue; g.add(arcs);
-  const light = new THREE.PointLight(0xff2050, 2.5, 5, 2); light.position.set(0.06, 0.75, 0); g.add(light);
-  const motes = statue ? null : { mist: makeMotes(LOW ? 26 : 70, 0.13), ember: makeMotes(LOW ? 34 : 96, 0.03) };
-  const ud = g.userData = { edgeMat, glowMat, glowMeshes, arcs, light, gem, pommelGem, uniforms: U, motes,
+  const light = new THREE.PointLight(0xff1838, statue ? 0 : 2.2, 4, 2); light.position.set(0.06, 0.75, 0); g.add(light);
+  const motes = statue ? null : { ember: makeMotes(LOW ? 24 : 64, 0.026) };
+  const gems = [];
+  g.traverse((o) => { if (o.isMesh && o.material === gem && !statue) gems.push(o); });
+  const ud = g.userData = { edgeMat, barrier, arcs, light, gem, pommelGem, uniforms: U, motes, awake: statue ? 0 : 1, statue,
     baseLocal: V(edgeX(0.05), 0.3, 0), tipLocal: V(TIPX, TIPY, 0) };
+  ud.setAwake = (k) => {
+    k = statue ? 0 : c01(k); ud.awake = k; U.uAwake.value = k;
+    if (barrier) barrier.visible = k > 0.004;
+    if (!statue) gem.color.copy(GEM_OFF).lerp(GEM_ON, k);
+    arcs.visible = !statue && k > 0.25;
+  };
   const R = Math.random;
+  const inCh = (u, f) => { const xb = backX(u), xe = edgeX(u); return xb + (xe - xb) * (CH_IN + (1 - CH_IN) * f); };
   ud.crackle = (intensity) => {
     const p = arcGeo.attributes.position.array;
     let n = 0;
     const push = (a, b) => { if (n > MAXV - 2) return; p.set(a, n * 3); p.set(b, n * 3 + 3); n += 2; };
-    const bolts = Math.min(LOW ? 2 : 5, 1 + Math.floor(intensity * (LOW ? 1.2 : 3) * (0.5 + R())));
+    const bolts = Math.min(LOW ? 2 : 4, 1 + Math.floor(intensity * (LOW ? 1.2 : 2.5) * (0.5 + R())));
     for (let b = 0; b < bolts; b++) {
-      const u0 = 0.04 + R() * 0.86, u1 = Math.min(0.97, u0 + 0.05 + R() * 0.2 * (0.6 + intensity * 0.5));
-      const steps = LOW ? 4 : 6;
-      let prev = [edgeX(u0) + 0.004, yOf(u0), 0];
+      const u0 = CH_U0 + 0.03 + R() * (CH_U1 - CH_U0 - 0.2), u1 = Math.min(CH_U1 - 0.02, u0 + 0.05 + R() * 0.16);
+      const side = R() < 0.5 ? 1 : -1, steps = LOW ? 4 : 7;
+      let prev = [inCh(u0, 0.3 + R() * 0.6), yOf(u0), side * chZ(u0) * 1.05];
       for (let s = 1; s <= steps; s++) {
-        const t = s / steps, u = u0 + (u1 - u0) * t, bulge = Math.sin(t * Math.PI) * (0.012 + 0.06 * intensity * R());
-        const cur = s === steps ? [edgeX(u) + 0.004, yOf(u), 0] : [edgeX(u) + 0.006 + bulge + (R() - 0.5) * 0.018 * intensity, yOf(u) + (R() - 0.5) * 0.02, (R() - 0.5) * 0.06 * intensity * Math.sin(t * Math.PI)];
-        push(prev, cur);
-        if (s === 2 && R() < 0.4 * intensity) { // a fork that licks out into the air
-          const f1 = [cur[0] + 0.03 + R() * 0.05 * intensity, cur[1] + (R() - 0.5) * 0.06, cur[2] + (R() - 0.5) * 0.05];
-          const f2 = [f1[0] + 0.02 + R() * 0.05 * intensity, f1[1] + (R() - 0.5) * 0.07, f1[2] + (R() - 0.5) * 0.05];
-          push(cur, f1); push(f1, f2);
-        }
-        prev = cur;
+        const u = u0 + (u1 - u0) * (s / steps);
+        const cur = [inCh(u, 0.08 + R() * 0.88), yOf(u) + (R() - 0.5) * 0.006, side * chZ(u) * 1.05];
+        push(prev, cur); prev = cur;
       }
     }
     arcGeo.attributes.position.needsUpdate = true;
     arcGeo.setDrawRange(0, n);
   };
-  // Per-frame: energy shader time, glow strength, red mist + embers shed from the edge (world space).
+  // Per-frame: shader time + heat, embers shed from the awakened edge (world space).
   const tmp = new THREE.Vector3();
   ud.tick = (dt, t, act = 0, heat = 0) => {
     U.uTime.value = t % 1000; U.uHeat.value = heat;
-    glowMat.uniforms.uOpacity.value = glowMat.opacity;
     if (!motes || dt <= 0) return;
-    const rateK = LOW ? 0.4 : 1;
+    const rateK = (LOW ? 0.4 : 1) * ud.awake;
     const emit = (M, rate, init) => {
       M.acc += rate * rateK * dt;
       while (M.acc >= 1) {
-        M.acc -= 1; const i = M.i = (M.i + 1) % M.n, u = 0.04 + R() * 0.9;
-        g.localToWorld(tmp.set(edgeX(u) + 0.01, yOf(u), (R() - 0.5) * 0.012));
+        M.acc -= 1; const i = M.i = (M.i + 1) % M.n, u = CH_U0 + R() * (CH_U1 - CH_U0);
+        g.localToWorld(tmp.set(edgeX(u) + 0.004, yOf(u), (R() - 0.5) * 0.008));
         M.pos[i * 3] = tmp.x; M.pos[i * 3 + 1] = tmp.y; M.pos[i * 3 + 2] = tmp.z;
         init(i, M);
       }
     };
-    emit(motes.mist, 5 + act * 14 + heat * 24, (i, M) => {
-      M.vel[i * 3] = (R() - 0.5) * 0.25; M.vel[i * 3 + 1] = 0.1 + R() * 0.25; M.vel[i * 3 + 2] = (R() - 0.5) * 0.25;
-      M.life[i] = M.max[i] = 0.6 + R() * 0.7;
+    emit(motes.ember, 1.5 + act * 10 + heat * 30, (i, M) => {
+      M.vel[i * 3] = (R() - 0.5) * 0.7; M.vel[i * 3 + 1] = 0.2 + R() * 0.7; M.vel[i * 3 + 2] = (R() - 0.5) * 0.7;
+      M.life[i] = M.max[i] = 0.3 + R() * 0.5;
     });
-    emit(motes.ember, 5 + act * 22 + heat * 34, (i, M) => {
-      M.vel[i * 3] = (R() - 0.5) * 0.9; M.vel[i * 3 + 1] = 0.35 + R() * 0.9; M.vel[i * 3 + 2] = (R() - 0.5) * 0.9;
-      M.life[i] = M.max[i] = 0.4 + R() * 0.7;
-    });
-    const step = (M, cr, cg, cb, drag, rise, fadeInOut) => {
+    const step = (M, cr, cg, cb, drag, rise) => {
       const dr = Math.pow(drag, dt);
       for (let i = 0; i < M.n; i++) {
         if (M.life[i] <= 0) { if (M.pos[i * 3 + 1] > -900) { M.pos[i * 3 + 1] = -999; M.col[i * 3] = M.col[i * 3 + 1] = M.col[i * 3 + 2] = 0; } continue; }
         M.life[i] -= dt;
         M.vel[i * 3] *= dr; M.vel[i * 3 + 2] *= dr; M.vel[i * 3 + 1] = M.vel[i * 3 + 1] * dr + rise * dt;
         M.pos[i * 3] += M.vel[i * 3] * dt; M.pos[i * 3 + 1] += M.vel[i * 3 + 1] * dt; M.pos[i * 3 + 2] += M.vel[i * 3 + 2] * dt;
-        const k = c01(M.life[i] / M.max[i]), f = fadeInOut ? Math.min(1, (1 - k) * 5) * k : k * k * (1.2 + 0.8 * Math.sin(M.life[i] * 40 + i));
+        const k = c01(M.life[i] / M.max[i]), f = k * k * (1.2 + 0.8 * Math.sin(M.life[i] * 40 + i));
         M.col[i * 3] = cr * f; M.col[i * 3 + 1] = cg * f; M.col[i * 3 + 2] = cb * f;
       }
       M.pts.geometry.attributes.position.needsUpdate = true; M.pts.geometry.attributes.color.needsUpdate = true;
     };
-    step(motes.mist, 0.3, 0.008, 0.05, 0.5, 0.06, true);
-    step(motes.ember, 3.2, 0.42, 0.75, 0.25, 0.25, false);
+    step(motes.ember, 3.2, 0.5, 0.3, 0.25, 0.25);
   };
+  ud.setAwake(ud.awake);
   return g;
 }
 

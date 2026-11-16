@@ -368,28 +368,41 @@ export class Player {
   capeAndBlade(dt, spd, act) {
     const u = this.u;
     this.simCape(dt, spd);
-    // blade: energy edge, glow sheath, light, lightning, mist
+    // blade: Dormant out of combat (channel dark), Awakened in combat (contained barrier in the channel).
+    // No ritual or tutorial: it simply wakes when the Warden fights and settles a few seconds after.
     const sw2 = u.sword.userData;
-    sw2.glowMat.opacity = 0.3 + 0.3 * act + 0.06 * Math.sin(this.t * 30);
+    const want = this.titleMode || this.wantsAwake() ? 1 : 0;
+    if (want) this.calmT = 0; else this.calmT = (this.calmT || 0) + dt;
+    const target = want || this.calmT < 2.5 ? 1 : 0;
+    if (this.forceAwake != null) this.bladeAwake = this.forceAwake; // tests / screenshots
+    else this.bladeAwake = (this.bladeAwake ?? 0) + (target - (this.bladeAwake ?? 0)) * Math.min(1, dt * (target ? 5 : 1.6));
+    sw2.setAwake(this.bladeAwake);
+    const aw = sw2.awake;
     let heat = 0;
     if (this.state === 'attack' && this.atk?.heavy) heat = clamp(this.t * (1 + this.stats.aspd / 100) / this.atk.t[0], 0, 1);
     if (this.riposte > 0) heat = Math.max(heat, 0.6 + 0.4 * Math.sin(this.t * 18));
-    sw2.light.intensity = (2 + act * 4 + heat * 7) * (0.88 + 0.12 * Math.random());
-    if (heat > 0) sw2.glowMat.opacity += heat * 0.3;
-    if (Math.random() < 0.35 + act * 0.6) sw2.crackle(0.4 + act * 0.8 + heat * 0.5 + this.game.bladeRarity * 0.15); else sw2.arcs.geometry.setDrawRange(0, 0);
-    sw2.tick(dt, this.t, act, heat);
+    heat *= aw;
+    sw2.light.intensity = aw * (1.6 + act * 2.5 + heat * 5) * (0.9 + 0.1 * Math.random());
+    if (aw > 0.25 && Math.random() < 0.25 + act * 0.5) sw2.crackle(0.4 + act * 0.8 + heat * 0.5); else sw2.arcs.geometry.setDrawRange(0, 0);
+    sw2.tick(dt, this.t, act * aw, heat);
     // trail sample
     if (this.titleMode) { u.visorMat.color.setRGB(2.6, 0.07, 0.11); return; }
     const b = u.sword.localToWorld(tmpA.copy(sw2.baseLocal));
     const tp = u.sword.localToWorld(tmpB.copy(sw2.tipLocal));
     const cutting = this.state === 'attack' && this.t * (1 + this.stats.aspd / 100) >= this.atk.t[0] * 0.75;
-    this.game.fx.trailPush(b, tp, cutting && this.bladeSpeed > 3);
+    this.game.fx.trailPush(b, tp, cutting && this.bladeSpeed > 3 && aw > 0.5);
     audio.setHum(Math.min(1, this.bladeSpeed / 15));
     this.lastTip.copy(tp);
     // hurt flash on visor
     u.visorMat.color.setRGB(this.hurtT > 0 ? 6 : 2.6, this.hurtT > 0 ? 1.4 : 0.07, this.hurtT > 0 ? 0.3 : 0.11);
   }
   bladeTip() { return this.lastTip; }
+  // In combat: swinging, dodging, riposte window, locked on, or an aggressive abomination close by.
+  wantsAwake() {
+    if (this.state === 'attack' || this.state === 'dodge' || this.riposte > 0 || this.game.lockTarget) return true;
+    for (const e of this.game.enemies || []) if (!e.dead && e.aggro && e.pos.distanceTo(this.pos) < 16) return true;
+    return false;
+  }
 }
 
 function lerpPose(a, b, k) {

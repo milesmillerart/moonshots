@@ -69,7 +69,7 @@ export class WardenPreview {
     this.last = t;
     if (!this.drag) this.yaw += dt * this.spin;
     this.model.rotation.y = this.yaw;
-    this.model.userData.sword.userData.tick?.(0, t / 1000, 0.2, 0.15);
+    const sw = this.model.userData.sword.userData; sw.setAwake?.(this.awake ?? 1); sw.tick?.(0, t / 1000, 0.2, 0.15);
     this.ring.material.opacity = 0.65 + 0.2 * Math.sin(t / 500);
     this.r.render(this.scene, this.cam);
   }

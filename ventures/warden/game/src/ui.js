@@ -60,7 +60,7 @@ export class UI {
         <div class="slotcard${mode === 'load' && n === Save.lastSlot() ? ' last' : ''}" data-slot="${n}">
           <div class="si"><div class="sn"><span class="no">${n + 1}</span>Warden ${esc(s.name)} <span class="lv">Lv ${s.level}</span></div>
             <div class="sd">${esc(tr(s))} · ${esc(Save.chapterOf(s))}</div>
-            <div class="sd">${esc(s.area || 'Lantern Street')}${s.playTime >= 1 ? ` · played ${Save.fmtPlay(s.playTime)}` : ''} · saved ${Save.fmtAgo(s.saved)}</div></div>
+            <div class="sd">Hallowmere · ${esc(s.area || 'Lantern Street')}${s.playTime >= 1 ? ` · played ${Save.fmtPlay(s.playTime)}` : ''} · saved ${Save.fmtAgo(s.saved)}</div></div>
           <div class="sb">${mode === 'new'
             ? `<button data-act="slot-new" data-slot="${n}" class="${this.armed === 'new' + n ? 'danger' : ''}">${arm('new' + n, 'Overwrite', 'Tap again: erase')}</button>`
             : `<button data-act="slot-play" data-slot="${n}" class="primary">Play</button><button data-act="slot-export" data-slot="${n}">Export</button><button data-act="slot-del" data-slot="${n}" class="${this.armed === 'del' + n ? 'danger' : ''}">${arm('del' + n, 'Delete', 'Tap again')}</button>`}</div>
@@ -224,7 +224,7 @@ export class UI {
     else if (s === 'controls') this.panel.innerHTML = this.controlsHtml();
     else if (s === 'export') this.panel.innerHTML = this.exportHtml();
     else if (s === 'import') this.panel.innerHTML = this.importHtml();
-    else if (s === 'dead') this.panel.innerHTML = `<div class="card center"><h2 class="red">You have fallen</h2><p>The Ward endures. The forge-wardens drag you back to the Plaza.</p><button data-act="respawn" class="primary">Rise, Warden</button></div>`;
+    else if (s === 'dead') this.panel.innerHTML = `<div class="card center defeat"><h2 class="red">Defeated</h2><p>Your journey resumes from the last synchronization point, Statute Plaza. Your gear, levels and progress are kept.</p><button data-act="respawn" class="primary">Resume from checkpoint</button></div>`;
     this.panel.className = 'panel ' + s;
     if (s === 'armory') this.armory.afterRender();
     if (s === 'skills') this.skills.afterRender();
