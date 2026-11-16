@@ -1,5 +1,8 @@
 # WARDEN: world bible (living)
 
+> **Superseded for canon:** `docs/lore.md` (synced from Don's Drive lore folder) overrides this file. This file describes the v0.4-era build snapshot.
+
+
 ## Pitch
 A widescreen third-person action RPG. You create the Warden and name them. Cyber-medieval: Game of Thrones grit (oaths, gaols, wardens of the march) under neon, rain and humming pylons.
 
