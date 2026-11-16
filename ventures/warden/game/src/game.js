@@ -448,8 +448,19 @@ export class Game {
   learnPerk(id) {
     const sv = this.save, p = PERKS.find((x) => x.id === id);
     const spent = PERKS.filter((x) => x.branch === p.branch).reduce((a, x) => a + (sv.perks[x.id] || 0), 0);
-    if (!sv.points || (sv.perks[id] || 0) >= p.max || spent < TIER_REQ[p.tier]) return;
-    sv.points--; sv.perks[id] = (sv.perks[id] || 0) + 1; this.refreshStats(); this.persist('perk'); audio.levelUp();
+    if (!sv.points || (sv.perks[id] || 0) >= p.max || spent < TIER_REQ[p.tier]) return false;
+    sv.points--; sv.perks[id] = (sv.perks[id] || 0) + 1; this.refreshStats(); this.persist('perk'); audio.perkUnlock(sv.perks[id] >= p.max);
+    return true;
+  }
+  respecCost() { return 15 * Object.values(this.save.perks).reduce((a, r) => a + r, 0); }
+  // Unlearn every perk at the Forge for scrap; all points come back.
+  respec() {
+    const sv = this.save, spent = Object.values(sv.perks).reduce((a, r) => a + r, 0), cost = this.respecCost();
+    if (!this.nearForge || !spent || sv.scrap < cost) return false;
+    sv.scrap -= cost; sv.points += spent; sv.perks = {};
+    this.refreshStats(); this.player.charge = Math.min(this.player.charge, 100);
+    audio.forge(); this.persist('respec');
+    return true;
   }
   applySetting(k, v) {
     if (k === 'mute') { audio.setMuted(v); this.settings.mute = v; }

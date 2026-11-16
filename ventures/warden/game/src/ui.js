@@ -5,6 +5,7 @@ import { audio } from './audio.js';
 import { fmt } from './util.js';
 import * as Save from './save.js';
 import { Armory } from './inventory.js';
+import { SkillTree } from './skills.js';
 import { itemIcon } from './icons.js';
 
 const $ = (s) => document.querySelector(s);
@@ -18,6 +19,7 @@ export class UI {
     this.panel.addEventListener('click', (e) => this.onClick(e));
     this.panel.addEventListener('change', (e) => { if (e.target.id === 'impfile') this.readImportFile(e.target); });
     this.armory = new Armory(this);
+    this.skills = new SkillTree(this);
     this.panel.addEventListener('mouseover', (e) => {
       if (this.screen !== 'armory') return;
       const el = e.target.closest('[data-item]');
@@ -215,7 +217,7 @@ export class UI {
     const s = this.screen; if (!s) return;
     if (s !== 'armory') this.armory.preview?.stop();
     if (s === 'armory') this.panel.innerHTML = this.tabs() + this.armory.html();
-    else if (s === 'skills') this.panel.innerHTML = this.tabs() + this.skillsHtml();
+    else if (s === 'skills') this.panel.innerHTML = this.tabs() + this.skills.html();
     else if (s === 'forge') this.panel.innerHTML = this.tabs() + this.forgeHtml();
     else if (s === 'pause') this.panel.innerHTML = this.pauseHtml();
     else if (s === 'news') this.panel.innerHTML = this.newsHtml();
@@ -225,6 +227,7 @@ export class UI {
     else if (s === 'dead') this.panel.innerHTML = `<div class="card center"><h2 class="red">You have fallen</h2><p>The Ward endures. The forge-wardens drag you back to the Plaza.</p><button data-act="respawn" class="primary">Rise, Warden</button></div>`;
     this.panel.className = 'panel ' + s;
     if (s === 'armory') this.armory.afterRender();
+    if (s === 'skills') this.skills.afterRender();
   }
   itemCard(it, where) {
     const r = effectiveRarity(it);
@@ -291,22 +294,6 @@ export class UI {
         <div class="bag">${cores.length ? cores.map((c) => `<div class="item core-pick" style="--rc:${CORES[c.core].color}"><span class="ic">◆</span><span class="nm">${esc(itemName(c))}<br><small>${esc(CORES[c.core].desc(c.grade))}</small></span><button data-act="socket" data-uid="${c.uid}" ${free ? '' : 'disabled'}>Install</button></div>`).join('') : '<p class="muted">No Cores in your pack.</p>'}</div>
         ${it.cores.length ? `<h3>Installed</h3>${it.cores.map((c, i) => `<div class="core" style="color:${CORES[c.core].color}">◆ ${esc(itemName(c))} <button data-act="extract" data-i="${i}">Break (+${5 * c.grade} scrap)</button></div>`).join('')}` : ''}
       </div></div>`;
-  }
-  skillsHtml() {
-    const g = this.g, sv = g.save;
-    return `<div class="skills-head"><div>Level ${sv.level} · <b class="${sv.points ? 'gold' : ''}">${sv.points}</b> point${sv.points === 1 ? '' : 's'} to spend</div><div class="muted">One point per level. Deeper perks open as you invest in a branch.</div></div>
-      <div class="tree">${BRANCHES.map((b) => {
-        const spent = PERKS.filter((p) => p.branch === b.id).reduce((a, p) => a + (sv.perks[p.id] || 0), 0);
-        return `<div class="branch" style="--bc:${b.color}"><h3>${b.name}</h3><div class="muted">${b.sub} · ${spent} spent</div>
-          ${PERKS.filter((p) => p.branch === b.id).map((p) => {
-            const r = sv.perks[p.id] || 0, open = spent >= TIER_REQ[p.tier], can = open && r < p.max && sv.points > 0;
-            return `<div class="perk ${r ? 'has' : ''} ${open ? '' : 'locked'} ${r >= p.max ? 'max' : ''}">
-              <div class="pn">${p.name} <span class="rk">${r}/${p.max}</span></div>
-              <div class="pd">${esc(p.desc(Math.max(1, r)))}</div>
-              ${open ? '' : `<div class="req">Needs ${TIER_REQ[p.tier]} points in ${b.name}</div>`}
-              <button data-act="perk" data-id="${p.id}" ${can ? '' : 'disabled'}>${r >= p.max ? 'Mastered' : 'Learn'}</button></div>`;
-          }).join('<div class="link"></div>')}</div>`;
-      }).join('')}</div>`;
   }
   pauseHtml() {
     const st = this.g.settings, T = !!this.g.touch?.on;
@@ -404,6 +391,7 @@ export class UI {
     const g = this.g;
     const tab = e.target.closest('[data-tab]'); if (tab) { if (this.screen === 'armory' && tab.dataset.tab !== 'armory') this.armory.closed(); this.screen = tab.dataset.tab; this.sel = null; this.render(); audio.ui(); return; }
     if (this.screen === 'armory' && !e.target.closest('[data-act],[data-set]') && this.armory.onClick(e)) { audio.ui(); return; }
+    if (this.screen === 'skills' && this.skills.onClick(e)) return;
     const set = e.target.closest('[data-set]');
     if (set) { g.applySetting(set.dataset.set, set.type === 'checkbox' ? set.checked : parseFloat(set.value)); return; }
     const act = e.target.closest('[data-act]');
@@ -422,7 +410,6 @@ export class UI {
       if (a === 'doimport') { this.doImport(); return; }
       if (a === 'equip') { g.equip(act.dataset.uid); this.sel = act.dataset.uid; }
       if (a === 'salvage') { g.salvage(act.dataset.uid); this.sel = null; }
-      if (a === 'perk') g.learnPerk(act.dataset.id);
       if (a === 'upgrade') g.upgrade(this.forgeSel);
       if (a === 'socket') g.socket(this.forgeSel, act.dataset.uid);
       if (a === 'extract') g.extract(this.forgeSel, +act.dataset.i);

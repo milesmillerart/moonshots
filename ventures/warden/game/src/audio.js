@@ -102,5 +102,13 @@ export const audio = {
   lastKill(big = false) { this._tone(big ? 55 : 82, big ? 2.2 : 1.3, 'sine', 0.4, big ? 28 : 40); this._noise(big ? 1.6 : 0.9, 'lowpass', 1200, 60, 0.35); this._tone(big ? 330 : 440, 1.2, 'triangle', 0.05, null, 0.06); },
   // Heavy wind-up: the synth edge drawing charge.
   charge(dur = 0.4) { this._tone(140, dur, 'sawtooth', 0.04, 520); this._noise(dur, 'bandpass', 500, 3800, 0.08, 6); },
+  // Skill learned: a charge sweep into a struck chord, a crackle and a low bloom. Mastery adds a high bell.
+  perkUnlock(max = false) {
+    this._tone(180, 0.35, 'sawtooth', 0.035, 900); this._noise(0.3, 'bandpass', 600, 4200, 0.12, 5);
+    [392, 523, 659, 784].forEach((f, i) => this._tone(f, 0.9, 'triangle', 0.07, null, 0.26 + i * 0.05));
+    this._tone(65, 1.1, 'sine', 0.35, 40, 0.24);
+    if (max) [1568, 2093].forEach((f, i) => this._tone(f, 1.4, 'sine', 0.05, null, 0.5 + i * 0.08));
+  },
+  holdTick(k) { this._tone(300 + k * 700, 0.05, 'square', 0.015); },
   death() { this._tone(110, 1.5, 'sawtooth', 0.12, 30); },
 };
