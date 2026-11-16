@@ -6,7 +6,8 @@
 > read it first.
 >
 > - **Drive folder:** "Warden - A test Game" — https://drive.google.com/drive/folders/1vEgVos85hxS9IqFXMJrvOzjvxi-VPe3p (folder id `1vEgVos85hxS9IqFXMJrvOzjvxi-VPe3p`)
-> - **Last synced:** 2026-11-16 ~2:55 PM ET (all files in the folder read in full; no comments on any doc)
+> - **Last synced:** 2026-11-16 ~3:10 PM ET (folder re-listed; new doc: The Prismatic Order; all other docs unchanged since the 2:55 PM sync; no comments on any doc)
+> - **Don's written direction (2026-11-16):** `docs/direction-2026-11-16.md` — summarized and tagged in the "Direction from Don" section below.
 > - Don keeps expanding the folder. To re-sync: list the folder, compare each file's Drive
 >   `modifiedTime` with the table below, re-read only changed/new files, rewrite that file's
 >   section in Part B, then update Part A, the conflicts list and this header.
@@ -29,8 +30,10 @@
    Wielder Synth Proficiency are independent per character. One source of truth for rarity
    labels and slot counts.
 5. **Don't collapse concepts:** Dissonance ≠ the Rot; abominations are not assumed to be
-   Dissonance victims; no single universal cause of abominations; no established synth church,
-   deity or title yet; the Tribunal is not the Presidium.
+   Dissonance victims; no single universal cause of abominations; the Tribunal is not the
+   Presidium. The religion is now the **Prismatic Order** (members: **Prisms**) — but no named
+   high priest, parish hierarchy, miracles, deity or fixed creed (see B7). The Order did not
+   (canonically) create abominations or the old catastrophe.
 6. Don's concept art lives in Drive only (not copied into this public repo). Link, don't rehost.
 
 ## Source list
@@ -41,6 +44,7 @@
 | WARDEN — Wards, Paramount & Presidium | working canon v0.1 | 2026-11-16T19:18:36Z | 2:18 PM | https://docs.google.com/document/d/1kal17N2XIzCDjUs1lHw09HVijgMScIKh5ikQqmUns-w/edit |
 | WARDEN — Augmentation, Binding & Echoes | working canon v0.1 | 2026-11-16T19:18:41Z | 2:18 PM | https://docs.google.com/document/d/1EFFYWUW4a0Vmg-yxEuLxINumnFHP6thyynE3PIeF8Cs/edit |
 | WARDEN — Synth Technology & Equipment Systems | **approved design spec v1.0** | 2026-11-16T17:45:42Z | 12:45 PM | https://docs.google.com/document/d/1IGOZ_IsbfTS027GWvbc5yAdhV59Hn6uI9GiYeARAqKQ/edit |
+| WARDEN — The Prismatic Order | working canon v0.1 | 2026-11-16T20:02:12Z | 3:02 PM | https://docs.google.com/document/d/1CepYHrX481or4ncRpdMg89XGGWY-FIFQjV-ufIsOg0U/edit |
 | WARDEN — Lore Outline (current canon, v0.4) | snapshot of the shipped build (written by Moonshots; unedited since creation) | 2026-11-16T15:42:12Z | 10:42 AM | https://docs.google.com/document/d/1fWx0CWp95JAadPOWlLxfIHjekRb9BLykXko98YRvbdA/edit |
 | synthblade-concept-on.jpg (image) | WIP concept art | 2026-11-16T17:11:45Z | 12:11 PM | https://drive.google.com/file/d/1NVCYrg2y2ljCyi5xIAPrbSWF8TD6Dw3M/view |
 | synthblade-concept-off.jpg (image) | WIP concept art | 2026-11-16T17:17:09Z | 12:17 PM | https://drive.google.com/file/d/11Xu8hvcSGKZTzeLU1ZTe7Xj_WVoBe21W/view |
@@ -123,8 +127,19 @@ candidates only.
 awakens under the right conditions, remembers material interactions, improves with exposure.
 Origin/biology/mechanism deliberately unexplained. **Dormant** synth items pass as ordinary
 gear. **Awakened** = responds to a compatible, proficient user. Synth is neither hot nor cold.
-Surrounded by a **synth religion/tradition** (shaman-like synth-knowledge figure per Ward); all
-structure, names and doctrine deferred to a future religion doc.
+Studied and revered by the **Prismatic Order** (see below). Default synth colour is
+purple-pink/fuchsia (Order doc); the Synthblade's approved edge look is the red-to-pink
+contained barrier in the concept art.
+
+**The Prismatic Order (working canon v0.1).** The world's primary scientific *and* religious
+institution. Members are **Prisms**. Maxim: *"To understand is to be divine."* Pursues knowledge
+and implementation of synth and hoped-for proof of a higher order that made synth accessible
+(unproven). One broad Order with sub-sects and wide interpretive freedom (incl. attunement-purist
+zealots under its umbrella; the anti-augment "Clean" are separate). Runs parallel to the Warden
+system, not bound to Ward borders; Wardens *may* employ a Prism but needn't. Uneasy, pragmatic
+tolerance by the Wardens. Main income: supplying synth tech/expertise to the Presidium.
+Publicly known, semi-secretive internally. Colleges are the usual path to recognition, not the
+only one. Attunement ≠ divine selection (prevailing view, not a binding creed).
 
 **The Synthblade.** A real metal longsword (other shapes/sizes possible) with an **incut
 channel along one edge**. Awakened: a contained red synth boundary fills that channel. **Not a
@@ -155,6 +170,66 @@ channel dark.
 - **Slots (unchanged):** Synthblade, Helm, Cuirass, Gauntlets, Greaves, Mantle.
 
 **Visual canon (concept art).** See Part B §6.
+
+---
+
+# Direction from Don, 2026-11-16
+
+Source: Don's written "Development Questions & Direction" (saved as `docs/direction-2026-11-16.md`).
+Tags: **[ESTABLISHED]** canon · **[RECOMMENDED — pending]** Don's preferred direction, usable as a
+reversible starting point but not formally decided · **[OPEN]** still undecided.
+
+1. **Defeat.**
+   - [RECOMMENDED — pending] Checkpoint-based: defeat returns the player to the last
+     synchronization point. It is a *gameplay rewind*, not a canonical resurrection; the
+     character did not die and come back. Physical sync locations can be save points.
+   - [ESTABLISHED guardrail] Binding / Greater Consciousness do not reconstruct bodies, restore
+     the dead, or duplicate the Warden. Avoid "Rise, Warden"; use neutral wording such as
+     "Defeated" / "Synchronization Restored". Death screen + retry is enough; no penalties yet.
+   - [OPEN] Penalties, lost resources, recovery mechanics.
+2. **Cores.**
+   - [ESTABLISHED] Cores no longer increase rarity. Rarity, Tempering, learned material effects
+     and Runes are separate systems.
+   - [RECOMMENDED — pending] Cores stay a distinct technological module that changes how
+     compatible equipment behaves (damage-type interactions, defense, utility); predictable,
+     with tradeoffs and compatibility rules; not a replacement for adaptive proficiency.
+     Arc/Ember/Leech/Bastion/Kinetic/Overclock/Edge stay as provisional categories.
+   - [ESTABLISHED for now] Preserve existing Core functionality where practical; **no new Core
+     rules, slots, progression or crafting** without approval.
+3. **Attunement & Awakening.**
+   - [ESTABLISHED] Innate attunement exists at varying levels; proficiency grows with
+     experience/training.
+   - [Don's preference] The player Warden has *some* innate attunement, not exceptional; not a
+     chosen one / divinely selected.
+   - [RECOMMENDED — pending] Awakening = compatible synth item + successful interaction of
+     wielder, attunement and proficiency; higher proficiency makes it easier/more effective;
+     the item keeps its shape. Synthblade awakened = contained barrier along the inset edge
+     channel; dormant = still a working sword. Conditions discovered through play, no elaborate
+     tutorial.
+   - [ESTABLISHED guardrail] No religious blessing, bloodline or named ritual is universally
+     required.
+4. **Names.**
+   - [ESTABLISHED] Paramount (not King); Presidium (provisional) as the central institution; a
+     Ward is an autonomous territory governed by its Warden; Hallowmere = provisional capital of
+     the Ninth Ward. Prismatic Order / Prisms; independent of Warden government, crosses
+     territories, Wardens need not employ a religious adviser.
+   - [ESTABLISHED rule] "King Vael" → "Paramount" only where the character actually holds that
+     office; don't assume Vael is the current Paramount or finalize identity. Review each
+     "Saint" individually (a scholar might be a Prism); no blanket replace.
+   - [ESTABLISHED for now] **Kade** stays as the provisional default name, editable.
+   - [ESTABLISHED guardrail] No new canonical rulers, religious authorities, family histories or
+     biographies without approval.
+5. **Next zone.**
+   - [RECOMMENDED — pending] **Ruins first, then Subterranean** (City → Ruins → Subterranean, not
+     strictly linear; short underground entrances in the Ruins may tease deeper areas). Ruins =
+     inhabited/exploited decline, not a monster wasteland. One coherent explorable area beats
+     many unfinished ones.
+6. **Priorities (ESTABLISHED order):** (1) rarity names/colours/effect slots; (2) remove
+   Core-driven rarity promotion; (3) Synthblade dormant/awakened visuals; (4) remove resurrection
+   implications from defeat text; (5) Ninth Ward geography + "the Rot" references; (6) begin
+   replacing placeholder political/religious terms. Then a focused Ruins expansion. The
+   Prismatic Order influences NPCs, dialogue, environment, institutions and lore only — **no
+   reputation/membership/faction/college system yet**.
 
 ---
 
@@ -262,6 +337,64 @@ loses. See `docs/bible.md` for the in-repo version of this snapshot.
   synthblade point-down in front of him with one hand on the guard; red mist and lightning around
   the edge. Background: foggy, dark gothic-industrial towers with small **teal** window lights
   and gantries. "WARDEN" in distressed white caps at the bottom.
+
+## B7. The Prismatic Order — working canon v0.1
+Source: https://docs.google.com/document/d/1CepYHrX481or4ncRpdMg89XGGWY-FIFQjV-ufIsOg0U/edit · modified 2026-11-16T20:02:12Z
+
+- **Established — identity:** name *The Prismatic Order*; members *Prism / Prisms*. Both religious
+  and scientific; not a Warden government, not a combat mage guild, not a local priesthood. A
+  Prism may be an engineer, theoretician, physician, archivist, historian, theologian, explorer
+  or wielder; synth proficiency is not required for authority. Maxim: **"To understand is to be
+  divine."** Goal: expand knowledge and implementation of synth and seek proof of a higher being /
+  intelligence / fundamental order believed to have made synth accessible. No proof exists; its
+  nature and the faith's correctness are unknown.
+- **Established — symbolism:** synth's purple-pink/fuchsia light and *refraction* (a prism reveals
+  hidden components; scholars refract the same mystery differently). Not every robe or building
+  glows; whether light is worshipped is not established.
+- **Established — theology:** knowledge and inquiry are sacred; observation, experiment, recovering
+  lost tech, preserving records and applying discoveries can be devotion. Ritual may encode real
+  working procedures (none canonized). Prevailing view: innate attunement is natural, origin
+  unknowable short of full enlightenment; attunement ≠ divine selection (widely held, not a binding
+  creed). Enlightenment's mechanism/feasibility is OPEN. Innate Attunement, Wielder Synth
+  Proficiency and **Synth Knowledge** are distinct.
+- **Established — sects:** one broad Order with sub-sects and local scholarly cultures; individual
+  Prisms have wide latitude. Attunement-purist zealots (exceptional attunement = divine election)
+  exist under the umbrella; the anti-augment "Clean" are separate. Ethical disputes over hazardous
+  research; no universal risk threshold or licence to harm.
+- **Established — politics:** parallel to the Warden system; not bounded by Wards. Wardens may
+  invite/commission/employ a Prism; not required. Serving a Warden doesn't make a Prism a civil
+  servant. Wardens don't fully trust the Order (opaque experiments vs duty to protect) but
+  tolerate it (tradition; losing its expertise would be worse). No automatic immunity from Ward law.
+- **Established — economy:** principal income is supplying synth technologies, services and
+  expertise to the Presidium. Contracts, pricing, exclusivity, manufacturing control: OPEN. The
+  Order does not make all technology or control all augmentation.
+- **Established — secrecy:** publicly known (Prisms and some institutions recognizable), internally
+  semi-secretive. No hidden mastermind, conspiracy or secret proof of divinity.
+- **Established — colleges:** formal training/admission required to be a recognized Prism; college
+  is the traditional path (ancient college + technical institute + religious academy), studying
+  synth theory, history, research, theology, consciousness/augmentation. Not one-per-Ward. Also:
+  apprenticeship under a Prism, or recognition of an exceptional independent researcher — same
+  title, no inferior grade.
+- **Design direction:** scholarly reputation separate from administrative office and political
+  power; no mandatory central chain of command.
+- **Provisional — NOT canon:** ranks Aspirant / Initiate / Prism / Preceptor / Luminary (only Prism is
+  final); an initiation exercise "the Refraction". No fixed five-level ladder.
+- **Established framework — sites:** colleges, sanctuaries, workshops, research communities,
+  expeditions, religious areas — can sit beyond normal Ward geography, incl. subterranean sites;
+  may be agreed, tolerated, disputed or out of reach; not sovereign states.
+- **Guardrails:** Prisms may know synth, interfaces, Echoes and Binding, but these aren't
+  Order-exclusive. No automatic link Dissonance ↔ Rot ↔ abominations. Don't presume the Order
+  created abominations or the old catastrophe. Use "Prismatic Order"/"Prism(s)"; review each old
+  "Saint" individually. **Don't add:** Warden-bound parishes, compulsory Warden-appointed priests,
+  religious police, a named high priest, mandated miracles, a fixed statement about synth's
+  creator. Synth is purple-pink/fuchsia by default; equipment may have its own approved look. Keep
+  the Order morally ambiguous (not all enemies, not all good; devout Wardens aren't subordinates).
+  New religious mechanics only as reversible proposals.
+- **Open (author-reserved):** founding/age; colleges' names/number/locations; leadership; who
+  approves non-college admission; initiation form; reality of enlightenment; whether synth was
+  gifted; depth of the Order's understanding; restricted archives/tech; dealings with the
+  Paramount; rules at Order sites; whether named NPCs are Prisms; rites, symbols, clothing;
+  factions and relations with the Clean; any hidden discovery behind the secrecy.
 
 ---
 
