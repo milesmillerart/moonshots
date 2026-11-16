@@ -87,5 +87,11 @@ export const audio = {
   },
   levelUp() { [523, 659, 784, 1046].forEach((f, i) => this._tone(f, 0.5, 'triangle', 0.08, null, i * 0.09)); },
   thunder() { this._noise(3.5, 'lowpass', 300, 40, 0.5); },
+  // Perfect dodge: a low whoomp under a rising glass shimmer.
+  perfect() { this._tone(90, 0.5, 'sine', 0.35, 45); this._noise(0.35, 'bandpass', 900, 5200, 0.22, 3); [1320, 1760, 2640].forEach((f, i) => this._tone(f, 0.45, 'sine', 0.05, null, 0.05 + i * 0.04)); },
+  // Last abomination of a fight falls: a deep toll and a sub drop.
+  lastKill(big = false) { this._tone(big ? 55 : 82, big ? 2.2 : 1.3, 'sine', 0.4, big ? 28 : 40); this._noise(big ? 1.6 : 0.9, 'lowpass', 1200, 60, 0.35); this._tone(big ? 330 : 440, 1.2, 'triangle', 0.05, null, 0.06); },
+  // Heavy wind-up: the synth edge drawing charge.
+  charge(dur = 0.4) { this._tone(140, dur, 'sawtooth', 0.04, 520); this._noise(dur, 'bandpass', 500, 3800, 0.08, 6); },
   death() { this._tone(110, 1.5, 'sawtooth', 0.12, 30); },
 };

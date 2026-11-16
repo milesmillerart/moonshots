@@ -38,6 +38,7 @@ export class Player {
     this.staDelay = 0; this.hitSet = new Set(); this.speedMul = 1;
     this.bladeSpeed = 0;
     this.lastTip = new THREE.Vector3();
+    this.riposte = 0; this.perfectCd = 0; this.chargeFx = false;
   }
   get stats() { return this.game.stats; }
   forward(out = new THREE.Vector3()) { return out.set(Math.sin(this.face), 0, Math.cos(this.face)); }
@@ -45,7 +46,7 @@ export class Player {
 
   update(dt, inp, camYaw) {
     const s = this.stats;
-    this.t += dt; this.iframes -= dt; this.hurtT -= dt; this.staDelay -= dt;
+    this.t += dt; this.iframes -= dt; this.hurtT -= dt; this.staDelay -= dt; this.riposte -= dt; this.perfectCd -= dt;
     const aspd = 1 + s.aspd / 100;
     // movement intent relative to camera
     const fwd = tmpA.set(Math.sin(camYaw), 0, Math.cos(camYaw));
@@ -100,14 +101,26 @@ export class Player {
         if (!close) moveCircle(this.pos, f.x * A.lunge * dt * aspd, f.z * A.lunge * dt * aspd, 0.45);
       }
       this.vel.multiplyScalar(0.8);
+      // heavy wind-up: the synth edge visibly draws charge, then flashes when it is about to fall
+      if (A.heavy && !this.chargeFx && T >= tw * 0.85) {
+        this.chargeFx = true;
+        this.game.fx.burst(this.lastTip.clone(), 12, 0xff3050, 2.5, 1, 0.35);
+      }
+      // cancel window: dodge out of any wind-up, getting half the stamina back
+      if (inp.dodge && T < tw * 0.85) {
+        this.sta = Math.min(s.sta, this.sta + A.sta * 0.5);
+        this.state = 'move'; this.t = 0; this.activeHit = false; this.buffer = null;
+        this.startDodge(moving ? mv : this.forward().multiplyScalar(-1));
+        this.animate(dt, 1); return;
+      }
       if (T >= tw && T < tw + ta) { this.activeHit = true; this.game.meleeCheck(this, A); }
       else this.activeHit = false;
       if (T >= tw + ta * 0.5) {
         if (inp.light) this.buffer = 'light';
         if (inp.heavy) this.buffer = 'heavy';
-        if (inp.dodge) this.buffer = 'dodge';
       }
-      const cancel = T >= tw + ta + tr * 0.35 && this.buffer;
+      if (inp.dodge) this.buffer = 'dodge';
+      const cancel = (T >= tw + ta + tr * 0.35 && this.buffer) || (T >= tw + ta && this.buffer === 'dodge');
       if (T >= tw + ta + tr || cancel) {
         this.state = 'move'; this.t = 0; this.activeHit = false;
         if (this.buffer === 'dodge') { this.buffer = null; this.startDodge(moving ? mv : this.forward().multiplyScalar(-1)); }
@@ -130,7 +143,9 @@ export class Player {
     const A = ATTACKS[kind];
     if (this.sta < 4) return;
     this.sta -= A.sta; this.staDelay = 0.6;
-    this.state = 'attack'; this.t = 0; this.atk = { ...A, kind };
+    this.state = 'attack'; this.t = 0; this.atk = { ...A, kind }; this.chargeFx = false;
+    if (this.riposte > 0) { this.atk.riposte = true; this.riposte = 0; }
+    if (A.heavy) audio.charge(A.t[0] / (1 + this.stats.aspd / 100));
     this.hitSet.clear();
     this.fromPose = { g: this.pose.g.clone(), d: this.pose.d.clone(), tw: this.pose.tw };
     if (kind === 'heavy') this.combo = 0; else this.combo = (this.combo % 3) + 1;
@@ -152,6 +167,7 @@ export class Player {
     g.ui.toast('Stim injected');
   }
   takeHit(dmg, from, knock = 4) {
+    if (this.state === 'dodge' && this.t < 0.24 && this.perfectCd <= 0) { this.game.onPerfectDodge(from); return false; }
     if (this.iframes > 0 || this.state === 'dead') return false;
     const s = this.stats;
     let d = dmg * (1 - s.reduction);
@@ -183,7 +199,16 @@ export class Player {
     u.legs[1].thigh.rotation.x = damp(u.legs[1].thigh.rotation.x, -sw, 20, dt);
     u.legs[0].shin.rotation.x = Math.max(0, -Math.cos(this.walkPh)) * 0.8 * Math.min(1, spd / 4);
     u.legs[1].shin.rotation.x = Math.max(0, Math.cos(this.walkPh)) * 0.8 * Math.min(1, spd / 4);
-    u.hips.position.y = 1.02 + Math.abs(Math.cos(this.walkPh)) * 0.04 * Math.min(1, spd / 4) - (this.state === 'attack' ? 0.06 : 0);
+    let crouch = this.state === 'attack' ? 0.06 : 0, lean = 0.12;
+    if (this.state === 'attack' && this.atk.heavy) {
+      // heavy: sink the hips and lean back through the wind-up, then throw the weight forward
+      const T = this.t * (1 + this.stats.aspd / 100), [tw, ta] = this.atk.t;
+      const w = smooth(clamp(T / tw, 0, 1)), r = clamp((T - tw) / (ta + 0.12), 0, 1);
+      crouch = T < tw ? 0.06 + 0.1 * w : 0.16 - 0.08 * r;
+      lean = T < tw ? 0.12 - 0.3 * w : -0.18 + 0.58 * Math.sin(Math.min(1, r * 1.4) * Math.PI * 0.5) - 0.18 * clamp((T - tw - ta) / 0.3, 0, 1);
+    }
+    this.atkLean = lean;
+    u.hips.position.y = 1.02 + Math.abs(Math.cos(this.walkPh)) * 0.04 * Math.min(1, spd / 4) - crouch;
     // pose target
     let target;
     if (this.state === 'attack') {
@@ -205,7 +230,7 @@ export class Player {
       this.pose.g.y += Math.sin(this.t * 2) * 0.0015;
     }
     u.torso.rotation.y = this.pose.tw;
-    u.torso.rotation.x = this.state === 'attack' ? 0.12 : spd > 5 ? 0.18 : 0.04;
+    u.torso.rotation.x = this.state === 'attack' ? this.atkLean : spd > 5 ? 0.18 : 0.04;
     // dodge roll
     if (this.state === 'dodge') {
       const k = clamp(this.t / 0.52, 0, 1);
@@ -251,13 +276,18 @@ export class Player {
     // blade glow + crackle
     const sw2 = u.sword.userData;
     sw2.glowMat.opacity = 0.25 + 0.25 * act + 0.05 * Math.sin(this.t * 30);
-    sw2.light.intensity = 2 + act * 4;
+    let heat = 0;
+    if (this.state === 'attack' && this.atk?.heavy) heat = clamp(this.t * (1 + this.stats.aspd / 100) / this.atk.t[0], 0, 1);
+    if (this.riposte > 0) heat = Math.max(heat, 0.6 + 0.4 * Math.sin(this.t * 18));
+    sw2.light.intensity = 2 + act * 4 + heat * 7;
+    if (heat > 0) sw2.glowMat.opacity += heat * 0.3;
     if (Math.random() < 0.35 + act * 0.6) sw2.crackle(0.4 + act * 0.8 + this.game.bladeRarity * 0.15); else sw2.arcs.geometry.setDrawRange(0, 0);
     // trail sample
     if (this.titleMode) { u.visorMat.color.setRGB(5, 0.25, 0.3); return; }
     const b = u.sword.localToWorld(tmpA.copy(sw2.baseLocal));
     const tp = u.sword.localToWorld(tmpB.copy(sw2.tipLocal));
-    this.game.fx.trailPush(b, tp, this.state === 'attack' && this.bladeSpeed > 3);
+    const cutting = this.state === 'attack' && this.t * (1 + this.stats.aspd / 100) >= this.atk.t[0] * 0.75;
+    this.game.fx.trailPush(b, tp, cutting && this.bladeSpeed > 3);
     audio.setHum(Math.min(1, this.bladeSpeed / 15));
     this.lastTip.copy(tp);
     // hurt flash on visor

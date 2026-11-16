@@ -1,6 +1,18 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.2",
+    "title": "Combat feel: Perfect Dodge and the last blow",
+    "items": [
+      "Perfect Dodge: roll through an attack at the last instant and the Rot slows to a crawl around you. Strike while your blade burns for a guaranteed critical Riposte (+50% damage), with stamina and Charge refunded.",
+      "The last abomination of a fight now falls in slow motion with a deep toll, a lens punch-in and a red shockwave. Felling the Bellwright gets a longer, heavier moment.",
+      "Heavy strikes have real weight: the Warden sinks and draws back as the synth edge charges and flares, then throws the whole body into the cut.",
+      "Abominations flinch, twist and buckle when your blade lands, so every hit reads.",
+      "Snappier controls: dodge out of any wind-up (half the stamina back) or straight out of a finished swing. The blade trail now only streaks during the actual cut."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.1",
     "title": "The first night in the Ninth Ward",
     "items": [

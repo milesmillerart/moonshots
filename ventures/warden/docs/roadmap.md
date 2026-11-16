@@ -3,7 +3,7 @@
 Rule: every night ships one or two visible improvements (graphics a little at a time, feel, content). Each gets a line in `game/data/changelog.json`. Run `tools/shots.py` before shipping; zero console errors.
 
 ## Now (next 7 nights, highest impact first)
-1. **Combat feel pass**: animation-cancel windows, a heavier wind-up pose for heavy attacks, enemy hit-react poses, a short slow-mo on the final kill of a wave, and a parry or perfect-dodge window.
+1. ~~**Combat feel pass**~~ shipped 2026-11-16 (build 0.2): perfect dodge (0.24 s window, enemy time-dilation, guaranteed-crit Riposte), final-kill slow-mo + FOV punch, heavy wind-up crouch/lean + blade charge, enemy hit-react flinch, dodge-cancel windows, trail only during the cut. Follow-ups: a true parry on heavy-attack timing, and per-move recovery tuning once gamepad lands.
 2. **Warden model v2**: bevelled plate pieces, a proper backplate and gorget, a real helmet silhouette (smooth dome, flared neck guard), cape cloth with gravity and wind, and the red mist particles around the blade like the poster.
 3. **Puddle reflections**: planar reflections (Reflector) or screen-space reflections on the wet street so neon reflects. Splash rings where rain hits.
 4. **Abomination art v2**: real silhouettes (exposed ribs, cables, tumorous plating), death dissolve shader, and individual attack telegraphs that read from a distance.
@@ -27,6 +27,10 @@ Rule: every night ships one or two visible improvements (graphics a little at a 
 - Seasonal "Tribunal" events with leaderboards (needs an approved backend).
 - Photo mode for sharing poster-style shots.
 - Desktop build (Electron/Tauri) for itch.io or Steam, if Don wants to sell it (needs approval).
+
+## Shipped log
+- 2026-11-16 build 0.1: vertical slice.
+- 2026-11-16 build 0.2: combat feel pass (perfect dodge + Riposte, last-kill slow-mo, heavy wind-up weight, hit-reacts, cancel windows).
 
 ## Known gaps in the vertical slice (v0.1)
 - Animation is procedural (no skeletal rig or mocap), so poses read as stiff.

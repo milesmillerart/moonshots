@@ -28,6 +28,7 @@ export class Game {
     scene.add(this.player.model);
     this.enemies = []; this.projectiles = []; this.loot = []; this.shockwaves = [];
     this.time = 0; this.hitstop = 0; this.shakeAmt = 0;
+    this.slow = null; this.fov = 58;
     this.camYaw = Math.PI; this.camPitch = 0.26; this.camDist = 5.4;
     this.keys = {}; this.edge = {}; this.state = 'title'; this.started = false;
     this.lockTarget = null; this.combatOn = false; this.save = null;
@@ -236,8 +237,9 @@ export class Game {
     const s = this.stats, p = this.player;
     let dmg = s.dmgFinal * (A ? A.mult : 1) * mult;
     if (A?.finisher && this.perk('momentum')) dmg *= 1.6;
+    if (A?.riposte) dmg *= 1.5;
     if (e.hp / e.maxHp < 0.35) dmg *= 1 + 0.25 * this.perk('executioner');
-    const crit = Math.random() * 100 < s.crit;
+    const crit = !!A?.riposte || Math.random() * 100 < s.crit;
     if (crit) dmg *= 1 + s.critDmg / 100;
     dmg *= rand(0.92, 1.08);
     e.hurt(dmg, p.pos, A ? A.poise : 0.5, crit);
@@ -277,6 +279,24 @@ export class Game {
   }
   spawnProjectile(from, to, dmg) { this.projectiles.push(new Projectile(this, from, to, dmg)); }
   shake(a) { this.shakeAmt = Math.max(this.shakeAmt, a); }
+  // Time dilation. world: the scale for abominations/projectiles; all: also slow the Warden.
+  slowmo(dur, scale, all, kind) {
+    if (this.slow && this.slow.t > dur && this.slow.all && !all) return;
+    this.slow = { t: dur, dur, scale, all, kind };
+  }
+  onPerfectDodge(from) {
+    const p = this.player, s = this.stats;
+    p.perfectCd = 0.6; p.iframes = Math.max(p.iframes, 0.5); p.riposte = 1.6;
+    p.sta = Math.min(s.sta, p.sta + 20); p.charge = Math.min(100, p.charge + 15);
+    this.slowmo(1.1, 0.22, false, 'perfect');
+    const at = p.pos.clone().setY(1.1);
+    this.fx.ring(p.pos.clone(), 3.2, 0.35, 0x46f0e0, 0.25);
+    this.fx.burst(at, 30, 0x46f0e0, 5, 1.5, 0.5);
+    this.fx.number(at.clone().setY(2.1), 'PERFECT', 'perfect');
+    audio.perfect();
+    if (!this.save?.flags?.tipRiposte && this.save) { this.save.flags.tipRiposte = true; this.ui.toast('Perfect dodge. Strike now for a guaranteed critical Riposte.', 'cyan'); }
+    void from;
+  }
   onPlayerHurt(d) { this.ui.hurtFlash(d / this.stats.hp * 3); this.shake(0.25); this.player.hurtT = 0.2; this.fx.burst(this.player.pos.clone().setY(1.2), 8, 0x802030, 3, 1, 0.3); }
   onPlayerDeath() { audio.death(); this.lockTarget = null; setTimeout(() => this.ui.open('dead'), 1400); }
   respawn() {
@@ -293,6 +313,12 @@ export class Game {
     sv.kills++;
     if (this.lockTarget === e) this.lockTarget = null;
     this.fx.burst(e.pos.clone().setY(1), e.elite ? 120 : 40, 0x46f0e0, 6, 3, 0.9);
+    // last abomination standing: the world holds its breath
+    if (!this.enemies.some((o) => o !== e && !o.dead)) {
+      this.slowmo(e.elite ? 1.6 : 0.85, e.elite ? 0.12 : 0.2, true, 'final');
+      this.shake(e.elite ? 0.7 : 0.35); audio.lastKill(e.elite);
+      this.fx.ring(e.pos.clone(), e.elite ? 10 : 5, e.elite ? 1.2 : 0.7, 0xff3050, 0.35);
+    }
     const scrap = Math.round(randi(e.def.scrap[0], e.def.scrap[1]) * (1 + 0.1 * (e.level - 1)) * (1 + s.scrapPct / 100));
     sv.scrap += scrap; this.fx.number(e.pos.clone().setY(2), `+${scrap} scrap`, 'scrap');
     this.gainXp(Math.round(e.def.xp * (1 + 0.15 * (e.level - 1))));
@@ -439,6 +465,18 @@ export class Game {
     const paused = this.ui.isOpen && this.state === 'play';
     let dt = paused ? 0 : dtReal;
     if (this.hitstop > 0) { this.hitstop -= dtReal; dt *= 0.06; }
+    let worldScale = 1;
+    if (this.slow) {
+      if (!paused) this.slow.t -= dtReal;
+      if (this.slow.t <= 0 || this.state !== 'play') this.slow = null;
+      else {
+        const k = Math.min(1, this.slow.t / 0.3, (this.slow.dur - this.slow.t) / 0.06 + 0.2); // ease out of it
+        const sc = 1 - (1 - this.slow.scale) * k;
+        if (this.slow.all) dt *= sc; else worldScale = sc;
+      }
+    }
+    const fxEl = this._slowEl || (this._slowEl = document.getElementById('slowmo'));
+    if (fxEl) { const on = this.slow ? Math.min(1, this.slow.t / 0.3) : 0; fxEl.style.opacity = String(on); fxEl.dataset.kind = this.slow?.kind || ''; }
     const p = this.player;
     if (this.state === 'play' && !paused) {
       const k = this.keys;
@@ -461,11 +499,12 @@ export class Game {
     }
     // enemies, projectiles, shockwaves
     if (dt > 0) {
-      this.enemies = this.enemies.filter((e) => { const alive = e.update(dt); if (!alive) e.dispose(); return alive; });
-      this.projectiles = this.projectiles.filter((pr) => pr.update(dt));
+      const dw = dt * worldScale;
+      this.enemies = this.enemies.filter((e) => { const alive = e.update(dw); if (!alive) e.dispose(); return alive; });
+      this.projectiles = this.projectiles.filter((pr) => pr.update(dw));
       for (const s of this.shockwaves) {
-        s.t += dt; const r = (s.t / s.dur) * s.maxR, d = p.pos.distanceTo(s.c);
-        if (!s.hit && Math.abs(d - r) < 0.9 && p.state !== 'dodge') { s.hit = true; p.takeHit(s.dmg, s.c, 8); }
+        s.t += dw; const r = (s.t / s.dur) * s.maxR, d = p.pos.distanceTo(s.c);
+        if (!s.hit && Math.abs(d - r) < 0.9) { if (p.state !== 'dodge' || p.t < 0.24) { s.hit = true; p.takeHit(s.dmg, s.c, 8); } }
       }
       this.shockwaves = this.shockwaves.filter((s) => s.t < s.dur);
     }
@@ -506,6 +545,9 @@ export class Game {
   }
   updateCamera(dt, t) {
     const cam = this.camera, p = this.player;
+    const wantFov = this.slow ? (this.slow.kind === 'final' ? 49 : 53) : 58;
+    this.fov += (wantFov - this.fov) * (1 - Math.exp(-(this.slow ? 10 : 4) * dt));
+    if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     if (this.state === 'title') {
       const k = Math.sin(t * 0.1);
       cam.position.set(-1.1 + k * 0.25, 1.05, 34.6 + Math.cos(t * 0.13) * 0.2);

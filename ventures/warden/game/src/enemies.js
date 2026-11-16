@@ -18,7 +18,7 @@ export class Enemy {
     this.face = rand(0, 6.28); this.state = 'idle'; this.t = rand(0, 1); this.cd = rand(0.5, 1.5);
     this.poise = 0; this.flash = 0; this.dead = false; this.deadT = 0; this.ph = rand(0, 10);
     this.burn = 0; this.burnDps = 0; this.aggro = false; this.vel = new THREE.Vector3();
-    this.phase2 = false; this.home = pos.clone();
+    this.phase2 = false; this.home = pos.clone(); this.react = 0; this.reactSide = 1;
     game.scene.add(this.model);
   }
   get elite() { return !!this.def.elite; }
@@ -26,6 +26,7 @@ export class Enemy {
   hurt(dmg, from, poiseDmg, crit) {
     if (this.dead) return;
     this.hp -= dmg; this.flash = 0.12; this.aggro = true;
+    this.react = Math.min(1.4, (this.react > 0.3 ? this.react : 0) + 0.7 + poiseDmg * 0.12 + (crit ? 0.25 : 0)); this.reactSide = Math.random() < 0.5 ? -1 : 1;
     this.poise += poiseDmg;
     const away = this.pos.clone().sub(from).setY(0).normalize();
     if (!this.elite) this.vel.addScaledVector(away, 3 + poiseDmg);
@@ -34,7 +35,6 @@ export class Enemy {
       if (this.elite) this.game.ui.toast('STAGGERED', 'red');
     }
     if (this.hp <= 0) this.die();
-    void crit;
   }
   die() {
     this.dead = true; this.state = 'dead'; this.t = 0;
@@ -43,7 +43,7 @@ export class Enemy {
   }
   update(dt) {
     const g = this.game, p = g.player;
-    this.t += dt; this.ph += dt; this.flash -= dt; this.cd -= dt;
+    this.t += dt; this.ph += dt; this.flash -= dt; this.cd -= dt; this.react = Math.max(0, this.react - dt * 5);
     this.poise = Math.max(0, this.poise - dt * (this.elite ? 4 : 1.5));
     // material flash / glow
     const f = this.flash > 0 ? 1 : 0;
@@ -192,6 +192,12 @@ export class Enemy {
       else u.body.rotation.x *= 0.85;
       if (T === 'spitter') { const s = 1 + Math.sin(this.ph * 2) * 0.04 + (this.state === 'windup' ? 0.15 * this.t / this.windT : 0); u.body.scale.set(s, s, s); }
     }
+    // hit-react: snap back from the blow, twist off-line, squash, then settle
+    const r = this.react * this.react * (this.elite ? 0.35 : 1);
+    this.model.rotation.x = -0.32 * r;
+    this.model.rotation.z = 0.16 * r * this.reactSide;
+    if (u.head) u.head.rotation.x = -0.6 * r;
+    if (T !== 'spitter' && u.body) { const sq = 0.09 * r; u.body.scale.set(1 + sq, 1 - sq, 1 + sq); }
     if (u.bellMat) u.bellMat.emissive.setRGB(this.telegraphing ? 1.2 : 0.05, this.telegraphing ? 0.1 : 0.02, 0.05);
   }
   dispose() { this.game.scene.remove(this.model); }
