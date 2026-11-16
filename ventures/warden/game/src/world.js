@@ -568,7 +568,7 @@ function placeManifestAssets(scene) {
     const meta = Assets.manifest.assets[id];
     for (const pl of meta.placements || []) {
       const inst = Assets.instance(id); if (!inst) continue;
-      inst.root.position.set(pl.x, pl.y || 0, pl.z); inst.root.rotation.y = pl.ry || 0;
+      inst.root.position.set(pl.x, pl.y || 0, pl.z); inst.root.rotation.y = pl.ry || 0; inst.root.userData.assetId = id;
       if (pl.s) inst.root.scale.multiplyScalar(pl.s);
       scene.add(inst.root);
       if (pl.r) colliders.push({ x: pl.x, z: pl.z, r: pl.r });

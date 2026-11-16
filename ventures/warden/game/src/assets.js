@@ -58,6 +58,7 @@ export const Assets = {
     if (m.rotationY) root.rotation.y = m.rotationY;
     root.traverse((o) => {
       if (o.isMesh) {
+        if (m.type === 'char' || m.type === 'enemy' || /^(char|enemy)_/.test(id)) o.material = Array.isArray(o.material) ? o.material.map((x) => x.clone()) : o.material.clone(); // per-instance flashes
         o.castShadow = m.castShadow !== false; o.receiveShadow = true;
         if (o.isSkinnedMesh) o.frustumCulled = false; // animated bounds lag the bind pose
         if (o.material && o.material.envMapIntensity !== undefined) o.material.envMapIntensity = m.envMapIntensity ?? 1;
@@ -68,7 +69,8 @@ export const Assets = {
   },
   bone(root, names) { // first bone/object whose name matches one of the patterns
     let hit = null;
-    root.traverse((o) => { if (!hit && names.some((n) => (n instanceof RegExp ? n.test(o.name) : o.name === n))) hit = o; });
+    const san = (n) => THREE.PropertyBinding.sanitizeNodeName(n); // GLTFLoader strips '.', ':' etc from node names
+    root.traverse((o) => { if (!hit && names.some((n) => (n instanceof RegExp ? n.test(o.name) : o.name === n || o.name === san(n)))) hit = o; });
     return hit;
   },
 };
@@ -95,7 +97,9 @@ export class Animator {
   }
   has(k) { return !!this.actions[k]; }
   play(k, { fade = 0.15, once = false, speed = 1, restart = false } = {}) {
-    const a = this.actions[k] || this.actions.idle; if (!a) return;
+    if (!this.actions[k] && /^(attack\d|heavy)$/.test(k)) k = this.actions[k.replace(/\d$/, '')] ? k.replace(/\d$/, '') : 'attack'; // combo/heavy fall back to the base attack clip
+    if (!this.actions[k]) k = 'idle';
+    const a = this.actions[k]; if (!a) return;
     a.timeScale = speed;
     if (this.cur === a && !restart) return;
     a.reset(); a.enabled = true;
@@ -104,4 +108,17 @@ export class Animator {
     a.play(); this.cur = a; this.state = k;
   }
   update(dt) { this.mixer.update(dt); }
+}
+
+// Swap a procedural model's visuals for a loaded GLB (keeps the procedural group as the logic/animation rig).
+// `keep` = procedural sub-groups that stay visible (e.g. the Synthblade while no weapon GLB exists).
+export function attachSkin(model, id, keep = []) {
+  const inst = Assets.instance(id); if (!inst) return null;
+  const kept = (o) => { for (let p = o; p; p = p.parent) if (keep.includes(p)) return true; return false; };
+  model.traverse((o) => { if ((o.isMesh || o.isLine || o.isPoints || o.isSprite) && !kept(o)) { o.visible = false; o.userData.hiddenBySkin = true; } });
+  model.add(inst.root);
+  inst.mats = [];
+  inst.root.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.emissive) { inst.mats.push(m); m.userData.baseEmissive = m.emissive.clone(); } });
+  inst.flash = (k) => { for (const m of inst.mats) m.emissive.copy(m.userData.baseEmissive).lerp(new THREE.Color(1.2, 1.1, 1.1), k); };
+  return inst;
 }

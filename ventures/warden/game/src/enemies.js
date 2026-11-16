@@ -1,6 +1,7 @@
 // Abominations (street slang: "the Rot"; their origin is unknown in canon): Husk, Skitter, Bile Spitter, the Bellwright.
 import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { buildEnemy } from './models.js';
+import { attachSkin } from './assets.js';
 import { ENEMIES } from './data.js';
 import { moveCircle } from './world.js';
 import { angleDiff, clamp, dampAngle, rand } from './util.js';
@@ -19,6 +20,7 @@ export class Enemy {
     this.poise = 0; this.flash = 0; this.dead = false; this.deadT = 0; this.ph = rand(0, 10);
     this.burn = 0; this.burnDps = 0; this.aggro = false; this.vel = new THREE.Vector3();
     this.phase2 = false; this.home = pos.clone(); this.react = 0; this.reactSide = 1;
+    this.skin = attachSkin(this.model, 'enemy_' + type); // Don's GLB if the manifest has one, else the procedural abomination
     game.scene.add(this.model);
   }
   get elite() { return !!this.def.elite; }
@@ -50,12 +52,13 @@ export class Enemy {
     this.u.flesh.emissive.setRGB(f * 1.5, f * 1.4, f * 1.4);
     const vein = this.telegraphing ? 4.5 : 1.5 + Math.sin(this.ph * 3) * 0.3;
     this.u.vein.color.setRGB(0.3 * vein / 2.4, vein, vein * 0.88);
+    if (this.skin) this.updateSkin(dt, f);
     if (this.dead) {
       this.deadT += dt;
       if (!this.shadowOff) { this.shadowOff = true; this.model.traverse((o) => { if (o.isMesh) o.castShadow = false; }); }
-      this.model.rotation.x = Math.min(1.4, this.deadT * 4) * (this.type === 'skitter' ? 0 : 1);
+      if (!this.skin) this.model.rotation.x = Math.min(1.4, this.deadT * 4) * (this.type === 'skitter' ? 0 : 1);
       this.model.position.y = -Math.max(0, this.deadT - 1.2) * 0.25;
-      if (this.type === 'skitter') this.model.rotation.z = Math.min(3.1, this.deadT * 8);
+      if (this.type === 'skitter' && !this.skin) this.model.rotation.z = Math.min(3.1, this.deadT * 8);
       // the Rot lets go: flesh burns away from the inside in a teal-edged dissolve, shedding motes
       const big = this.type === 'bellwright', k = clamp((this.deadT - (big ? 0.6 : 0.3)) / (big ? 2.2 : 1.4), 0, 1);
       this.u.dissolve.value = k * 1.02;
@@ -161,6 +164,19 @@ export class Enemy {
       if (this.t > this.recT) { this.state = 'chase'; this.t = 0; }
     }
     void toP;
+  }
+  updateSkin(dt, flash) {
+    const A = this.skin.anim; this.skin.flash(flash);
+    if (A) {
+      const st = this.state, sp = Math.hypot(this.vel.x, this.vel.z);
+      if (st === 'dead') A.play('death', { once: true, fade: 0.2 });
+      else if (st === 'stagger') A.play('hit', { once: true, fade: 0.08 });
+      else if (st === 'windup' || st === 'attack') A.play('attack', { once: true, fade: 0.1, restart: st === 'windup' && this.t < dt * 1.5 });
+      else if (st === 'chase' || (st === 'wander' && this.wmove)) A.play(this.def.speed > 4 ? 'run' : 'walk');
+      else A.play('idle');
+      A.update(dt);
+    }
+    this.skinState = A?.state || 'static';
   }
   endAttack(cd) { this.state = 'recover'; this.t = 0; this.recT = 0.35; this.cd = cd * rand(0.8, 1.3); }
   spit() {

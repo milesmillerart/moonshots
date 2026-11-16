@@ -5,6 +5,7 @@ import * as Items from './items.js';
 import * as SaveSys from './save.js';
 import { detectTouch } from './touch.js';
 import { POI } from './world.js';
+import { Enemy } from './enemies.js';
 
 import { Q, pickTier } from './quality.js';
 import { Assets } from './assets.js';
@@ -107,6 +108,7 @@ window.__warden = { game, THREE, build: BUILD, stats, renderer, Q, Assets, compo
 window.__wardenItems = Items;
 window.__wardenSave = SaveSys;
 window.__wardenPOI = POI;
+window.__wardenEnemy = Enemy;
 
 // Per-frame cost snapshot for the perf table: draw calls, triangles, textures and an estimate of their GPU memory.
 function perfReport(r, sc) {

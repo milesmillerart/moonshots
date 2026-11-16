@@ -1,0 +1,21 @@
+{
+  "name": "warden-tools",
+  "private": true,
+  "description": "Build-time tools for Warden: the vendored three.js bundle (entry.js) and the GLB import pipeline (gltf-transform). Not shipped to players.",
+  "type": "module",
+  "scripts": {
+    "bundle": "esbuild entry.js --bundle --minify --format=esm --legal-comments=none --outfile=../../game/vendor/three-warden.r187-09.min.js"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "4.5.1",
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "esbuild": "0.25.12",
+    "meshoptimizer": "^0.22.0",
+    "three": "0.187.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "sharp@0.35.5": true
+  }
+}

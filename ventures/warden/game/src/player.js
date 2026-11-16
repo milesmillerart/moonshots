@@ -1,6 +1,7 @@
 // The Warden: movement, stamina, dodge, synthblade combo, procedural animation.
 import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { buildWarden } from './models.js';
+import { Assets, attachSkin } from './assets.js';
 import { moveCircle } from './world.js';
 import { angleDiff, clamp, damp, dampAngle, smooth } from './util.js';
 import { audio } from './audio.js';
@@ -42,6 +43,22 @@ export class Player {
     this.lastTip = new THREE.Vector3();
     this.riposte = 0; this.perfectCd = 0; this.chargeFx = false;
     this.restT = 0; this.turnLean = 0; this.lastFace = this.face; this.cloth = null;
+    // GLB character (Don's models via the asset manifest): the procedural rig keeps driving logic, the GLB is drawn.
+    this.skin = attachSkin(this.model, 'char_warden', [this.u.sword]);
+    if (this.skin) {
+      const g = this.skin.meta.weaponGrip || {};
+      this.hand = Assets.bone(this.skin.root, g.bone ? [g.bone] : [/mixamorig:?RightHand$/i, /^RightHand$/i, /^hand[._]?r$/i, /^Hand_R$/i, /^Palm2\.?R$/i]);
+      this.gripQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(...(g.rotation || [-90, 0, 0]).map((d) => (d * Math.PI) / 180)));
+      this.gripO = new THREE.Vector3(...(g.offset || [0, 0.08, 0]));
+      this.skinAtk = 0;
+    }
+    const wpn = Assets.instance('weapon_synthblade');
+    if (wpn) { // Don's blade replaces the procedural steel; a mesh/material named *synth_channel* glows when Awakened
+      const sw = this.u.sword;
+      sw.traverse((o) => { if (o.isMesh && !o.userData.keep) o.visible = false; });
+      sw.add(wpn.root); this.wpn = wpn; wpn.channel = [];
+      wpn.root.traverse((o) => { if (o.isMesh && /synth_?channel/i.test(o.name + ' ' + (o.material?.name || ''))) { o.material = o.material.clone(); wpn.channel.push(o.material); } });
+    }
     const motes = this.u.sword.userData.motes; // red mist + embers live in world space
     if (motes) for (const k in motes) game.scene.add(motes[k].pts);
   }
@@ -290,6 +307,36 @@ export class Player {
       ik(a, sh, hand, u.torso);
     }
     this.capeAndBlade(dt, spd, this.state === 'attack' ? 1 : 0);
+    if (this.skin) this.updateSkin(dt, spd);
+    if (this.wpn) for (const m of this.wpn.channel) { m.emissive?.setRGB(1, 0.05, 0.12); if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 3.5 * (this.u.sword.userData.awake ?? 1); }
+  }
+  // Logical animation state -> clip (Mixamo-style names mapped in assets.js / the manifest), then hand the blade to the rig.
+  updateSkin(dt, spd) {
+    const A = this.skin.anim;
+    if (A) {
+      if (this.state === 'dead') A.play('death', { once: true, fade: 0.25 });
+      else if (this.state === 'dodge') A.play('dodge', { once: true, fade: 0.08 });
+      else if (this.state === 'hurt') A.play('hit', { once: true, fade: 0.08 });
+      else if (this.state === 'attack') {
+        const kind = this.atk?.kind, k = kind === 'heavy' ? 'heavy' : kind === 'l3' ? 'attack3' : kind === 'l2' ? 'attack2' : 'attack';
+        const fresh = this.atk !== this.skinAtk || this.t < this.lastSkinT; this.skinAtk = this.atk; this.lastSkinT = this.t;
+        A.play(k, { once: true, fade: 0.08, restart: fresh, speed: 1 + this.stats.aspd / 100 });
+      } else if (spd > 5) A.play('run', { speed: spd / 6.6 });
+      else if (spd > 0.35) A.play('walk', { speed: Math.max(0.6, spd / 2.6) });
+      else A.play('idle');
+      A.update(dt);
+    }
+    this.skinState = A?.state || 'static';
+    if (this.hand) { // put the Synthblade in the GLB's right hand
+      const u = this.u, sw = u.sword;
+      this.skin.root.updateMatrixWorld(true);
+      const hp = this.hand.getWorldPosition(tmpA), hq = this.hand.getWorldQuaternion(new THREE.Quaternion()).multiply(this.gripQ);
+      hp.add(tmpB.copy(this.gripO).applyQuaternion(hq));
+      u.torso.updateMatrixWorld(true);
+      const inv = new THREE.Matrix4().copy(u.torso.matrixWorld).invert();
+      const m = new THREE.Matrix4().compose(hp, hq, tmpC.set(1, 1, 1)).premultiply(inv);
+      m.decompose(sw.position, sw.quaternion, tmpC);
+    }
   }
   // Tattered cape: a small verlet cloth pinned under the pauldrons, simulated in world space so it
   // trails behind movement, rolls and turns; kept behind the back/legs with a cheap body proxy.
@@ -393,6 +440,7 @@ export class Player {
     this.game.fx.trailPush(b, tp, cutting && this.bladeSpeed > 3 && aw > 0.5);
     audio.setHum(Math.min(1, this.bladeSpeed / 15));
     this.lastTip.copy(tp);
+    if (this.skin) this.skin.flash(this.hurtT > 0 ? 0.6 : 0);
     // hurt flash on visor
     u.visorMat.color.setRGB(this.hurtT > 0 ? 3.2 : 1.25, this.hurtT > 0 ? 0.6 : 0.015, this.hurtT > 0 ? 0.2 : 0.04); // deep red T-visor (cover art)
   }
