@@ -100,7 +100,7 @@ export class SkillTree {
       // branch label + rail
       const y = ROWS[b.id];
       bg += `<path d="M ${COLS[0] - 60} ${y + 62} H ${COLS[4] + 50}" stroke="${b.color}" stroke-opacity=".08" stroke-width="1" stroke-dasharray="2 6"/>`;
-      bg += `<text class="sk-bl" x="${COLS[0] - 58}" y="${y - 84}" fill="${b.color}">${b.name.toUpperCase()}</text><text class="sk-bs" x="${COLS[0] - 58}" y="${y - 67}">${esc(b.sub)} · ${spent}/${this.total(b.id)}</text>`;
+      bg += `<text class="sk-bl" data-b="${b.id}" x="${COLS[0] - 58}" y="${y - 84}" fill="${b.color}">${b.name.toUpperCase()}</text><text class="sk-bs" data-b="${b.id}" x="${COLS[0] - 58}" y="${y - 67}">${esc(b.sub)} · ${spent}/${this.total(b.id)}</text>`;
       let prev = ROOT;
       for (const p of ps) {
         const [x, yy] = pos(p), open = spent >= TIER_REQ[p.tier], r = sv.perks[p.id] || 0;
@@ -109,17 +109,17 @@ export class SkillTree {
         // circuit trace: horizontal run, then a 45° jog
         const mx = prev[0] + (x - prev[0]) * 0.55;
         const d = prev === ROOT ? `M ${prev[0]} ${prev[1]} C ${prev[0] + 70} ${prev[1]}, ${x - 110} ${yy}, ${x - 42} ${yy}` : `M ${prev[0] + 42} ${prev[1]} H ${mx - Math.abs(yy - prev[1])} L ${mx} ${yy} H ${x - 42}`;
-        lines += `<path class="tr ${cls}${fresh}" d="${d}" style="--bc:${b.color}"/>`;
+        lines += `<path class="tr ${cls}${fresh}" data-b="${b.id}" d="${d}" style="--bc:${b.color}"/>`;
         if (p.tier > 0) {
           const gx = mx + (x - 42 - mx) / 2, met = spent >= TIER_REQ[p.tier];
-          gates += `<g class="gate ${met ? 'met' : ''}" transform="translate(${gx} ${yy})" style="--bc:${b.color}"><path d="M0 -11 L11 0 L0 11 L-11 0 Z"/><text y="4">${TIER_REQ[p.tier]}</text></g>`;
+          gates += `<g class="gate ${met ? 'met' : ''}" data-b="${b.id}" transform="translate(${gx} ${yy})" style="--bc:${b.color}"><path d="M0 -11 L11 0 L0 11 L-11 0 Z"/><text y="4">${TIER_REQ[p.tier]}</text></g>`;
         }
         prev = [x, yy];
         nodes += this.nodeSvg(p, x, yy, b);
       }
     }
     const root = `<g class="sk-root" transform="translate(${ROOT[0]} ${ROOT[1]})"><circle r="70" fill="url(#skroot)"/><circle r="40" class="rr"/><circle r="33" class="ri"/>${glyph('root', 40)}<text y="62" class="sk-lbl">OATH</text><text y="80" class="sk-rk">Lv ${sv.level}</text></g>`;
-    return `<svg id="sksvg" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid meet">${defs}<g class="bg">${bg}</g><g class="lines">${lines}</g><g class="gates">${gates}</g>${root}<g class="nodes">${nodes}</g></svg>`;
+    return `<svg id="sksvg" data-focus="${this.view}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid meet">${defs}<g class="bg">${bg}</g><g class="lines">${lines}</g><g class="gates">${gates}</g>${root}<g class="nodes">${nodes}</g></svg>`;
   }
   nodeSvg(p, x, y, b) {
     const sv = this.g.save, r = sv.perks[p.id] || 0, st = this.state(p);
@@ -133,7 +133,7 @@ export class SkillTree {
       segs.push(p.max === 1 ? `<circle r="${rr}" class="pip ${i < r ? 'f' : ''}"/>` : `<path class="pip ${i < r ? 'f' : ''}" d="M ${pt(a0)} A ${rr} ${rr} 0 ${large} 1 ${pt(a1)}"/>`);
     }
     const above = false, ly = R + 30;
-    return `<g class="nd ${st} ${this.sel === p.id ? 'sel' : ''} ${this.just === p.id ? 'just' : ''}" data-perk="${p.id}" transform="translate(${x} ${y})" style="--bc:${b.color}">
+    return `<g data-b="${p.branch}" class="nd ${st} ${this.sel === p.id ? 'sel' : ''} ${this.just === p.id ? 'just' : ''}" data-perk="${p.id}" transform="translate(${x} ${y})" style="--bc:${b.color}">
       <circle r="${R + 16}" class="hit"/>
       ${this.sel === p.id ? `<circle r="${R + 15}" class="selring"/>` : ''}
       ${segs.join('')}
@@ -244,6 +244,7 @@ export class SkillTree {
     };
     requestAnimationFrame(step);
     document.querySelectorAll('.sk-views button').forEach((b) => b.classList.toggle('on', b.dataset.v === view));
+    document.getElementById('sksvg')?.setAttribute('data-focus', view);
   }
   select(id) {
     this.sel = id; this.armed = false; this.armedRespec = false;

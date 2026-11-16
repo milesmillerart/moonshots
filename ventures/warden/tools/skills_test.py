@@ -117,10 +117,13 @@ def desktop(p):
         pg.click(f".sk-views [data-v={br}]"); time.sleep(2.5)
         vb = [float(x) for x in pg.get_attribute("#sksvg", "viewBox").split()]
         assert abs(vb[2] - 860) < 1 and abs(vb[3] - 245) < 1, vb
+        other = "circuit" if br != "circuit" else "blade"
+        op = pg.evaluate(f"[+getComputedStyle(document.querySelector('.nd[data-b={br}]')).opacity, +getComputedStyle(document.querySelector('.nd[data-b={other}]')).opacity]")
+        assert op[0] > 0.9 and op[1] < 0.3, op
         pg.screenshot(path=str(OUT / f"desktop-04-branch-{br}.png"))
     pg.click(".sk-views [data-v=all]"); time.sleep(2.5)
     assert pg.get_attribute("#sksvg", "viewBox").split()[2] == "1020", pg.get_attribute("#sksvg", "viewBox")
-    print("  OK Blade / Bulwark / Circuit tabs zoom the view, All zooms back")
+    print("  OK Blade / Bulwark / Circuit tabs zoom the view and dim the other branches, All zooms back")
     perks = G("return JSON.stringify(g.save.perks)")
     # persistence
     pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000)

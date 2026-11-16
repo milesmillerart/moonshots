@@ -117,6 +117,7 @@ def run(p, devname, tag, full):
     if full: pg.screenshot(path=str(OUT / f"{tag}-06-skills.png"))
     tap_el("#panel [data-act=close]"); time.sleep(0.5)
     assert not G("return g.ui.isOpen")
+    pg.wait_for_selector("#touch [data-t=pause]", state="visible", timeout=20000)
     tap_el("#touch [data-t=pause]"); time.sleep(0.6)
     assert G("return g.ui.screen") == "pause"
     if full: pg.screenshot(path=str(OUT / f"{tag}-07-pause.png"))

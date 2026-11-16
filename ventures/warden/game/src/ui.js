@@ -205,7 +205,7 @@ export class UI {
     if (document.pointerLockElement) document.exitPointerLock();
     this.render(); audio.ui();
   }
-  close() { if (this.screen === 'armory') this.armory.closed(); this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = ''; audio.ui(); this.g.onPanelClosed(); }
+  close() { if (this.screen === 'armory') this.armory.closed(); this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = ''; audio.ui(); this.g.onPanelClosed(); if (this.g.touch?.on) this.g.touch.update(); }
   toggle(name) { if (this.screen === name) this.close(); else this.open(name); }
   tabs() {
     const T = !!this.g.touch?.on;
