@@ -2,13 +2,15 @@
 import * as THREE from '../vendor/three-warden.r187.min.js';
 import { buildWarden } from './models.js';
 import { moveCircle } from './world.js';
-import { clamp, damp, dampAngle, smooth } from './util.js';
+import { angleDiff, clamp, damp, dampAngle, smooth } from './util.js';
 import { audio } from './audio.js';
 
 const N = (x, y, z) => new THREE.Vector3(x, y, z).normalize();
 const P = (x, y, z) => new THREE.Vector3(x, y, z);
 // Poses in torso space. Character faces +Z; its right hand side is -X.
 const IDLE = { g: P(-0.4, -0.12, 0.22), d: N(-0.55, -0.42, 0.72), tw: -0.12 };
+// Poster stance when calm: point planted, both hands resting on the grip.
+const REST = { g: P(0.0, 0.27, 0.34), d: N(0, -0.97, 0.2), tw: 0 };
 const RUN = { g: P(-0.36, -0.2, 0.05), d: N(-0.3, -0.35, -0.89), tw: -0.15 };
 const ATTACKS = {
   l1: { keys: [{ g: P(-0.42, 0.38, 0.12), d: N(-0.8, 0.35, -0.45), tw: -0.55 }, { g: P(-0.08, 0.25, 0.58), d: N(-0.15, 0.05, 1), tw: 0 }, { g: P(0.38, 0.14, 0.32), d: N(0.95, -0.1, 0.15), tw: 0.55 }],
@@ -39,6 +41,9 @@ export class Player {
     this.bladeSpeed = 0;
     this.lastTip = new THREE.Vector3();
     this.riposte = 0; this.perfectCd = 0; this.chargeFx = false;
+    this.restT = 0; this.turnLean = 0; this.lastFace = this.face; this.cloth = null;
+    const motes = this.u.sword.userData.motes; // red mist + embers live in world space
+    if (motes) for (const k in motes) game.scene.add(motes[k].pts);
   }
   get stats() { return this.game.stats; }
   forward(out = new THREE.Vector3()) { return out.set(Math.sin(this.face), 0, Math.cos(this.face)); }
@@ -195,11 +200,26 @@ export class Player {
     const spd = Math.hypot(this.vel.x, this.vel.z);
     // legs
     this.walkPh += dt * spd * 2.1;
-    const sw = Math.sin(this.walkPh) * Math.min(1, spd / 4) * 0.7;
-    u.legs[0].thigh.rotation.x = damp(u.legs[0].thigh.rotation.x, sw, 20, dt);
-    u.legs[1].thigh.rotation.x = damp(u.legs[1].thigh.rotation.x, -sw, 20, dt);
-    u.legs[0].shin.rotation.x = Math.max(0, -Math.cos(this.walkPh)) * 0.8 * Math.min(1, spd / 4);
-    u.legs[1].shin.rotation.x = Math.max(0, Math.cos(this.walkPh)) * 0.8 * Math.min(1, spd / 4);
+    const walkK = Math.min(1, spd / 4), run = clamp((spd - 4.3) / 2.3, 0, 1);
+    const sw = Math.sin(this.walkPh) * walkK * (0.62 + 0.22 * run);
+    // attack stance: left foot steps into the cut, right foot braces behind
+    let st = 0;
+    if (this.state === 'attack') {
+      const T = this.t * (1 + this.stats.aspd / 100), [tw, ta, tr] = this.atk.t;
+      st = smooth(clamp(T / tw, 0, 1)) * (1 - smooth(clamp((T - tw - ta) / tr, 0, 1))) * (this.atk.heavy ? 1 : 0.7);
+    }
+    const shinA = Math.max(0, -Math.cos(this.walkPh)) * (0.8 + 0.5 * run) * walkK, shinB = Math.max(0, Math.cos(this.walkPh)) * (0.8 + 0.5 * run) * walkK;
+    u.legs[0].thigh.rotation.x = damp(u.legs[0].thigh.rotation.x, sw * (1 - st) + 0.36 * st, 20, dt);
+    u.legs[1].thigh.rotation.x = damp(u.legs[1].thigh.rotation.x, -sw * (1 - st) - 0.48 * st, 20, dt);
+    u.legs[0].shin.rotation.x = shinA * (1 - st) + 0.22 * st;
+    u.legs[1].shin.rotation.x = shinB * (1 - st) + 0.5 * st;
+    // stride weight: hips swing and roll with each step, the torso counter-twists below
+    u.hips.rotation.y = Math.sin(this.walkPh) * 0.11 * walkK * (1 - st);
+    u.hips.rotation.z = Math.cos(this.walkPh) * 0.035 * walkK;
+    u.hips.position.x = Math.cos(this.walkPh) * 0.018 * walkK;
+    // lean into turns
+    const dFace = angleDiff(this.lastFace, this.face) / Math.max(dt, 1e-3); this.lastFace = this.face;
+    this.turnLean = damp(this.turnLean, clamp(-dFace * 0.035 * walkK, -0.22, 0.22), 8, dt);
     let crouch = this.state === 'attack' ? 0.06 : 0, lean = 0.12;
     if (this.state === 'attack' && this.atk.heavy) {
       // heavy: sink the hips and lean back through the wind-up, then throw the weight forward
@@ -222,22 +242,32 @@ export class Player {
       } else target = lerpPose(A.keys[2], IDLE, smooth(clamp((T - tw - ta) / tr, 0, 1)) * 0.6);
       this.pose = target;
     } else {
-      const base = spd > 5 ? RUN : IDLE;
+      const calm = this.state === 'move' && spd < 0.3 && !this.game.lockTarget && !this.game.enemies.some((e) => !e.dead && e.aggro);
+      this.restT = calm ? this.restT + dt : 0;
+      const resting = this.restT > 2.2;
+      const base = spd > 5 ? RUN : resting ? REST : IDLE;
       const tgt = this.state === 'dodge' ? RUN : base;
-      this.pose.g.lerp(tgt.g, 1 - Math.exp(-10 * dt));
-      this.pose.d.lerp(tgt.d, 1 - Math.exp(-10 * dt)).normalize();
+      const rate = resting ? 3.5 : 10;
+      this.pose.g.lerp(tgt.g, 1 - Math.exp(-rate * dt));
+      this.pose.d.lerp(tgt.d, 1 - Math.exp(-rate * dt)).normalize();
+      if (resting) this.edgeDir.lerp(tmpC.set(0, 0, 1), 1 - Math.exp(-4 * dt)).normalize();
       this.pose.tw = damp(this.pose.tw, tgt.tw + (spd > 0.5 ? Math.sin(this.walkPh) * 0.06 : 0), 10, dt);
       // idle breathing
       this.pose.g.y += Math.sin(this.t * 2) * 0.0015;
     }
-    u.torso.rotation.y = this.pose.tw;
-    u.torso.rotation.x = this.state === 'attack' ? this.atkLean : spd > 5 ? 0.18 : 0.04;
+    u.torso.rotation.y = this.pose.tw - u.hips.rotation.y * 0.8;
+    u.torso.rotation.x = this.state === 'attack' ? this.atkLean : 0.04 + 0.15 * run + (this.restT > 2.2 ? 0.03 : 0);
+    // idle breathing: chest rises, helm dips a touch
+    const br = Math.sin(this.t * 1.9) * (spd < 0.5 && this.state !== 'attack' ? 1 : 0.3);
+    u.torso.position.y = 0.12 + br * 0.006;
+    u.head.rotation.x = -0.035 * br + (this.restT > 2.2 ? 0.12 : 0);
     // dodge roll
     if (this.state === 'dodge') {
       const k = clamp(this.t / 0.52, 0, 1);
       u.body.rotation.x = smooth(k) * Math.PI * 2;
       u.body.position.y = -Math.sin(k * Math.PI) * 0.45;
-    } else { u.body.rotation.x = this.state === 'dead' ? damp(u.body.rotation.x, -1.45, 6, dt) : 0; u.body.position.y = this.state === 'dead' ? damp(u.body.position.y, -0.75, 6, dt) : 0; }
+      u.body.rotation.z = 0;
+    } else { u.body.rotation.z = this.state === 'dead' ? 0 : this.turnLean; u.body.rotation.x = this.state === 'dead' ? damp(u.body.rotation.x, -1.45, 6, dt) : 0; u.body.position.y = this.state === 'dead' ? damp(u.body.position.y, -0.75, 6, dt) : 0; }
     if (this.state === 'hurt') u.torso.rotation.x = -0.25;
     // sword orientation from pose: y = blade dir, x = edge (leading direction of motion)
     const d = this.pose.d;
@@ -261,30 +291,95 @@ export class Player {
     }
     this.capeAndBlade(dt, spd, this.state === 'attack' ? 1 : 0);
   }
+  // Tattered cape: a small verlet cloth pinned under the pauldrons, simulated in world space so it
+  // trails behind movement, rolls and turns; kept behind the back/legs with a cheap body proxy.
+  simCape(dt, spd) {
+    const u = this.u, cape = u.cape, geo = cape.geometry, pa = geo.attributes.position, rest = u.capeRest;
+    const W = u.capeSim.cols + 1, n = pa.count;
+    cape.updateWorldMatrix(true, false);
+    const mw = cape.matrixWorld, v = tmpA;
+    const c = this.cloth;
+    if (!c || dt <= 0) {
+      if (!c) {
+        const P = new Float32Array(n * 3), Q = new Float32Array(n * 3), cons = [];
+        for (let i = 0; i < n; i++) { v.fromArray(rest, i * 3).applyMatrix4(mw); v.toArray(P, i * 3); v.toArray(Q, i * 3); }
+        const L = (a, b) => Math.hypot(rest[a * 3] - rest[b * 3], rest[a * 3 + 1] - rest[b * 3 + 1], rest[a * 3 + 2] - rest[b * 3 + 2]);
+        for (let i = 0; i < n; i++) {
+          const x = i % W;
+          if (x < W - 1) cons.push(i, i + 1, L(i, i + 1));
+          if (i + W < n) cons.push(i, i + W, L(i, i + W));
+          if (i + 2 * W < n) cons.push(i, i + 2 * W, -L(i, i + 2 * W)); // negative = stretch-only link
+        }
+        this.cloth = { P, Q, cons, inv: new THREE.Matrix4() };
+      }
+      return;
+    }
+    const { P, Q, cons, inv } = c;
+    // teleports (respawn, cutscene jumps): snap the cloth back to rest
+    v.fromArray(rest, 0).applyMatrix4(mw);
+    if (v.distanceToSquared(tmpB.fromArray(P, 0)) > 1.5) { this.cloth = null; return this.simCape(0, spd); }
+    inv.copy(mw).invert();
+    const steps = dt > 1 / 40 ? 2 : 1, h = Math.min(dt, 0.05) / steps, t = this.t;
+    const wk = (this.titleMode ? 0.5 + spd * 0.5 : 0.35) * 2.2;
+    const wx = (Math.sin(t * 0.7) * 0.6 + Math.sin(t * 2.3) * 0.3) * wk, wz = (Math.cos(t * 0.5) * 0.5 - 0.4) * wk;
+    const fr = Math.pow(0.965, h * 60);
+    for (let s = 0; s < steps; s++) {
+      for (let i = 0; i < n; i++) {
+        const k = i * 3;
+        if (i < W) { v.fromArray(rest, k).applyMatrix4(mw); P[k] = Q[k] = v.x; P[k + 1] = Q[k + 1] = v.y; P[k + 2] = Q[k + 2] = v.z; continue; }
+        const fl = Math.sin(t * 7 + i * 0.7) * 0.8 * wk;
+        for (let a = 0; a < 3; a++) {
+          const cur = P[k + a], vel = (cur - Q[k + a]) * fr;
+          Q[k + a] = cur;
+          P[k + a] = cur + vel + (a === 1 ? -9.8 : a === 0 ? wx + fl : wz + fl * 0.5) * h * h;
+        }
+      }
+      for (let it = 0; it < 3; it++) {
+        for (let q = 0; q < cons.length; q += 3) {
+          const a = cons[q] * 3, b = cons[q + 1] * 3;
+          let len = cons[q + 2];
+          const dx = P[b] - P[a], dy = P[b + 1] - P[a + 1], dz = P[b + 2] - P[a + 2];
+          const d = Math.hypot(dx, dy, dz) || 1e-6;
+          if (len < 0) { len = -len; if (d < len) continue; }
+          const diff = (d - len) / d;
+          const pinA = cons[q] < W, pinB = cons[q + 1] < W;
+          const wa = pinA ? 0 : pinB ? 1 : 0.5, wb = pinB ? 0 : pinA ? 1 : 0.5;
+          P[a] += dx * diff * wa; P[a + 1] += dy * diff * wa; P[a + 2] += dz * diff * wa;
+          P[b] -= dx * diff * wb; P[b + 1] -= dy * diff * wb; P[b + 2] -= dz * diff * wb;
+        }
+      }
+    }
+    // body proxy (cape-local space = torso space shifted): stay behind the back and the legs
+    for (let i = W; i < n; i++) {
+      const k = i * 3;
+      v.set(P[k], Math.max(P[k + 1], this.pos.y + 0.03), P[k + 2]).applyMatrix4(inv);
+      const ax = Math.abs(v.x);
+      let zl = v.y > -0.75 ? (ax < 0.29 ? 0.215 - 0.177 * Math.sqrt(1 - (ax / 0.29) ** 2) - 0.03 : 0.3) : 0.07;
+      if (v.y > -0.2 && ax > 0.2) zl = Math.min(zl, 0.06); // under the pauldrons
+      if (v.z > zl) v.z = zl;
+      pa.setXYZ(i, v.x, v.y, v.z);
+      v.applyMatrix4(mw); P[k] = v.x; P[k + 1] = v.y; P[k + 2] = v.z;
+    }
+    for (let i = 0; i < W; i++) pa.setXYZ(i, rest[i * 3], rest[i * 3 + 1], rest[i * 3 + 2]);
+    pa.needsUpdate = true;
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
+  }
   capeAndBlade(dt, spd, act) {
     const u = this.u;
-    // cape sway
-    const cp = u.cape.geometry.attributes.position, rest = u.capeRest;
-    const sway = Math.min(1.2, spd / 5);
-    for (let i = 0; i < cp.count; i++) {
-      const y = rest[i * 3 + 1], k = -y / 1.45;
-      const flutter = Math.sin(this.t * 6 + rest[i * 3] * 3 + y * 4) * 0.04 * k;
-      cp.array[i * 3 + 2] = rest[i * 3 + 2] - (sway * 0.55 + 0.05) * k * k + flutter;
-      cp.array[i * 3 + 1] = y + sway * 0.18 * k * k;
-    }
-    cp.needsUpdate = true;
-    u.cape.geometry.computeVertexNormals();
-    // blade glow + crackle
+    this.simCape(dt, spd);
+    // blade: energy edge, glow sheath, light, lightning, mist
     const sw2 = u.sword.userData;
-    sw2.glowMat.opacity = 0.25 + 0.25 * act + 0.05 * Math.sin(this.t * 30);
+    sw2.glowMat.opacity = 0.3 + 0.3 * act + 0.06 * Math.sin(this.t * 30);
     let heat = 0;
     if (this.state === 'attack' && this.atk?.heavy) heat = clamp(this.t * (1 + this.stats.aspd / 100) / this.atk.t[0], 0, 1);
     if (this.riposte > 0) heat = Math.max(heat, 0.6 + 0.4 * Math.sin(this.t * 18));
-    sw2.light.intensity = 2 + act * 4 + heat * 7;
+    sw2.light.intensity = (2 + act * 4 + heat * 7) * (0.88 + 0.12 * Math.random());
     if (heat > 0) sw2.glowMat.opacity += heat * 0.3;
-    if (Math.random() < 0.35 + act * 0.6) sw2.crackle(0.4 + act * 0.8 + this.game.bladeRarity * 0.15); else sw2.arcs.geometry.setDrawRange(0, 0);
+    if (Math.random() < 0.35 + act * 0.6) sw2.crackle(0.4 + act * 0.8 + heat * 0.5 + this.game.bladeRarity * 0.15); else sw2.arcs.geometry.setDrawRange(0, 0);
+    sw2.tick(dt, this.t, act, heat);
     // trail sample
-    if (this.titleMode) { u.visorMat.color.setRGB(5, 0.25, 0.3); return; }
+    if (this.titleMode) { u.visorMat.color.setRGB(2.6, 0.07, 0.11); return; }
     const b = u.sword.localToWorld(tmpA.copy(sw2.baseLocal));
     const tp = u.sword.localToWorld(tmpB.copy(sw2.tipLocal));
     const cutting = this.state === 'attack' && this.t * (1 + this.stats.aspd / 100) >= this.atk.t[0] * 0.75;
@@ -292,7 +387,7 @@ export class Player {
     audio.setHum(Math.min(1, this.bladeSpeed / 15));
     this.lastTip.copy(tp);
     // hurt flash on visor
-    u.visorMat.color.setRGB(this.hurtT > 0 ? 8 : 5, this.hurtT > 0 ? 2 : 0.25, 0.3);
+    u.visorMat.color.setRGB(this.hurtT > 0 ? 6 : 2.6, this.hurtT > 0 ? 1.4 : 0.07, this.hurtT > 0 ? 0.3 : 0.11);
   }
   bladeTip() { return this.lastTip; }
 }

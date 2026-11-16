@@ -48,14 +48,22 @@ export class Enemy {
     // material flash / glow
     const f = this.flash > 0 ? 1 : 0;
     this.u.flesh.emissive.setRGB(f * 1.5, f * 1.4, f * 1.4);
-    const vein = this.telegraphing ? 6 : 2.4 + Math.sin(this.ph * 3) * 0.4;
+    const vein = this.telegraphing ? 4.5 : 1.5 + Math.sin(this.ph * 3) * 0.3;
     this.u.vein.color.setRGB(0.3 * vein / 2.4, vein, vein * 0.88);
     if (this.dead) {
       this.deadT += dt;
+      if (!this.shadowOff) { this.shadowOff = true; this.model.traverse((o) => { if (o.isMesh) o.castShadow = false; }); }
       this.model.rotation.x = Math.min(1.4, this.deadT * 4) * (this.type === 'skitter' ? 0 : 1);
-      this.model.position.y = -Math.max(0, this.deadT - 0.8) * 0.6;
+      this.model.position.y = -Math.max(0, this.deadT - 1.2) * 0.25;
       if (this.type === 'skitter') this.model.rotation.z = Math.min(3.1, this.deadT * 8);
-      return this.deadT < 3;
+      // the Rot lets go: flesh burns away from the inside in a teal-edged dissolve, shedding motes
+      const big = this.type === 'bellwright', k = clamp((this.deadT - (big ? 0.6 : 0.3)) / (big ? 2.2 : 1.4), 0, 1);
+      this.u.dissolve.value = k * 1.02;
+      if (k > 0 && k < 1 && Math.random() < (g.isTouch ? 0.35 : 0.8)) {
+        const s = big ? 2.3 : 1;
+        g.fx.burst(this.pos.clone().add(new THREE.Vector3(rand(-0.4, 0.4) * s, rand(0.15, 1.1) * s, rand(-0.4, 0.4) * s)), big ? 3 : 2, 0x46f0e0, 0.5, 1.4, 0.7);
+      }
+      return this.deadT < (big ? 3.2 : 2.0);
     }
     if (this.burn > 0) {
       this.burn -= dt; this.hp -= this.burnDps * dt;
@@ -175,15 +183,30 @@ export class Enemy {
     const moving = this.state === 'chase' || (this.state === 'wander' && this.wmove) || (this.state === 'attack' && T !== 'spitter');
     const sp = moving ? (T === 'skitter' ? 18 : 7) : 2;
     const ph = this.ph * sp;
+    const wk = this.state === 'windup' ? clamp(this.t / this.windT, 0, 1) : 0;
     for (const l of u.limbs) {
-      if (T === 'skitter') l.g.rotation.y = Math.sin(ph + l.i * 2 + (l.side > 0 ? 1 : 0)) * 0.4;
-      else if (l.arm) {
-        let base = Math.sin(ph * 0.5 + (l.side > 0 ? Math.PI : 0)) * 0.3 - 0.2;
-        if (this.state === 'windup') base = -2.2 * clamp(this.t / this.windT, 0, 1);
-        if (this.state === 'attack') base = 0.9;
+      if (T === 'skitter') {
+        const g = ph + l.i * 2 + (l.side > 0 ? 1 : 0);
+        l.g.rotation.y = Math.sin(g) * 0.4;
+        l.g.rotation.z = -l.side * (Math.max(0, Math.cos(g)) * (moving ? 0.28 : 0.04) + (this.state === 'windup' ? 0.25 * wk : 0));
+      } else if (l.arm) {
+        let base = Math.sin(ph * 0.5 + (l.side > 0 ? Math.PI : 0)) * 0.3 - 0.2, bend = -0.35 + Math.sin(ph * 0.5 + l.side) * 0.12;
+        if (this.state === 'windup') { base = -2.2 * wk; bend = -0.2 - 0.9 * wk; }
+        if (this.state === 'attack') { base = 0.9; bend = -0.05; }
+        if (this.state === 'stagger') bend = -0.9;
         l.g.rotation.x = base;
-      } else l.g.rotation.x = Math.sin(ph * 0.5 + (l.side > 0 ? Math.PI : 0)) * (moving ? 0.5 : 0.05);
+        if (l.fore) l.fore.rotation.x = bend;
+      } else {
+        const g = ph * 0.5 + (l.side > 0 ? Math.PI : 0);
+        l.g.rotation.x = Math.sin(g) * (moving ? 0.5 : 0.05);
+        if (l.shin) l.shin.rotation.x = 0.12 + Math.max(0, -Math.cos(g)) * (moving ? 0.7 : 0.05);
+      }
     }
+    // jaws gape on the wind-up, mandibles clack, the head twitches like something is wrong with it
+    if (u.jaw) u.jaw.rotation.x = this.state === 'windup' ? 0.55 * wk : this.state === 'attack' ? 0.6 : 0.1 + 0.07 * Math.sin(this.ph * 2.2);
+    if (u.mand) for (const m of u.mand) m.g.rotation.y = m.side * (this.state === 'windup' ? 0.55 * wk : 0.15 + 0.2 * Math.abs(Math.sin(this.ph * 6)));
+    if (u.head) u.head.rotation.z = Math.sin(this.ph * 2.3) * 0.1 + (Math.sin(this.ph * 5.7 + this.id) > 0.96 ? 0.3 : 0);
+    if (u.clapper) u.clapper.position.z = -0.04 + Math.sin(this.ph * 2.6) * 0.04;
     if (u.body) {
       u.body.rotation.z = Math.sin(this.ph * 1.3) * 0.06;
       if (this.state === 'windup') u.body.rotation.x = -0.25 * clamp(this.t / this.windT, 0, 1);
@@ -196,7 +219,7 @@ export class Enemy {
     const r = this.react * this.react * (this.elite ? 0.35 : 1);
     this.model.rotation.x = -0.32 * r;
     this.model.rotation.z = 0.16 * r * this.reactSide;
-    if (u.head) u.head.rotation.x = -0.6 * r;
+    if (u.head) u.head.rotation.x = (u.headBase || 0) - 0.6 * r;
     if (T !== 'spitter' && u.body) { const sq = 0.09 * r; u.body.scale.set(1 + sq, 1 - sq, 1 + sq); }
     if (u.bellMat) u.bellMat.emissive.setRGB(this.telegraphing ? 1.2 : 0.05, this.telegraphing ? 0.1 : 0.02, 0.05);
   }

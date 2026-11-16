@@ -44,9 +44,9 @@ export class Game {
     const statue = buildWarden({ statue: true }); statue.scale.setScalar(2.1); statue.position.set(0, 2.0, 0); statue.rotation.y = Math.PI * 0.85;
     scene.add(statue); posePoster(statue);
     // Story cast
-    this.brann = buildPerson({ coat: 0x2b2a2e, hood: false, lantern: true });
+    this.brann = buildPerson({ coat: 0x2b2a2e, hood: false, lantern: true, keys: true });
     this.mira = buildPerson({ coat: 0x3a2c24, kneel: true });
-    this.watch = buildPerson({ coat: 0x1f2226, hood: false });
+    this.watch = buildPerson({ coat: 0x1f2226, hood: false, helm: true, polearm: true });
     this.brann.position.set(1.7, 0, 44.6); this.mira.position.set(0, 0, 45.0); this.watch.position.set(-1.6, 0, 44.9);
     for (const n of [this.brann, this.mira, this.watch]) scene.add(n);
     this.cacheMarker = buildLoot('#ffb547', false, 2); this.cacheMarker.position.copy(POI.cache); scene.add(this.cacheMarker);

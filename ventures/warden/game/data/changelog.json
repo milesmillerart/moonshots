@@ -1,6 +1,22 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.4",
+    "title": "Graphics pass: the Synthblade, the Warden and the Rot",
+    "items": [
+      "The Synthblade is a real longsword now: dark faceted steel spine with a fuller, swept crossguard, wrapped grip and a gem pommel. Its single synth edge burns with a flowing, flickering energy shader, crackling lightning forks off it, and it sheds red mist and embers while casting red light on your armor and the street.",
+      "Swing trails are tapered, smoothed arcs that burn hot at the edge and fade fast, even at low frame rates.",
+      "The Warden is rebuilt: smooth black helm with a glowing red T-visor and cables running into the backplate, layered pauldrons, ridged breastplate, gorget, gauntlets, greaves, belt and pouches, all in scuffed metal that catches the light.",
+      "His tattered cape is real cloth now. It trails when you run, whips through rolls and lifts in the wind. Stand still out of combat and he plants the blade point-down, hands on the grip.",
+      "Walking and running carry weight (hip sway, counter-twist, leaning into turns), and attacks step into the cut.",
+      "The Rot looks wrong in a new way: lumpy, mottled flesh, exposed ribs, a cleaver grafted into a Husk's arm, Skitters with clacking mandibles and jointed legs, and a Bile Spitter with a lamprey mouth. Jaws gape before they strike. Dead abominations burn away in a teal-edged dissolve.",
+      "The Bellwright is a hunched bell-ringer now: a cracked bronze bell worn as a head with eyes glowing under the rim, organ-pipe chimneys on its hump, a spiked iron clapper for a hammer and a chain of small bells.",
+      "Townsfolk wear real cloaks and hoods. The gaoler carries his lantern and keys, and the watchman has a kettle helm and a halberd.",
+      "Phones get lighter models, fewer lightning arcs and fewer particles. Draw calls are about the same as before."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.3",
     "title": "Mobile controls: Warden on your phone",
     "items": [

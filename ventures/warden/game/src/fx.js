@@ -1,6 +1,23 @@
 // Combat feedback: sparks, blade trail, lightning, rings, damage numbers.
 import * as THREE from '../vendor/three-warden.r187.min.js';
 import { softCanvas } from './world.js';
+import { detectTouch } from './touch.js';
+
+const LOWFX = detectTouch();
+// Swing trail: a tapered additive ribbon, Catmull-Rom smoothed between frames so fast cuts stay
+// round even at low frame rates. Hot pink-white at the edge, deep red toward the inside, fades with age.
+const TRAIL_VS = `attribute vec3 aT; varying vec3 vT; void main(){ vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const TRAIL_FS = `varying vec3 vT;
+void main(){
+  float k = vT.x, s = vT.y, a = vT.z;
+  float fade = pow(1.0 - k, 2.2);
+  float edge = pow(s, 2.2);
+  float streak = 0.72 + 0.28 * sin(k * 70.0 + s * 9.0);
+  vec3 col = mix(vec3(0.5, 0.0, 0.1), vec3(3.6, 0.45, 1.25), edge) + vec3(3.0, 2.0, 2.4) * pow(s, 16.0) * (1.0 - k);
+  float inner = smoothstep(0.0, 0.35, s);
+  gl_FragColor = vec4(col * a * fade * (0.035 + 0.75 * edge * edge) * inner * streak, 1.0);
+}`;
+const CR = (p0, p1, p2, p3, t) => { const t2 = t * t, t3 = t2 * t; return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3); };
 
 export class FX {
   constructor(scene, camera) {
@@ -16,15 +33,17 @@ export class FX {
     this.points = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.075, map: sprite, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
     this.points.frustumCulled = false; scene.add(this.points);
     // blade trail ribbon
-    this.TN = 18;
+    this.TN = 20; this.SUB = LOWFX ? 2 : 4;
     this.trail = [];
+    const NV = (this.TN - 1) * this.SUB + 1; this.NV = NV;
     const tg = new THREE.BufferGeometry();
-    tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.TN * 2 * 3), 3));
-    tg.setAttribute('color', new THREE.BufferAttribute(new Float32Array(this.TN * 2 * 4), 4));
+    tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(NV * 2 * 3), 3));
+    tg.setAttribute('aT', new THREE.BufferAttribute(new Float32Array(NV * 2 * 3), 3));
     const idx = [];
-    for (let i = 0; i < this.TN - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    for (let i = 0; i < NV - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     tg.setIndex(idx);
-    this.trailMesh = new THREE.Mesh(tg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+    tg.setDrawRange(0, 0);
+    this.trailMesh = new THREE.Mesh(tg, new THREE.ShaderMaterial({ vertexShader: TRAIL_VS, fragmentShader: TRAIL_FS, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
     this.trailMesh.frustumCulled = false; scene.add(this.trailMesh);
     this.rings = []; this.bolts = []; this.nums = [];
     this.numLayer = document.getElementById('nums');
@@ -44,6 +63,33 @@ export class FX {
   trailPush(base, tip, active) {
     this.trail.unshift({ b: base.clone(), t: tip.clone(), a: active ? 1 : 0 });
     if (this.trail.length > this.TN) this.trail.pop();
+  }
+  updateTrail(dt) {
+    const tr = this.trail, geo = this.trailMesh.geometry;
+    for (const s of tr) s.a *= Math.pow(0.0008, dt);
+    const m = tr.length;
+    if (m < 2 || tr[0].a + tr[Math.min(3, m - 1)].a < 0.004) { geo.setDrawRange(0, 0); return; }
+    const pa = geo.attributes.position.array, ta = geo.attributes.aT.array, S = this.SUB;
+    const at = (i) => tr[Math.max(0, Math.min(m - 1, i))];
+    const total = (m - 1) * S;
+    let v = 0;
+    for (let i = 0; i < m - 1; i++) {
+      const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
+      for (let j = 0; j < S || (i === m - 2 && j === S); j++) {
+        const t = j / S, k = (i * S + j) / total;
+        const tx = CR(p0.t.x, p1.t.x, p2.t.x, p3.t.x, t), ty = CR(p0.t.y, p1.t.y, p2.t.y, p3.t.y, t), tz = CR(p0.t.z, p1.t.z, p2.t.z, p3.t.z, t);
+        const bx = CR(p0.b.x, p1.b.x, p2.b.x, p3.b.x, t), by = CR(p0.b.y, p1.b.y, p2.b.y, p3.b.y, t), bz = CR(p0.b.z, p1.b.z, p2.b.z, p3.b.z, t);
+        const w = 0.8 * Math.pow(1 - k, 1.1); // taper: the inner edge slides out toward the tip with age
+        const a = p1.a + (p2.a - p1.a) * t;
+        pa[v * 6] = tx + (bx - tx) * w; pa[v * 6 + 1] = ty + (by - ty) * w; pa[v * 6 + 2] = tz + (bz - tz) * w;
+        pa[v * 6 + 3] = tx; pa[v * 6 + 4] = ty; pa[v * 6 + 5] = tz;
+        ta[v * 6] = k; ta[v * 6 + 1] = 0; ta[v * 6 + 2] = a;
+        ta[v * 6 + 3] = k; ta[v * 6 + 4] = 1; ta[v * 6 + 5] = a;
+        v++;
+      }
+    }
+    geo.setDrawRange(0, Math.max(0, v - 1) * 6);
+    geo.attributes.position.needsUpdate = true; geo.attributes.aT.needsUpdate = true;
   }
   ring(pos, maxR, dur, color, width = 0.5) {
     const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2.5), transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
@@ -87,18 +133,7 @@ export class FX {
     this.points.geometry.attributes.position.needsUpdate = true;
     this.points.geometry.attributes.color.needsUpdate = true;
     // trail
-    const pa = this.trailMesh.geometry.attributes.position.array, ca = this.trailMesh.geometry.attributes.color.array;
-    for (const s of this.trail) s.a *= Math.pow(0.0008, dt);
-    for (let i = 0; i < this.TN; i++) {
-      const s = this.trail[Math.min(i, this.trail.length - 1)];
-      if (!s) break;
-      const k = 1 - i / this.TN;
-      pa.set([s.b.x, s.b.y, s.b.z], i * 6); pa.set([s.t.x, s.t.y, s.t.z], i * 6 + 3);
-      const a = s.a * k;
-      ca.set([2.4 * a, 0.12 * a, 0.5 * a, a * 0.2], i * 8); ca.set([4 * a, 0.5 * a, 1.2 * a, a], i * 8 + 4);
-    }
-    this.trailMesh.geometry.attributes.position.needsUpdate = true;
-    this.trailMesh.geometry.attributes.color.needsUpdate = true;
+    this.updateTrail(dt);
     // rings / telegraphs
     for (let i = this.rings.length - 1; i >= 0; i--) {
       const r = this.rings[i]; r.t += dt;
