@@ -302,7 +302,7 @@ function makeMotes(n, size) {
 // (contained barrier in the channel). Shape and size never change. Statues are always Dormant stone.
 export function buildSword({ statue = false, stone = null } = {}) {
   const g = new THREE.Group();
-  const steel = stone || new THREE.MeshStandardMaterial({ color: 0x4a5059, metalness: 1, roughness: 0.4, roughnessMap: grunge(), envMapIntensity: 1.9 });
+  const steel = stone || new THREE.MeshStandardMaterial({ color: 0x7a808a, metalness: 0.8, roughness: 0.42, roughnessMap: grunge(), envMapIntensity: 1.9 });
   const web = stone || new THREE.MeshStandardMaterial({ color: 0x0b0c0f, metalness: 0.85, roughness: 0.5, envMapIntensity: 0.8 });
   const dark = stone || MAT.plate(), trim = stone || MAT.trim();
   const leather = stone || new THREE.MeshStandardMaterial({ color: 0x120d0b, roughness: 0.9 });
