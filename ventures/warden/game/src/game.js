@@ -397,7 +397,7 @@ export class Game {
   }
   pickup(l) {
     const sv = this.save;
-    sv.bag.push(l.item); this.scene.remove(l.m);
+    l.item.got = Date.now(); l.item.seen = false; sv.bag.push(l.item); this.scene.remove(l.m);
     const col = l.item.kind === 'core' ? CORES[l.item.core].color : RARITIES[effectiveRarity(l.item)].color;
     this.ui.toast(`${itemName(l.item)}`, 'loot', col);
     audio.pickup(effectiveRarity(l.item));
@@ -411,8 +411,19 @@ export class Game {
     if (sv.equip[it.slot]) sv.bag.push(sv.equip[it.slot]);
     sv.equip[it.slot] = it; this.refreshStats(); this.persist('equip'); audio.pickup(2);
   }
+  toggleFav(uid) {
+    const it = this.findGear(uid) || this.save.bag.find((x) => x.uid === uid); if (!it) return;
+    it.fav = !it.fav; audio.ui(); this.persist('lock');
+  }
+  // bulk salvage: every unlocked pack item that passes test(it). Returns [count, scrap].
+  salvageMany(test) {
+    const sv = this.save; let n = 0, v = 0;
+    sv.bag = sv.bag.filter((it) => { if (it.fav || !test(it)) return true; n++; v += salvageValue(it); return false; });
+    if (n) { sv.scrap += v; this.ui.toast(`Salvaged ${n} item${n > 1 ? 's' : ''} for ${v} scrap`); audio.forge(); this.persist('salvage'); }
+    return [n, v];
+  }
   salvage(uid) {
-    const sv = this.save, i = sv.bag.findIndex((x) => x.uid === uid); if (i < 0) return;
+    const sv = this.save, i = sv.bag.findIndex((x) => x.uid === uid); if (i < 0 || sv.bag[i].fav) return;
     const v = salvageValue(sv.bag[i]); sv.bag.splice(i, 1); sv.scrap += v; this.ui.toast(`Salvaged for ${v} scrap`); this.persist('salvage');
   }
   findGear(uid) { const sv = this.save; return Object.values(sv.equip).find((x) => x?.uid === uid) || sv.bag.find((x) => x.uid === uid); }

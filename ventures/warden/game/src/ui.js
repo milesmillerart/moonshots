@@ -4,6 +4,8 @@ import { itemLines, itemName, effectiveRarity, upgradeCost, salvageValue, MAX_UP
 import { audio } from './audio.js';
 import { fmt } from './util.js';
 import * as Save from './save.js';
+import { Armory } from './inventory.js';
+import { itemIcon } from './icons.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -15,7 +17,13 @@ export class UI {
     this.hud = $('#hud'); this.panel = $('#panel'); this.dlg = $('#dialogue');
     this.panel.addEventListener('click', (e) => this.onClick(e));
     this.panel.addEventListener('change', (e) => { if (e.target.id === 'impfile') this.readImportFile(e.target); });
-    this.panel.addEventListener('mouseover', (e) => { const el = e.target.closest('[data-item]'); if (el && this.screen === 'armory') { this.hover = el.dataset.item; this.renderDetail(); } });
+    this.armory = new Armory(this);
+    this.panel.addEventListener('mouseover', (e) => {
+      if (this.screen !== 'armory') return;
+      const el = e.target.closest('[data-item]');
+      if (el) this.armory.onHover(el.dataset.item);
+      else if (this.armory.hover && !e.target.closest('#invdetail')) { this.armory.hover = null; this.armory.renderDetail(); }
+    });
     $('#title').addEventListener('click', (e) => this.onTitleClick(e));
     this.toasts = $('#toasts');
     this.lastHud = 0;
@@ -195,7 +203,7 @@ export class UI {
     if (document.pointerLockElement) document.exitPointerLock();
     this.render(); audio.ui();
   }
-  close() { this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = ''; audio.ui(); this.g.onPanelClosed(); }
+  close() { if (this.screen === 'armory') this.armory.closed(); this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = ''; audio.ui(); this.g.onPanelClosed(); }
   toggle(name) { if (this.screen === name) this.close(); else this.open(name); }
   tabs() {
     const T = !!this.g.touch?.on;
@@ -205,7 +213,8 @@ export class UI {
   }
   render() {
     const s = this.screen; if (!s) return;
-    if (s === 'armory') this.panel.innerHTML = this.tabs() + this.armoryHtml();
+    if (s !== 'armory') this.armory.preview?.stop();
+    if (s === 'armory') this.panel.innerHTML = this.tabs() + this.armory.html();
     else if (s === 'skills') this.panel.innerHTML = this.tabs() + this.skillsHtml();
     else if (s === 'forge') this.panel.innerHTML = this.tabs() + this.forgeHtml();
     else if (s === 'pause') this.panel.innerHTML = this.pauseHtml();
@@ -215,13 +224,13 @@ export class UI {
     else if (s === 'import') this.panel.innerHTML = this.importHtml();
     else if (s === 'dead') this.panel.innerHTML = `<div class="card center"><h2 class="red">You have fallen</h2><p>The Ward endures. The forge-wardens drag you back to the Plaza.</p><button data-act="respawn" class="primary">Rise, Warden</button></div>`;
     this.panel.className = 'panel ' + s;
+    if (s === 'armory') this.armory.afterRender();
   }
   itemCard(it, where) {
     const r = effectiveRarity(it);
-    const icon = it.kind === 'core' ? '◆' : SLOTS.find((x) => x.id === it.slot).icon;
     const col = it.kind === 'core' ? CORES[it.core].color : rc(it);
     return `<div class="item r${r} ${this.sel === it.uid || this.forgeSel === it.uid ? 'sel' : ''}" data-item="${it.uid}" data-where="${where}" style="--rc:${col}">
-      <span class="ic">${icon}</span><span class="nm">${esc(itemName(it))}</span>
+      <span class="ic">${itemIcon(it, 26)}</span><span class="nm">${esc(itemName(it))}</span>
       ${it.kind === 'gear' ? `<span class="sk">${'◆'.repeat(it.cores.length)}${'◇'.repeat(it.sockets - it.cores.length)}</span>` : ''}</div>`;
   }
   findItem(uid) {
@@ -261,16 +270,6 @@ export class UI {
       ${t ? `<div class="trait">Verdict trait: <b>${TRAITS[t].name}</b>. ${TRAITS[t].desc}</div>` : ''}
     </div>`;
   }
-  armoryHtml() {
-    const sv = this.g.save;
-    const cur = this.findItem(this.sel || this.hover)?.it;
-    return `<div class="cols3">
-      <div class="col"><h3>Equipped</h3>${SLOTS.map((sl) => `<div class="slot"><span class="sl">${sl.name}</span>${sv.equip[sl.id] ? this.itemCard(sv.equip[sl.id], 'equip') : '<div class="item none">Empty</div>'}</div>`).join('')}${this.statsHtml()}</div>
-      <div class="col"><h3>Pack <span class="muted">${sv.bag.length} items · ${fmt(sv.scrap)} scrap</span></h3><div class="bag">${sv.bag.length ? sv.bag.map((it) => this.itemCard(it, 'bag')).join('') : '<p class="muted">Nothing yet. Abominations drop gear and Cores.</p>'}</div>
-        <div class="legend">${RARITIES.map((r) => `<span style="color:${r.color}">■ ${r.name}</span>`).join(' ')}</div></div>
-      <div class="col" id="detail">${this.detailHtml(cur)}</div></div>`;
-  }
-  renderDetail() { const d = $('#detail'); if (d) d.innerHTML = this.detailHtml(this.findItem(this.sel || this.hover)?.it); }
   forgeHtml() {
     const sv = this.g.save;
     const all = [...SLOTS.map((s) => sv.equip[s.id]).filter(Boolean), ...sv.bag.filter((x) => x.kind === 'gear')];
@@ -403,7 +402,8 @@ export class UI {
   }
   onClick(e) {
     const g = this.g;
-    const tab = e.target.closest('[data-tab]'); if (tab) { this.screen = tab.dataset.tab; this.sel = null; this.render(); audio.ui(); return; }
+    const tab = e.target.closest('[data-tab]'); if (tab) { if (this.screen === 'armory' && tab.dataset.tab !== 'armory') this.armory.closed(); this.screen = tab.dataset.tab; this.sel = null; this.render(); audio.ui(); return; }
+    if (this.screen === 'armory' && !e.target.closest('[data-act],[data-set]') && this.armory.onClick(e)) { audio.ui(); return; }
     const set = e.target.closest('[data-set]');
     if (set) { g.applySetting(set.dataset.set, set.type === 'checkbox' ? set.checked : parseFloat(set.value)); return; }
     const act = e.target.closest('[data-act]');

@@ -13,7 +13,7 @@ export function rollRarity(luck = 0) {
 }
 
 export function makeCore(type, grade = 1) {
-  return { uid: uid(), kind: 'core', core: type || pick(Object.keys(CORES)), grade };
+  return { uid: uid(), kind: 'core', core: type || pick(Object.keys(CORES)), grade, got: Date.now(), seen: false, fav: false };
 }
 
 export function makeItem(slot, rarity, ilvl, opts = {}) {
@@ -30,6 +30,7 @@ export function makeItem(slot, rarity, ilvl, opts = {}) {
   const item = {
     uid: uid(), kind: 'gear', slot, rarity, ilvl: Math.max(1, ilvl), name, base,
     upgrade: 0, affixes, cores: [], sockets: RARITIES[rarity].sockets,
+    got: Date.now(), seen: false, fav: false,
   };
   // High-rarity drops can arrive with Cores already installed.
   if (!opts.noCores && rarity >= 3) {
@@ -45,7 +46,7 @@ export function randomGear(ilvl, luck = 0) {
 
 export function starterGear() {
   const o = { noCores: true };
-  return {
+  const g = {
     blade: makeItem('blade', 0, 1, { ...o, name: 'Ward-Issue Synthblade' }),
     helm: makeItem('helm', 0, 1, { ...o, name: 'Ninth Ward Visor Helm' }),
     cuirass: makeItem('cuirass', 0, 1, { ...o, name: 'Ninth Ward Cuirass' }),
@@ -53,7 +54,12 @@ export function starterGear() {
     greaves: makeItem('greaves', 0, 1, { ...o, name: 'Gaol-Iron Greaves' }),
     mantle: makeItem('mantle', 0, 1, { ...o, name: 'Tattered Mantle' }),
   };
+  for (const k in g) g[k].seen = true;
+  return g;
 }
+// Destiny-style power: item level, Temper and tier of everything worn.
+export function powerOf(it) { return it ? Math.round(it.ilvl * 10 + it.upgrade * 6 + effectiveRarity(it) * 12) : 0; }
+export function gearPower(equip) { return Math.round(SLOTS.reduce((a, s) => a + powerOf(equip[s.id]), 0) / SLOTS.length); }
 
 // Each installed Core raises the item one tier (capped at Sovereign).
 export const effectiveRarity = (it) => (it.kind === 'core' ? Math.min(4, it.grade + 1) : Math.min(4, it.rarity + it.cores.length));

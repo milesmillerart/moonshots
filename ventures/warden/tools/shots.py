@@ -80,7 +80,7 @@ def main():
         first = G("return g.save.bag.find(x=>x.kind==='gear' && x.rarity===4)?.uid")
         if first: pg.click(f"[data-item='{first}']"); settle(0.5)
         pg.screenshot(path=str(OUT / "07-inventory.png"))
-        pg.click("[data-act=equip]"); settle(0.3)
+        pg.click("#invdetail [data-inv=equip]"); settle(0.3)
         pg.keyboard.press("Escape"); settle(0.5)
         if G("return g.ui.isOpen"): G("g.ui.close()")
         # forge: walk there, temper + socket

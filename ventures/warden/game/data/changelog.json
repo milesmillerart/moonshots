@@ -1,6 +1,21 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.6",
+    "title": "The Armory, rebuilt: see your Warden, compare everything, manage your pack",
+    "items": [
+      "A new Armory screen [I] / GEAR: your Warden stands in the middle in his current gear, turning slowly (drag to spin him), with all six slots around him. His cape, visor and the light at his feet take on the tier of what you wear.",
+      "Every item has its own forged icon (Synthblades, helms, cuirasses, gauntlets, greaves, mantles and Cores) framed in its tier colour: Issued, Forged, Tempered, Relic, Sovereign.",
+      "Inspect any item to see its stats, Temper level (+0 to +10), installed Cores and empty sockets. Gear you are not wearing shows a side-by-side compare with green and red changes to your damage, armor, health, crit and more.",
+      "Filter the pack by slot or Cores and by tier, and sort by newest, rarity, power or slot. New pickups are marked NEW, and a green arrow flags gear stronger than what you wear.",
+      "Equip in two taps or clicks: select an item, then tap it again (or press Equip). Tap a worn slot to inspect it and see only gear for that slot.",
+      "Lock items to protect them from salvage. Salvaging asks for a confirm tap, and one button clears out every unlocked Issued item at once.",
+      "A full stat sheet and your Power rating sit under the Warden, and the Forge & Cores button takes you straight to tempering when you stand at the Forge.",
+      "Built for phones too: everything fits a landscape phone screen and nothing needs hover. Your saves carry over automatically."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.5",
     "title": "Saving you can trust: 3 slots, autosave, export and import",
     "items": [

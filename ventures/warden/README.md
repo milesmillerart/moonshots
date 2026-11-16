@@ -10,6 +10,7 @@ You are the Warden of Hallowmere's Ninth Ward: unapologetic, ruthless, fair, pro
   - `src/main.js` boot, renderer, bloom, adaptive resolution
   - `src/game.js` states, story, waves, combat resolution, loot, autosave triggers
   - `src/save.js` save slots, schema + migration, backups, export/import codes
+  - `src/inventory.js` Armory screen; `src/preview.js` live 3D paper-doll; `src/icons.js` procedural item icons
   - `src/player.js` movement, stamina, dodge, combo, procedural animation + arm IK
   - `src/enemies.js` Husk, Skitter, Bile Spitter, the Bellwright, projectiles
   - `src/world.js` the district, rain, height fog, neon, lights

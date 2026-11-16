@@ -23,6 +23,8 @@ V04 = """() => { const I = window.__wardenItems;
     bag: [I.makeItem('helm', 2, 4), I.makeCore('arc', 1)], scrap: 345, stims: 2, trait: 'measure',
     flags: { judged: true, waveA: true, waveB: true, starterCore: true, cache: true, tipRiposte: true },
     created: 1763300000000, kills: 21, pos: [-30, 0.5], hp: 77 };
+  const strip = (it) => { delete it.got; delete it.seen; delete it.fav; (it.cores || []).forEach(strip); };
+  Object.values(eq).forEach(strip); s.bag.forEach(strip);  // true 0.4 shape: no 0.6 item fields
   localStorage.setItem('warden.save.v1', JSON.stringify(s)); return s; }"""
 
 def snap_js():
@@ -32,7 +34,13 @@ def snap_js():
       pos: [Math.round(g.player.pos.x * 10) / 10, Math.round(g.player.pos.z * 10) / 10],
       ground: g.loot.map(l => l.item.uid).sort(), playTime: s.playTime })) })()"""
 
-def compare(a, b, keys, label):
+def unfield(x):
+    if isinstance(x, dict): return {k: unfield(v) for k, v in x.items() if k not in ("got", "seen", "fav")}
+    if isinstance(x, list): return [unfield(v) for v in x]
+    return x
+
+def compare(a, b, keys, label, strip=False):
+    if strip: a, b = unfield(a), unfield(b)
     bad = [k for k in keys if a.get(k) != b.get(k)]
     assert not bad, f"{label}: mismatch in {bad}: " + "; ".join(f"{k}: {a.get(k)!r} != {b.get(k)!r}" for k in bad)
     print(f"  OK {label}: {', '.join(keys)} all restored")
@@ -62,7 +70,8 @@ def desktop(p):
     print("  OK v0.4 save migrated to slot 1 (legacy key kept as backup); Continue shows:", sub.replace("\n", " "))
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(1)
     s = pg.evaluate(snap_js())
-    compare(s, v04, CORE, "v0.4 migration")
+    compare(s, v04, CORE, "v0.4 migration", strip=True)
+    assert pg.evaluate("window.__warden.game.save.schema") == 3 and pg.evaluate("Object.values(window.__warden.game.save.equip).every(i => typeof i.got === 'number' && i.fav === false)")
     assert s["pos"] == [-30, 0.5], s["pos"]; print("  OK position restored", s["pos"])
     # 2. make progress
     G("g.allowUnlockedAttack = true; g.noLock = true; g.applySetting('scale', 0.5);")
@@ -106,7 +115,7 @@ def desktop(p):
     full = pg.evaluate(snap_js())
     # 6. export -> wipe -> import
     G("g.ui.open('pause')"); time.sleep(0.4); pg.click("[data-act=export]"); time.sleep(0.5)
-    code = pg.input_value("#expcode"); assert code.startswith("WARDEN-SAVE.2."), code[:30]
+    code = pg.input_value("#expcode"); assert code.startswith("WARDEN-SAVE."), code[:30]
     pg.screenshot(path=str(OUT / "desktop-05-export.png"))
     with pg.expect_download() as dl: pg.click("[data-act=download]")
     path = OUT / dl.value.suggested_filename; dl.value.save_as(path)

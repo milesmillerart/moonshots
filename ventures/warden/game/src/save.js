@@ -6,7 +6,7 @@
 //   warden.save.v1       the single 0.1-0.4 save. Migrated into a slot once, then left in place as a backup.
 import { starterGear } from './items.js';
 
-export const SCHEMA = 2;
+export const SCHEMA = 3;
 export const SLOTS = 3;
 const LEGACY_KEY = 'warden.save.v1', META_KEY = 'warden.meta';
 const slotKey = (n) => `warden.slot.${n}`;
@@ -26,6 +26,7 @@ function setMeta(m) { try { ls.set(META_KEY, JSON.stringify(m)); } catch { /* ig
 
 const validItem = (it) => it && typeof it === 'object' && typeof it.uid === 'string' && (it.kind === 'gear' || it.kind === 'core');
 function fixGear(it) {
+  it.fav = !!it.fav; if (typeof it.got !== 'number') it.got = 0; if (it.seen == null) it.seen = true;
   if (it.kind !== 'gear') return it;
   it.upgrade = num(it.upgrade, 0, 0, 99); it.sockets = num(it.sockets, 0, 0, 6);
   it.cores = Array.isArray(it.cores) ? it.cores.filter(validItem) : [];
@@ -41,6 +42,16 @@ export function migrate(raw) {
   if (from < 2) {
     // 0.1-0.4 (v1): same core data, no play time / timestamps / ground loot / facing.
     s.playTime = 0; s.saved = s.saved || Date.now(); s.ground = []; s.migratedFrom = 1;
+  }
+  if (from < 3) {
+    // 0.6: items gain got (pickup time, for "newest" sorting), seen (NEW marker) and fav (lock against salvage).
+    // Older items keep their pack order as their age and count as already seen.
+    const t0 = (typeof s.created === 'number' ? s.created : Date.now() - 864e5);
+    let i = 0;
+    const stamp = (it) => { if (it && typeof it === 'object') { if (typeof it.got !== 'number') it.got = t0 + i++; if (it.seen == null) it.seen = true; it.fav = !!it.fav; } };
+    for (const k in obj(s.equip)) stamp(s.equip[k]);
+    (Array.isArray(s.bag) ? s.bag : []).forEach(stamp);
+    (Array.isArray(s.ground) ? s.ground : []).forEach((g) => stamp(g?.item));
   }
   s.schema = SCHEMA; s.v = SCHEMA;
   s.name = s.name.slice(0, 20) || 'Kade';

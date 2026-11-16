@@ -105,7 +105,7 @@ def run(p, devname, tag, full):
     # menus
     tap_el("#touch [data-t=armory]"); time.sleep(0.8)
     assert G("return g.ui.screen") == "armory"
-    tap_el("#panel .item[data-item]"); time.sleep(0.4)
+    tap_el("#panel [data-item]"); time.sleep(0.4)
     if full: pg.screenshot(path=str(OUT / f"{tag}-05-armory.png"))
     tap_el("#panel [data-tab=skills]"); time.sleep(0.6)
     assert G("return g.ui.screen") == "skills"
