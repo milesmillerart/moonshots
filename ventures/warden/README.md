@@ -8,7 +8,8 @@ You are the Warden of Hallowmere's Ninth Ward: unapologetic, ruthless, fair, pro
 - `game/`: the source, served as plain ES modules (no bundler needed)
   - `index.html`, `style.css`, `icon.svg`
   - `src/main.js` boot, renderer, bloom, adaptive resolution
-  - `src/game.js` states, story, waves, combat resolution, loot, save
+  - `src/game.js` states, story, waves, combat resolution, loot, autosave triggers
+  - `src/save.js` save slots, schema + migration, backups, export/import codes
   - `src/player.js` movement, stamina, dodge, combo, procedural animation + arm IK
   - `src/enemies.js` Husk, Skitter, Bile Spitter, the Bellwright, projectiles
   - `src/world.js` the district, rain, height fog, neon, lights

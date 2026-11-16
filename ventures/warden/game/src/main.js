@@ -2,6 +2,7 @@
 import * as THREE from '../vendor/three-warden.r187.min.js';
 import { Game } from './game.js';
 import * as Items from './items.js';
+import * as SaveSys from './save.js';
 import { detectTouch } from './touch.js';
 import { POI } from './world.js';
 
@@ -69,4 +70,5 @@ requestAnimationFrame(frame);
 // Test / debug hooks (used by the automated smoke test).
 window.__warden = { game, THREE, build: BUILD, stats, renderer };
 window.__wardenItems = Items;
+window.__wardenSave = SaveSys;
 window.__wardenPOI = POI;

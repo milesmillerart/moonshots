@@ -3,6 +3,7 @@ import { RARITIES, SLOTS, CORES, PERKS, BRANCHES, TIER_REQ, TRAITS } from './dat
 import { itemLines, itemName, effectiveRarity, upgradeCost, salvageValue, MAX_UPGRADE, computeStats } from './items.js';
 import { audio } from './audio.js';
 import { fmt } from './util.js';
+import * as Save from './save.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -13,41 +14,89 @@ export class UI {
     this.g = game; this.screen = null; this.sel = null; this.forgeSel = null;
     this.hud = $('#hud'); this.panel = $('#panel'); this.dlg = $('#dialogue');
     this.panel.addEventListener('click', (e) => this.onClick(e));
+    this.panel.addEventListener('change', (e) => { if (e.target.id === 'impfile') this.readImportFile(e.target); });
     this.panel.addEventListener('mouseover', (e) => { const el = e.target.closest('[data-item]'); if (el && this.screen === 'armory') { this.hover = el.dataset.item; this.renderDetail(); } });
     $('#title').addEventListener('click', (e) => this.onTitleClick(e));
     this.toasts = $('#toasts');
     this.lastHud = 0;
   }
-  // ---- title & naming -------------------------------------------------------
-  showTitle(hasSave, saveName) {
-    const t = $('#title'); t.classList.remove('hidden');
+  // ---- title, slots & naming ------------------------------------------------
+  showTitle() {
+    const t = $('#title'); t.classList.remove('hidden', 'naming-on', 'slots-on');
+    const slots = Save.listSlots(), last = Save.lastSlot(), any = slots.some(Boolean);
+    const L = last != null ? slots[last] : null;
     $('#menu').innerHTML = `
-      ${hasSave ? `<button data-act="continue" class="primary">Continue <span class="sub">${esc(saveName)}</span></button>` : ''}
-      <button data-act="new" class="${hasSave ? '' : 'primary'}">${hasSave ? 'New Warden' : 'Take the Oath'}</button>
+      ${L ? `<button data-act="continue" data-slot="${last}" class="primary">Continue <span class="sub">Warden ${esc(L.name)} · Level ${L.level} · ${esc(L.area || Save.chapterOf(L))}${L.playTime >= 1 ? ` · ${Save.fmtPlay(L.playTime)}` : ''}</span></button>` : ''}
+      ${any ? '<button data-act="slots">Wardens <span class="sub">Load, export or delete a save · 3 slots</span></button>' : ''}
+      <button data-act="new" class="${any ? '' : 'primary'}">${any ? 'New Warden' : 'Take the Oath'}</button>
+      <button data-act="import">Import save</button>
       <button data-act="news">What's new</button>
       <button data-act="controls">Controls</button>`;
-    this.hud.classList.add('hidden'); t.classList.remove('naming-on');
+    this.hud.classList.add('hidden');
   }
-  hideTitle() { $('#title').classList.add('hidden'); $('#title').classList.remove('naming-on'); }
+  // mode: 'load' (pick a Warden to play) or 'new' (pick a slot for a new Warden)
+  showSlots(mode = 'load') {
+    this.slotMode = mode; this.armed = null;
+    const t = $('#title'); t.classList.remove('naming-on'); t.classList.add('slots-on');
+    this.renderSlots();
+  }
+  renderSlots() {
+    const mode = this.slotMode, slots = Save.listSlots();
+    const tr = (s) => (s?.trait ? (TRAITS[s.trait]?.name || s.trait) : 'No verdict yet');
+    const arm = (k, label, armedLabel) => (this.armed === k ? armedLabel : label);
+    $('#menu').innerHTML = `<div class="slots">
+      <div class="slots-h">${mode === 'new' ? 'Choose a slot for your new Warden' : 'Your Wardens'}</div>
+      ${slots.map((s, n) => s ? `
+        <div class="slotcard${mode === 'load' && n === Save.lastSlot() ? ' last' : ''}" data-slot="${n}">
+          <div class="si"><div class="sn"><span class="no">${n + 1}</span>Warden ${esc(s.name)} <span class="lv">Lv ${s.level}</span></div>
+            <div class="sd">${esc(tr(s))} · ${esc(Save.chapterOf(s))}</div>
+            <div class="sd">${esc(s.area || 'Lantern Street')}${s.playTime >= 1 ? ` · played ${Save.fmtPlay(s.playTime)}` : ''} · saved ${Save.fmtAgo(s.saved)}</div></div>
+          <div class="sb">${mode === 'new'
+            ? `<button data-act="slot-new" data-slot="${n}" class="${this.armed === 'new' + n ? 'danger' : ''}">${arm('new' + n, 'Overwrite', 'Tap again: erase')}</button>`
+            : `<button data-act="slot-play" data-slot="${n}" class="primary">Play</button><button data-act="slot-export" data-slot="${n}">Export</button><button data-act="slot-del" data-slot="${n}" class="${this.armed === 'del' + n ? 'danger' : ''}">${arm('del' + n, 'Delete', 'Tap again')}</button>`}</div>
+        </div>` : `
+        <div class="slotcard empty" data-slot="${n}">
+          <div class="si"><div class="sn"><span class="no">${n + 1}</span>Empty slot</div><div class="sd">An oath not yet taken.</div></div>
+          <div class="sb"><button data-act="slot-new" data-slot="${n}" class="${mode === 'new' ? 'primary' : ''}">New Warden</button><button data-act="slot-import" data-slot="${n}">Import</button></div>
+        </div>`).join('')}
+      <button data-act="back">Back</button></div>`;
+  }
+  hideTitle() { $('#title').classList.add('hidden'); $('#title').classList.remove('naming-on', 'slots-on'); }
   onTitleClick(e) {
     const b = e.target.closest('button'); if (!b) return;
     audio.init(); audio.ui();
-    const a = b.dataset.act;
-    if (a === 'continue') this.g.continueGame();
+    const a = b.dataset.act, n = b.dataset.slot != null ? +b.dataset.slot : null;
+    const wasArmed = this.armed; this.armed = null;
+    if (a === 'continue') this.g.continueGame(n);
+    else if (a === 'slots') this.showSlots('load');
     else if (a === 'new') {
-      if (this.g.hasSave() && !confirm('Start a new Warden? Your current Warden will be lost.')) return;
-      this.showNaming();
-    } else if (a === 'news') this.open('news');
+      const empty = Save.firstEmpty();
+      if (!Save.listSlots().some(Boolean)) this.showNaming(empty < 0 ? 0 : empty);
+      else this.showSlots('new');
+    } else if (a === 'slot-play') this.g.continueGame(n);
+    else if (a === 'slot-new') {
+      if (Save.readSlot(n) && wasArmed !== 'new' + n) { this.armed = 'new' + n; this.renderSlots(); return; }
+      this.showNaming(n);
+    } else if (a === 'slot-del') {
+      if (wasArmed !== 'del' + n) { this.armed = 'del' + n; this.renderSlots(); return; }
+      Save.deleteSlot(n); this.toast(`Slot ${n + 1} deleted`);
+      if (Save.listSlots().some(Boolean)) this.renderSlots(); else this.showTitle();
+    } else if (a === 'slot-export') { this.exportSave = Save.readSlot(n); this.exportSlot = n; this.open('export'); }
+    else if (a === 'slot-import' || a === 'import') { this.openImport(a === 'import' ? null : n); }
+    else if (a === 'news') this.open('news');
     else if (a === 'controls') this.open('controls');
     else if (a === 'oath') {
       const name = ($('#wname').value || '').trim().slice(0, 20) || 'Kade';
-      this.g.newGame(name);
-    } else if (a === 'back') this.g.toTitle();
+      this.g.newGame(name, this.nameSlot ?? 0);
+    } else if (a === 'back') { if ($('#title').classList.contains('slots-on') || !Save.listSlots().some(Boolean)) this.showTitle(); else this.showSlots(this.slotMode || 'load'); }
+    else if (this.slotMode && $('#title').classList.contains('slots-on')) this.renderSlots();
   }
-  showNaming() {
+  showNaming(slot = 0) {
+    this.nameSlot = slot;
+    $('#title').classList.remove('slots-on');
     $('#menu').innerHTML = `
       <div class="naming">
-        <label for="wname">Name your Warden</label>
+        <label for="wname">Name your Warden <span class="muted">· slot ${slot + 1}</span></label>
         <input id="wname" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Kade" />
         <p class="hint">The Ninth Ward will know you by this name. A real name, a title, anything you like.</p>
         <button data-act="oath" class="primary">Take the Oath</button>
@@ -129,6 +178,14 @@ export class UI {
     const b = $('#banner'); b.innerHTML = `<div class="t">${esc(title)}</div><div class="s">${esc(sub)}</div>`;
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   }
+  // small "Saved" mark under the HUD block
+  savedFlash(text = 'Saved') {
+    const el = $('#saved'); if (!el) return;
+    el.querySelector('span').textContent = text;
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+    clearTimeout(this.savedT); this.savedT = setTimeout(() => el.classList.remove('on'), 1800);
+    if (this.screen === 'pause') this.render();
+  }
   hurtFlash(k) { const v = $('#vignette'); v.style.opacity = String(Math.min(1, 0.35 + k)); setTimeout(() => (v.style.opacity = '0'), 160); }
 
   // ---- panels ---------------------------------------------------------------
@@ -154,6 +211,8 @@ export class UI {
     else if (s === 'pause') this.panel.innerHTML = this.pauseHtml();
     else if (s === 'news') this.panel.innerHTML = this.newsHtml();
     else if (s === 'controls') this.panel.innerHTML = this.controlsHtml();
+    else if (s === 'export') this.panel.innerHTML = this.exportHtml();
+    else if (s === 'import') this.panel.innerHTML = this.importHtml();
     else if (s === 'dead') this.panel.innerHTML = `<div class="card center"><h2 class="red">You have fallen</h2><p>The Ward endures. The forge-wardens drag you back to the Plaza.</p><button data-act="respawn" class="primary">Rise, Warden</button></div>`;
     this.panel.className = 'panel ' + s;
   }
@@ -252,11 +311,16 @@ export class UI {
   }
   pauseHtml() {
     const st = this.g.settings, T = !!this.g.touch?.on;
-    return `<div class="card center"><h2>Paused</h2>
+    const g = this.g, sv = g.save;
+    return `<div class="card center pause-card"><h2>Paused</h2>
+      <div class="savebox"><div class="ss">Slot ${(g.slot ?? 0) + 1} · Warden ${esc(sv?.name || '')} · Lv ${sv?.level || 1}<br><span class="muted">Played ${Save.fmtPlay(sv?.playTime)} · last saved ${Save.fmtAgo(g.lastSaved)} · autosaves as you play</span></div>
+        <div class="sbtn"><button data-act="savenow" class="${this.justSaved ? 'ok' : ''}">${this.justSaved ? 'Saved ✓' : 'Save now'}</button><button data-act="export">Export save</button></div></div>
+      <div class="pc"><div class="pc-l">
       <button data-act="resume" class="primary">Resume</button>
-      <button data-tab="armory">Armory</button><button data-tab="skills">Skills</button>
-      <button data-tab="news">What's new</button><button data-tab="controls">Controls</button>
-      <div class="settings">
+      <div class="pnav"><button data-tab="armory">Armory</button><button data-tab="skills">Skills</button>
+      <button data-tab="news">What's new</button><button data-tab="controls">Controls</button></div>
+      <button data-act="title" class="quit">Save and quit to title</button></div>
+      <div class="pc-r"><div class="settings">
         <label><input type="checkbox" data-set="bloom" ${st.bloom ? 'checked' : ''}> Bloom glow</label>
         <label><input type="checkbox" data-set="shadows" ${st.shadows ? 'checked' : ''}> Shadows (reload)</label>
         <label><input type="checkbox" data-set="invertY" ${st.invertY ? 'checked' : ''}> Invert ${T ? 'look' : 'mouse'} Y</label>
@@ -265,7 +329,63 @@ export class UI {
         <label>Render scale <input type="range" min="0.5" max="1.5" step="0.05" value="${st.scale}" data-set="scale"></label>
       </div>
       ${T && document.fullscreenEnabled ? `<button data-act="fullscreen">${document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'}</button>` : ''}
-      <button data-act="title">Save and quit to title</button></div>`;
+      </div></div></div>`;
+  }
+  // ---- export / import ------------------------------------------------------
+  exportHtml() {
+    const sv = this.exportSave; if (!sv) return '<div class="card center"><p>No save to export.</p><button data-act="close">Close</button></div>';
+    const code = Save.exportCode(sv);
+    this.exportText = code;
+    return `<div class="card xfer"><div class="tabs"><b>Export save · Warden ${esc(sv.name)}</b><button data-act="close" class="x">✕</button></div>
+      <p class="muted">This code is your whole Warden: level, gear, Temper, Cores, perks, verdict and progress. Keep it in a notes app or email it to yourself. On any device, open Warden and choose <b>Import save</b> to bring this Warden back, even after clearing browser data.</p>
+      <textarea id="expcode" readonly spellcheck="false">${esc(code)}</textarea>
+      <div class="xb"><button data-act="copy" class="primary">${this.copied ? 'Copied ✓' : 'Copy code'}</button><button data-act="download">Download save file</button><button data-act="close">Done</button></div>
+      <p class="muted">Level ${sv.level} · ${esc(Save.chapterOf(sv))} · played ${Save.fmtPlay(sv.playTime)} · ${code.length.toLocaleString()} characters</p></div>`;
+  }
+  openImport(slot) {
+    const empty = Save.firstEmpty();
+    this.importSlot = slot ?? (empty < 0 ? null : empty); this.importErr = ''; this.importText = ''; this.armed = null;
+    this.open('import');
+  }
+  importHtml() {
+    const slots = Save.listSlots();
+    return `<div class="card xfer"><div class="tabs"><b>Import save</b><button data-act="close" class="x">✕</button></div>
+      <p class="muted">Paste a Warden save code, or choose a save file you downloaded.</p>
+      <textarea id="impcode" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="WARDEN-SAVE.2....">${esc(this.importText || '')}</textarea>
+      <label class="filepick"><input type="file" id="impfile" accept=".txt,.json,.wsave,text/plain,application/json"><span>Choose save file…</span></label>
+      <div class="impslots"><span class="muted">Import into:</span>${slots.map((s, n) => `<button data-act="impslot" data-slot="${n}" class="${this.importSlot === n ? 'on' : ''}">${n + 1}: ${s ? `${esc(s.name)} Lv ${s.level}` : 'Empty'}</button>`).join('')}</div>
+      ${this.importErr ? `<div class="err">${esc(this.importErr)}</div>` : ''}
+      <div class="xb"><button data-act="doimport" class="primary ${this.armed === 'imp' ? 'danger' : ''}" ${this.importSlot == null ? 'disabled' : ''}>${this.armed === 'imp' ? `Tap again: replace slot ${this.importSlot + 1}` : 'Import'}</button><button data-act="close">Cancel</button></div></div>`;
+  }
+  readImportFile(input) {
+    const f = input.files?.[0]; if (!f) return;
+    if (f.size > 2e6) { this.importErr = 'That file is too large to be a Warden save.'; this.render(); return; }
+    f.text().then((t) => { this.importText = t.trim(); this.importErr = ''; this.render(); }).catch(() => { this.importErr = 'Could not read that file.'; this.render(); });
+  }
+  doImport() {
+    const ta = $('#impcode'); if (ta) this.importText = ta.value;
+    let sv;
+    try { sv = Save.importCode(this.importText); } catch (err) { this.importErr = err.message; this.armed = null; this.render(); return false; }
+    const n = this.importSlot; if (n == null) return false;
+    if (Save.readSlot(n) && this.armed !== 'imp') { this.armed = 'imp'; this.importErr = ''; this.render(); return false; }
+    sv.saved = Date.now();
+    if (!Save.writeSlot(n, sv)) { this.importErr = 'Could not write the save: browser storage is full or blocked.'; this.render(); return false; }
+    this.armed = null; this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = '';
+    this.toast(`Imported Warden ${sv.name} (Lv ${sv.level}) into slot ${n + 1}`, 'gold');
+    this.showSlots('load');
+    return true;
+  }
+  download() {
+    const sv = this.exportSave; if (!sv) return;
+    const blob = new Blob([this.exportText + '\n'], { type: 'text/plain' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `warden-${(sv.name || 'save').replace(/[^\w-]+/g, '_')}-lv${sv.level}-${new Date().toISOString().slice(0, 10)}.wsave.txt`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+  copy() {
+    const done = () => { this.copied = true; this.render(); setTimeout(() => { this.copied = false; if (this.screen === 'export') this.render(); }, 2000); };
+    const fallback = () => { const ta = $('#expcode'); if (!ta) return; ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length); try { document.execCommand('copy'); done(); } catch { this.toast('Select the code and copy it'); } };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(this.exportText).then(done, fallback); else fallback();
   }
   newsHtml() {
     const log = this.g.changelog || [];
@@ -289,7 +409,17 @@ export class UI {
     const act = e.target.closest('[data-act]');
     if (act) {
       const a = act.dataset.act;
-      if (a === 'close' || a === 'resume') { if (!g.started && (this.screen === 'news' || this.screen === 'controls')) { this.screen = null; this.panel.classList.add('hidden'); return; } this.close(); return; }
+      if (a === 'close' || a === 'resume') {
+        if (!g.started && ['news', 'controls', 'export', 'import'].includes(this.screen)) { this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = ''; return; }
+        if (g.started && this.screen === 'export') { this.open('pause'); return; }
+        this.close(); return;
+      }
+      if (a === 'savenow') { if (g.persist('manual')) { this.justSaved = true; setTimeout(() => { this.justSaved = false; if (this.screen === 'pause') this.render(); }, 1800); } this.render(); return; }
+      if (a === 'export') { g.persist(); this.exportSave = g.save; this.exportSlot = g.slot; this.copied = false; this.open('export'); return; }
+      if (a === 'copy') { this.copy(); return; }
+      if (a === 'download') { this.download(); return; }
+      if (a === 'impslot') { const ta = $('#impcode'); if (ta) this.importText = ta.value; this.importSlot = +act.dataset.slot; this.armed = null; this.render(); return; }
+      if (a === 'doimport') { this.doImport(); return; }
       if (a === 'equip') { g.equip(act.dataset.uid); this.sel = act.dataset.uid; }
       if (a === 'salvage') { g.salvage(act.dataset.uid); this.sel = null; }
       if (a === 'perk') g.learnPerk(act.dataset.id);

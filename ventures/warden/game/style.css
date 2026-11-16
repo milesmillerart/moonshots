@@ -258,3 +258,74 @@ html.touch .dmg { font-size: 15px; } html.touch .dmg.crit { font-size: 20px; }
   .cols3, .tree { gap: 7px; }
   .item .sk { display: none; }
 }
+
+/* ---- saves (0.5): slot picker, pause save box, export/import, saved mark ---- */
+#title.slots-on .logo h1 { font-size: clamp(40px, 5vw, 80px); }
+#title.slots-on .tag { display: none; }
+#title.slots-on #menu { width: min(620px, 88vw); margin-top: 26px; }
+.slots { display: flex; flex-direction: column; gap: 8px; }
+.slots-h { letter-spacing: 0.3em; text-transform: uppercase; font-size: 12px; color: var(--dim); margin-bottom: 2px; }
+.slotcard { display: flex; align-items: center; gap: 12px; background: rgba(6, 8, 12, 0.78); border: 1px solid var(--line); border-left: 3px solid rgba(255, 255, 255, 0.15); padding: 10px 12px; }
+.slotcard.last { border-left-color: var(--red); box-shadow: inset 0 0 24px rgba(255, 42, 85, 0.06); }
+.slotcard.empty { opacity: 0.8; border-style: dashed; }
+.slotcard .si { flex: 1; min-width: 0; }
+.slotcard .sn { font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slotcard .no { display: inline-block; width: 22px; color: var(--red); font-weight: 700; }
+.slotcard .lv { color: var(--gold); font-size: 12px; margin-left: 6px; letter-spacing: 0.08em; }
+.slotcard .sd { color: var(--dim); font-size: 12px; margin-top: 3px; padding-left: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slotcard .sb { display: flex; gap: 6px; flex: none; }
+#menu .slotcard .sb button { padding: 9px 12px; font-size: 11px; letter-spacing: 0.14em; text-align: center; }
+button.danger, #menu button.danger { border-color: var(--red) !important; color: #fff; background: rgba(255, 42, 85, 0.25) !important; }
+#saved { position: absolute; top: 100%; left: 0; margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(--cyan); opacity: 0; transition: opacity 0.6s; background: rgba(4, 10, 12, 0.72); border: 1px solid rgba(70, 240, 224, 0.35); padding: 4px 10px 4px 9px; text-shadow: 0 0 8px rgba(70, 240, 224, 0.6); }
+#saved i { width: 9px; height: 9px; border: 1.5px solid var(--cyan); transform: rotate(45deg); box-shadow: 0 0 8px var(--cyan); }
+#saved.on { opacity: 1; transition: opacity 0.1s; }
+#saved.on i { animation: savespin 0.9s ease-out; }
+@keyframes savespin { from { transform: rotate(-135deg) scale(0.4); background: var(--cyan); } to { transform: rotate(45deg) scale(1); background: transparent; } }
+.savebox { display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.025); padding: 10px 12px; margin-bottom: 4px; }
+.savebox .ss { flex: 1; font-size: 13px; letter-spacing: 0.06em; line-height: 1.45; }
+.savebox .sbtn { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.card .savebox .sbtn button { padding: 8px 12px; font-size: 11px; text-align: center; }
+.card button.ok { border-color: var(--cyan) !important; color: var(--cyan); }
+.card.xfer { width: min(640px, 94vw); }
+.panel.export, .panel.import { inset: 0; background: rgba(3, 4, 6, 0.6); display: grid; place-items: center; border: none; }
+.xfer textarea { width: 100%; height: 120px; resize: vertical; background: rgba(0, 0, 0, 0.55); color: #cfe; border: 1px solid rgba(70, 240, 224, 0.35); font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; padding: 8px; word-break: break-all; user-select: text; -webkit-user-select: text; outline: none; }
+.xfer textarea:focus { border-color: var(--cyan); }
+.xfer .xb, .impslots { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.xfer .xb button { flex: 1; text-align: center; }
+.impslots button { padding: 8px 10px !important; font-size: 11px !important; text-transform: none !important; letter-spacing: 0.04em !important; }
+.impslots button.on { border-color: var(--cyan) !important; color: var(--cyan); box-shadow: inset 0 -2px 0 var(--cyan); }
+.filepick { position: relative; display: inline-block; align-self: flex-start; border: 1px dashed rgba(255, 255, 255, 0.25); padding: 8px 14px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; color: var(--ink); }
+.filepick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.xfer .err { color: var(--red); font-size: 13px; }
+html.touch #saved { font-size: 10px; margin-top: 4px; }
+@media (max-height: 520px) {
+  #title.slots-on { justify-content: flex-start; padding-top: calc(8px + env(safe-area-inset-top)); }
+  #title.slots-on .logo, #title.slots-on .foot { display: none; }
+  #title.slots-on #menu { margin-top: 0; width: min(640px, 90vw); }
+  .slots { gap: 5px; }
+  .slotcard { padding: 6px 10px; gap: 8px; }
+  .slotcard .sn { font-size: 13px; } .slotcard .sd { font-size: 10.5px; margin-top: 1px; }
+  .slotcard .sd + .sd { display: block; }
+  #menu .slotcard .sb button { padding: 9px 10px; font-size: 10.5px; min-height: 38px; }
+  .savebox { padding: 6px 10px; } .savebox .ss { font-size: 11px; }
+  .savebox .sbtn { flex-direction: row; }
+  .card.xfer { padding: 10px 14px; gap: 6px; }
+  .xfer textarea { height: 64px; }
+  .xfer p.muted { font-size: 10.5px; margin: 0; }
+  .panel.export, .panel.import { padding: 6px; }
+}
+
+/* pause: desktop = one column (resume, nav, settings, quit); short phones = two columns */
+.pc { display: flex; flex-direction: column; gap: 8px; }
+.pc-l { display: contents; }
+.pnav { display: flex; flex-direction: column; gap: 8px; }
+.pc-l > button.primary, .pc-l > .pnav { order: 0; } .pc-r { order: 1; } .pc-l > .quit { order: 2; }
+@media (max-height: 520px) {
+  .card.pause-card { width: min(760px, 96vw); padding: 10px 14px; gap: 6px; }
+  .card.pause-card h2 { display: none; }
+  .pc { display: grid; grid-template-columns: 1.1fr 1fr; gap: 10px; align-items: start; }
+  .pc-l { display: flex; flex-direction: column; gap: 6px; }
+  .pc-l > .quit { order: 3; }
+  .pnav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pc-r .settings { margin: 0; }
+}

@@ -1,6 +1,21 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.5",
+    "title": "Saving you can trust: 3 slots, autosave, export and import",
+    "items": [
+      "Three save slots. The title screen shows each Warden's name, level, verdict, story progress, where you are, play time and when you last saved. Play, export or delete from there (deleting takes a second tap).",
+      "Continue always picks up your most recent Warden, right where you stood, facing the way you faced.",
+      "Autosave on everything that matters: picking up loot, equipping, salvaging, tempering, installing or breaking Cores, learning a perk, levelling up, your verdict, each street cleared, the Bellwright, entering a new district, plus every 15 seconds and whenever you switch apps, lock your phone or close the tab.",
+      "Loot still lying in the street is saved too, so a reload never eats a Sovereign drop.",
+      "Save now from the pause menu, with your slot, play time and last-save time. A small SAVED mark under your health bar confirms each save.",
+      "Export your Warden as a save code or a file, and import it on any device (or after clearing browser data) from the title screen. Damaged or cut-off codes are caught before anything is overwritten.",
+      "Your 0.4 Warden moves into slot 1 automatically with all gear, Temper, Cores, perks, verdict and progress intact. The old save is kept as a backup.",
+      "Each slot keeps a backup of its previous save, so a corrupted write rolls back instead of losing your Warden."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.4",
     "title": "Graphics pass: the Synthblade, the Warden and the Rot",
     "items": [

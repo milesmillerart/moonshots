@@ -12,7 +12,9 @@ import { STORY, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
 import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, effectiveRarity, upgradeCost, salvageValue, MAX_UPGRADE } from './items.js';
 import { angleDiff, clamp, damp, dampAngle, rand, randi, pick } from './util.js';
 
-const SAVE_KEY = 'warden.save.v1', SET_KEY = 'warden.settings.v1';
+import * as Save from './save.js';
+
+const SET_KEY = 'warden.settings.v1';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export class Game {
@@ -52,6 +54,11 @@ export class Game {
     this.cacheMarker = buildLoot('#ffb547', false, 2); this.cacheMarker.position.copy(POI.cache); scene.add(this.cacheMarker);
     fetch('data/changelog.json').then((r) => r.json()).then((j) => (this.changelog = j)).catch(() => (this.changelog = []));
     this.bindInput();
+    // save whenever the page is hidden or closed (app switch, tab close, phone lock)
+    const flush = () => { if (this.save && this.state !== 'title') this.persist(); };
+    addEventListener('pagehide', flush);
+    addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
     // iOS/Android only start WebAudio inside a real gesture (touchend/click), so unlock on the first ones
     const unlock = () => audio.init();
     for (const ev of ['touchend', 'click', 'keydown']) addEventListener(ev, unlock, { passive: true, capture: true });
@@ -60,14 +67,24 @@ export class Game {
     // a touch on a desktop-detected device (tablet with keyboard, touchscreen laptop) switches touch controls on
     addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch' && !this.touch.on) { this.isTouch = true; this.touch.enable(); } }, true);
   }
-  // ---- save -------------------------------------------------------------------
-  hasSave() { try { return !!JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { return false; } }
-  loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { return null; } }
-  persist() {
-    if (!this.save) return;
-    this.save.pos = [this.player.pos.x, this.player.pos.z];
-    this.save.hp = this.player.hp;
-    localStorage.setItem(SAVE_KEY, JSON.stringify(this.save));
+  // ---- save (see save.js) -----------------------------------------------------
+  // persist(): write the current Warden to its slot. why: 'auto' (quiet periodic / page hide) or an event name;
+  // every non-auto save flashes the small Saved indicator.
+  persist(why = 'auto') {
+    if (!this.save || this.slot == null) return false;
+    const p = this.player, sv = this.save;
+    if (p.state === 'dead') sv.pos = [POI.respawn.x, POI.respawn.z];
+    else if (this.state === 'play') { sv.pos = [p.pos.x, p.pos.z]; sv.face = p.face; sv.camYaw = this.camYaw; }
+    sv.hp = p.hp;
+    sv.area = Save.areaAt(p.pos.x, p.pos.z);
+    // loot still lying in the street survives a reload
+    sv.ground = this.loot.filter((l) => !l.taken).map((l) => ({ item: l.item, x: +l.m.position.x.toFixed(2), z: +l.m.position.z.toFixed(2) }));
+    sv.saved = Date.now(); sv.build = window.__warden?.build || sv.build;
+    const ok = Save.writeSlot(this.slot, sv);
+    if (!ok) { if (!this.saveFailWarned) { this.saveFailWarned = true; this.ui.toast('Could not save: browser storage is full or blocked. Export your save from the pause menu.', 'red'); } return false; }
+    this.saveFailWarned = false; this.lastSaved = sv.saved; this.autosave = 0;
+    if (why !== 'auto') this.ui.savedFlash(why === 'manual' ? 'Game saved' : 'Saved');
+    return true;
   }
   perk(id) { return this.save?.perks[id] || 0; }
   refreshStats() {
@@ -80,39 +97,52 @@ export class Game {
 
   // ---- flow -------------------------------------------------------------------
   boot() {
-    const s = this.loadSave();
-    this.ui.showTitle(!!s, s ? `Warden ${s.name} · Level ${s.level}` : '');
+    Save.migrateLegacy();
+    this.save = null; this.slot = null; this.area = null;
+    this.touch?.root?.classList.add('hidden'); this.touch?.reset?.();
+    this.ui.showTitle();
     this.state = 'title';
     this.player.pos.set(0, 0, 30); this.player.face = 0; posePoster(this.player.model);
   }
   toTitle() {
-    this.persist(); this.ui.screen = null; this.ui.panel.classList.add('hidden');
+    this.persist('quit'); this.ui.screen = null; this.ui.panel.classList.add('hidden');
     for (const e of this.enemies) e.dispose(); this.enemies = [];
     for (const l of this.loot) this.scene.remove(l.m); this.loot = [];
-    this.started = false; this.combatOn = false; this.boss = null;
+    document.getElementById('banner').classList.remove('show'); this.ui.toasts.innerHTML = '';
+    this.started = false; this.combatOn = false; this.boss = null; this.hunts = false; this.wave = null; this.lockTarget = null; this.objective = '';
     this.boot();
   }
-  newGame(name) {
-    localStorage.removeItem(SAVE_KEY);
-    this.save = { v: 1, name, level: 1, xp: 0, points: 1, perks: {}, equip: starterGear(), bag: [], scrap: 0, stims: 3, trait: null,
-      flags: {}, created: Date.now(), kills: 0 };
+  newGame(name, slot = 0) {
+    this.slot = slot;
+    this.save = { schema: Save.SCHEMA, v: Save.SCHEMA, name, level: 1, xp: 0, points: 1, perks: {}, equip: starterGear(), bag: [], scrap: 0, stims: 3, trait: null,
+      flags: {}, created: Date.now(), kills: 0, playTime: 0, ground: [] };
     this.refreshStats(); this.player.hp = this.stats.hp; this.player.sta = this.stats.sta;
-    this.persist();
+    this.persist('new'); Save.requestPersist();
     this.ui.hideTitle();
     this.runIntro();
   }
-  continueGame() {
-    this.save = this.loadSave();
-    if (!this.save) return;
+  continueGame(slot = Save.lastSlot()) {
+    if (slot == null) return;
+    const sv = Save.readSlot(slot);
+    if (!sv) { this.ui.toast('That save could not be read.', 'red'); return; }
+    this.slot = slot; this.save = sv; this.lastSaved = sv.saved;
     this.refreshStats(); this.player.hp = clamp(this.save.hp || this.stats.hp, 1, this.stats.hp); this.player.sta = this.stats.sta;
     this.ui.hideTitle();
+    Save.requestPersist();
     if (!this.save.flags.judged) { this.runIntro(); return; }
     this.hideCast();
     const p = this.save.pos;
     if (p && walkable(p[0], p[1])) this.player.pos.set(p[0], 0, p[1]); else this.player.pos.copy(POI.respawn);
+    if (Number.isFinite(sv.face)) this.player.face = sv.face;
     this.startPlay();
+    if (Number.isFinite(sv.camYaw)) this.camYaw = sv.camYaw;
+    for (const g of sv.ground || []) this.dropAt(new THREE.Vector3(g.x, 0, g.z), g.item, true);
+    this.area = Save.areaAt(this.player.pos.x, this.player.pos.z);
     this.resumeProgress();
+    this.ui.toast(`Welcome back, Warden ${sv.name}. ${sv.area || this.area}.`);
   }
+  // test/debug: load a save object directly into a slot
+  importToSlot(slot, sv) { return Save.writeSlot(slot, sv); }
   hideCast() {
     this.watch.visible = false;
     if (this.save.trait === 'dread') { this.mira.visible = true; this.mira.rotation.set(-1.5, 0, 0); this.mira.position.set(0, 0.3, 45); }
@@ -139,7 +169,7 @@ export class Game {
     this.cine = { pos: new THREE.Vector3(3.6, 1.9, 48.8), look: new THREE.Vector3(0, 1.0, 45.0) };
     const k = await this.ui.say(STORY.judgment, STORY.choices);
     const ch = STORY.choices[k];
-    this.save.trait = ch.id; this.save.flags.judged = true; this.refreshStats(); this.persist();
+    this.save.trait = ch.id; this.save.flags.judged = true; this.refreshStats(); this.persist('verdict');
     if (ch.id === 'dread') {
       p.startAttack('heavy'); p.sta = this.stats.sta;
       await sleep(420); audio.hit(true, true); this.fx.burst(new THREE.Vector3(0, 1.1, 45.3), 50, 0xff2050, 5, 2, 0.7); this.hitstop = 0.15;
@@ -188,17 +218,17 @@ export class Game {
   progress() {
     const f = this.save.flags, p = this.player.pos;
     if (this.wave === 'A' && !this.waveAlive('A') && !f.waveA) {
-      f.waveA = true; this.persist(); this.objective = 'Push north into <b>Statute Plaza</b>';
+      f.waveA = true; this.persist('progress'); this.objective = 'Push north into <b>Statute Plaza</b>';
       this.ui.toast('The street is clear. Push north.');
       if (!f.starterCore) { f.starterCore = true; this.dropAt(new THREE.Vector3(0, 0, 21), makeCore('arc', 1)); this.ui.toast('An Arc Core fell from the Hollowed. Install Cores at the Forge.', 'cyan'); }
     }
     if (f.waveA && !f.waveB && this.wave !== 'B' && p.z < 18) this.spawnWave('B');
     if (this.wave === 'B' && !this.waveAlive('B') && !f.waveB) {
-      f.waveB = true; this.persist(); this.ui.banner('STATUTE PLAZA HELD', 'Use the Forge (east side of the plaza) to temper gear');
+      f.waveB = true; this.persist('progress'); this.ui.banner('STATUTE PLAZA HELD', 'Use the Forge (east side of the plaza) to temper gear');
       this.objective = 'Visit the <b>Forge</b>, then clear <b>Lantern Street</b> north';
       setTimeout(() => this.spawnWave('C'), 1200);
     }
-    if (this.wave === 'C' && !this.waveAlive('C') && !f.waveC) { f.waveC = true; this.persist(); this.objective = 'Enter the <b>Grave Gate</b> court'; }
+    if (this.wave === 'C' && !this.waveAlive('C') && !f.waveC) { f.waveC = true; this.persist('progress'); this.objective = 'Enter the <b>Grave Gate</b> court'; }
     if (f.waveC && !f.boss && !this.boss && p.z < -58) { this.spawnWave('BOSS'); this.ui.say(STORY.bossIntro).then(() => { this.boss.aggro = true; }); this.ui.banner('THE BELLWRIGHT', 'Abomination of the Sump'); audio.bell(); }
     if (this.boss && !this.boss.dead && !this.boss.phase2 && this.boss.hp < this.boss.maxHp * 0.5) {
       this.boss.phase2 = true; this.ui.toast('The Bellwright tolls. More Rot answers.', 'red'); audio.bell();
@@ -316,7 +346,7 @@ export class Game {
     for (const e of this.enemies) { e.aggro = false; if (e.elite) { e.hp = e.maxHp; e.pos.copy(e.home); e.phase2 = false; } }
     this.enemies = this.enemies.filter((e) => { if (!e.elite && e.wave === 'BOSS') { e.dispose(); return false; } return true; });
     if (this.boss && !this.boss.dead) { this.boss.aggro = false; }
-    this.ui.close(); this.persist();
+    this.ui.close(); this.persist('respawn');
   }
   onEnemyKilled(e) {
     const sv = this.save, p = this.player, s = this.stats;
@@ -339,14 +369,14 @@ export class Game {
       this.dropAt(e.pos.clone().add(new THREE.Vector3(1.2, 0, 0)), randomGear(sv.level + 1, 6));
       this.dropAt(e.pos.clone().add(new THREE.Vector3(-1.2, 0, 0.5)), makeItem('blade', Math.random() < 0.35 ? 4 : 3, sv.level + 1));
       this.dropAt(e.pos.clone().add(new THREE.Vector3(0, 0, 1.4)), makeCore(null, 2));
-      sv.flags.boss = true; this.persist();
+      sv.flags.boss = true; this.persist('boss');
       setTimeout(async () => { this.ui.banner('THE WARD HOLDS', 'For tonight'); await this.ui.say(STORY.victory); this.hunts = true; this.objective = 'Hunt the Rot. Temper your gear at the <b>Forge</b>.'; }, 1500);
     } else {
       const r = Math.random();
       if (r < 0.26) this.dropAt(e.pos.clone(), randomGear(sv.level, 0));
       else if (r < 0.34) this.dropAt(e.pos.clone(), makeCore(null, Math.random() < 0.15 ? 2 : 1));
     }
-    this.persist();
+    this.persist(e.elite ? 'boss' : 'auto');
   }
   gainXp(x) {
     const sv = this.save; sv.xp += x;
@@ -354,14 +384,16 @@ export class Game {
       sv.xp -= this.xpNeed(); sv.level++; sv.points++;
       this.refreshStats(); this.player.hp = this.stats.hp;
       this.ui.banner(`LEVEL ${sv.level}`, 'Skill point earned. Press K'); audio.levelUp();
+      this.levelled = true;
     }
+    if (this.levelled) { this.levelled = false; this.persist('level'); }
   }
-  dropAt(pos, item) {
+  dropAt(pos, item, restored = false) {
     const col = item.kind === 'core' ? CORES[item.core].color : RARITIES[effectiveRarity(item)].color;
     const m = buildLoot(col, item.kind === 'core', item.kind === 'core' ? 2 : effectiveRarity(item));
     pos.y = 0; if (!walkable(pos.x, pos.z, 0.5)) pos.copy(this.player.pos);
     m.position.copy(pos); this.scene.add(m);
-    this.loot.push({ m, item, t: 0 });
+    this.loot.push({ m, item, t: restored ? 1 : 0 });
   }
   pickup(l) {
     const sv = this.save;
@@ -369,7 +401,7 @@ export class Game {
     const col = l.item.kind === 'core' ? CORES[l.item.core].color : RARITIES[effectiveRarity(l.item)].color;
     this.ui.toast(`${itemName(l.item)}`, 'loot', col);
     audio.pickup(effectiveRarity(l.item));
-    this.persist();
+    this.persist('pickup');
   }
   // ---- inventory actions ---------------------------------------------------------
   equip(uid) {
@@ -377,36 +409,36 @@ export class Game {
     const it = sv.bag[i]; if (it.kind !== 'gear') return;
     sv.bag.splice(i, 1);
     if (sv.equip[it.slot]) sv.bag.push(sv.equip[it.slot]);
-    sv.equip[it.slot] = it; this.refreshStats(); this.persist(); audio.pickup(2);
+    sv.equip[it.slot] = it; this.refreshStats(); this.persist('equip'); audio.pickup(2);
   }
   salvage(uid) {
     const sv = this.save, i = sv.bag.findIndex((x) => x.uid === uid); if (i < 0) return;
-    const v = salvageValue(sv.bag[i]); sv.bag.splice(i, 1); sv.scrap += v; this.ui.toast(`Salvaged for ${v} scrap`); this.persist();
+    const v = salvageValue(sv.bag[i]); sv.bag.splice(i, 1); sv.scrap += v; this.ui.toast(`Salvaged for ${v} scrap`); this.persist('salvage');
   }
   findGear(uid) { const sv = this.save; return Object.values(sv.equip).find((x) => x?.uid === uid) || sv.bag.find((x) => x.uid === uid); }
   upgrade(uid) {
     const it = this.findGear(uid); if (!it || it.upgrade >= MAX_UPGRADE) return;
     const c = upgradeCost(it); if (this.save.scrap < c) return;
-    this.save.scrap -= c; it.upgrade++; this.refreshStats(); this.persist();
+    this.save.scrap -= c; it.upgrade++; this.refreshStats(); this.persist('forge');
     audio.forge(); this.fx.burst(POI.forge.clone().setY(1.1), 40, 0xffa040, 5, 3, 0.6); this.ui.toast(`${itemName(it)}`, 'gold');
   }
   socket(uid, coreUid) {
     const it = this.findGear(uid), sv = this.save, ci = sv.bag.findIndex((x) => x.uid === coreUid);
     if (!it || ci < 0 || it.cores.length >= it.sockets) return;
     const before = effectiveRarity(it);
-    it.cores.push(sv.bag.splice(ci, 1)[0]); this.refreshStats(); this.persist(); audio.zap(); audio.forge();
+    it.cores.push(sv.bag.splice(ci, 1)[0]); this.refreshStats(); this.persist('forge'); audio.zap(); audio.forge();
     const after = effectiveRarity(it);
     this.ui.toast(after > before ? `${it.name} rose to ${RARITIES[after].name}` : `Core installed in ${it.name}`, 'loot', RARITIES[after].color);
   }
   extract(uid, i) {
     const it = this.findGear(uid); if (!it || !it.cores[i]) return;
-    const c = it.cores.splice(i, 1)[0]; this.save.scrap += 5 * c.grade; this.refreshStats(); this.persist();
+    const c = it.cores.splice(i, 1)[0]; this.save.scrap += 5 * c.grade; this.refreshStats(); this.persist('forge');
   }
   learnPerk(id) {
     const sv = this.save, p = PERKS.find((x) => x.id === id);
     const spent = PERKS.filter((x) => x.branch === p.branch).reduce((a, x) => a + (sv.perks[x.id] || 0), 0);
     if (!sv.points || (sv.perks[id] || 0) >= p.max || spent < TIER_REQ[p.tier]) return;
-    sv.points--; sv.perks[id] = (sv.perks[id] || 0) + 1; this.refreshStats(); this.persist(); audio.levelUp();
+    sv.points--; sv.perks[id] = (sv.perks[id] || 0) + 1; this.refreshStats(); this.persist('perk'); audio.levelUp();
   }
   applySetting(k, v) {
     if (k === 'mute') { audio.setMuted(v); this.settings.mute = v; }
@@ -421,7 +453,7 @@ export class Game {
   bindInput() {
     const cv = this.renderer.domElement;
     addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       this.keys[e.code] = true; this.edge[e.code] = true;
       if (['Tab', 'Space'].includes(e.code)) e.preventDefault();
       if (this.state !== 'play') return;
@@ -462,7 +494,7 @@ export class Game {
       this.save.flags.cache = true; this.cacheMarker.visible = false;
       this.dropAt(POI.cache.clone().add(new THREE.Vector3(1.5, 0, 0)), randomGear(this.save.level, 3));
       this.dropAt(POI.cache.clone().add(new THREE.Vector3(1.5, 0, 1.2)), makeCore(null, 1));
-      this.save.scrap += 25; this.ui.toast('+25 scrap from the cache'); this.persist();
+      this.save.scrap += 25; this.ui.toast('+25 scrap from the cache'); this.persist('cache');
     }
   }
   consume(code) { const v = this.edge[code]; this.edge[code] = false; return !!v; }
@@ -531,7 +563,12 @@ export class Game {
       this.cacheMarker.visible = !this.save.flags.cache;
       this.prompt = this.nearForge ? '[E] Use the Forge (temper gear, install Cores, refill stims)' : this.nearCache ? '[E] Search the cache' : '';
       if (!paused) this.progress();
-      this.autosave = (this.autosave || 0) + dtReal; if (this.autosave > 10) { this.autosave = 0; this.persist(); }
+      // play time counts wall-clock seconds (dt is clamped on slow frames), capped so a backgrounded tab doesn't count
+      const now = performance.now(), wall = this.lastWall ? Math.min(1, (now - this.lastWall) / 1000) : 0; this.lastWall = now;
+      if (!paused) this.save.playTime = (this.save.playTime || 0) + wall;
+      const area = Save.areaAt(p.pos.x, p.pos.z);
+      if (area !== this.area) { const first = !this.area; this.area = area; if (!first && p.state !== 'dead') this.persist('area'); }
+      this.autosave = (this.autosave || 0) + dtReal; if (this.autosave > 15) this.persist();
     }
     this.fx.update(dtReal);
     this.updateCamera(dtReal, t);

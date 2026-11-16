@@ -130,7 +130,7 @@ def main():
         G("g.ui.close()")
         # save round trip
         G("g.persist()")
-        saved = pg.evaluate("JSON.parse(localStorage.getItem('warden.save.v1'))")
+        saved = pg.evaluate("window.__wardenSave.readSlot(window.__warden.game.slot)")
         assert saved["name"] == "Aldric Vane" and saved["flags"]["judged"]
         fps = pg.evaluate("window.__warden.stats.fps")
         info = pg.evaluate("(() => { const r = window.__warden.renderer.info; return {calls: r.render.calls, tris: r.render.triangles, geos: r.memory.geometries, tex: r.memory.textures}; })()")
