@@ -21,6 +21,7 @@ Rule: every night ships one or two visible improvements (graphics a little at a 
 Don wants to shape the opening himself. 0.8 applied only the canon fixes to the intro text. Do not rework the intro, title flow, first scene or first minutes until he weighs in; prepare options only if he asks.
 
 ## Long-term plan (Don, 2026-11-16: complete the first area before any new zone)
+North star (docs/vision.md, VISION, not approved scope): a large third-person open-world action RPG where *the world remembers what you do, but not everyone knows the same things*. Consequences over karma, visuals held to Don's concept art, a satisfying ending before endless content. Ideas from vision.md enter this plan only as **proposals** until Don marks them APPROVED FOR DEVELOPMENT.
 Phases run in order. A phase is done when it feels finished, not when a list is ticked. Everything stays inside `docs/lore.md` (no new rulers, biographies, faction systems or Core rules without approval).
 
 ### Phase 1 (next): complete Hallowmere, the capital
@@ -31,6 +32,8 @@ The map today is a few sites in the capital. Make the capital feel like a whole,
 - **More judgments**: one moral case per capital site. Each verdict changes the capital (NPCs, prices, who appears later).
 - **Contracts board**: daily bounties inside the capital (kill X, purge a street, hunt a named abomination) for scrap and Cores. A daily reason to come back.
 - **Enemy variety**: shielded Husks, a rooftop sniper, swarm events at the Gate; a second elite beside the Bellwright.
+- **Proposal (vision WI-006, needs Don's approval): a visual benchmark slice.** One street, one interior and one combat encounter in Hallowmere rebuilt toward the concept art (models, materials, lighting, post, VFX) with performance budgets per device tier, before more content is built. 0.8 already matched the Synthblade and Warden to the Drive art (`tools/reference_compare.py`).
+- **Proposal (vision WI-001/002, needs Don's approval): consequences from Mira Toll's case.** A small deterministic event ledger (who did what, who witnessed, who learns later) and Mira's Dread/Measure/Inquest verdict changing later NPCs, prices and access (Mira's family, Brann and his son, the Wall). This is the first slice of the Consequence Engine, with no AI dialogue.
 - **Polish of what exists**: puddle reflections, telegraphs, loot feel, performance, audio (Now list above).
 - **Collection: the Warden's Ledger**: codex of abominations, Cores, Exalted items, judgments.
 - **Skill tree v2**: active abilities per branch (Blade: Execution finisher; Bulwark: Oath Shield; Circuit: Overload variants).
@@ -43,6 +46,10 @@ Only after Hallowmere is complete (City → Ruins → Subterranean, not strictly
 Older buried societies, lost Ward archives. Design waits on Don. (Deferred: "the Sump" with drowned chapels, a v0.4 detail; fold in only if Don wants it.)
 
 ### Phase 4 (moonshots, need Don's go-ahead)
+- Consequence Engine beyond the prototype: witnesses, rumor, knowledge per NPC, arrests/investigation/trials, killable NPCs with succession (vision 5, WI-002/004/005). Each needs a spec and approval.
+- AI natural-language NPC conversations (WI-003): research only, grounded in the ledger and never allowed to change canon or state. It would need a paid model/API and a backend, so it needs Don's explicit cost approval.
+- Campaign arc and endgame (vision 6, DECISION NEEDED): an ending before post-campaign content.
+- Monetization (vision 7, DECISION NEEDED): the candidate is premium single-player with later expansions. No subscriptions, cosmetic shop, multiplayer or live service without Don's decision.
 - The wider Ninth Ward (countryside, far country) and other Wards, connected by gates.
 - Named Exalted weapons with unique movesets.
 - Seasonal "Tribunal" events with leaderboards (needs an approved backend).

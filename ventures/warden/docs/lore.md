@@ -7,6 +7,7 @@
 >
 > - **Drive folder:** "Warden - A test Game" — https://drive.google.com/drive/folders/1vEgVos85hxS9IqFXMJrvOzjvxi-VPe3p (folder id `1vEgVos85hxS9IqFXMJrvOzjvxi-VPe3p`)
 > - **Last synced:** 2026-11-16 ~3:10 PM ET (folder re-listed; new doc: The Prismatic Order; all other docs unchanged since the 2:55 PM sync; no comments on any doc)
+> - **Game vision (Don's living doc v0.1):** `docs/vision.md` — feel, core loop, scale, never-be list, must-haves, Consequence Engine, monetization (undecided), What-If idea bank. Creative direction only: nothing in it is approved for development, and this file outranks it on canon.
 > - **Don's written direction (2026-11-16):** `docs/direction-2026-11-16.md` — summarized and tagged in the "Direction from Don" section below.
 > - Don keeps expanding the folder. To re-sync: list the folder, compare each file's Drive
 >   `modifiedTime` with the table below, re-read only changed/new files, rewrite that file's
@@ -45,6 +46,7 @@
 | WARDEN — Augmentation, Binding & Echoes | working canon v0.1 | 2026-11-16T19:18:41Z | 2:18 PM | https://docs.google.com/document/d/1EFFYWUW4a0Vmg-yxEuLxINumnFHP6thyynE3PIeF8Cs/edit |
 | WARDEN — Synth Technology & Equipment Systems | **approved design spec v1.0** | 2026-11-16T17:45:42Z | 12:45 PM | https://docs.google.com/document/d/1IGOZ_IsbfTS027GWvbc5yAdhV59Hn6uI9GiYeARAqKQ/edit |
 | WARDEN — The Prismatic Order | working canon v0.1 | 2026-11-16T20:02:12Z | 3:02 PM | https://docs.google.com/document/d/1CepYHrX481or4ncRpdMg89XGGWY-FIFQjV-ufIsOg0U/edit |
+| WARDEN — Game Vision & Possibilities | living document v0.1 (vision, not canon or an implementation order) → `docs/vision.md` | 2026-11-16T20:16:43Z | 3:16 PM | https://docs.google.com/document/d/112YgYYK5LluEmvi4Vol-T--E7VxbYcSVsXza7iile6w/edit |
 | WARDEN — Lore Outline (current canon, v0.4) | snapshot of the shipped build (written by Moonshots; unedited since creation) | 2026-11-16T15:42:12Z | 10:42 AM | https://docs.google.com/document/d/1fWx0CWp95JAadPOWlLxfIHjekRb9BLykXko98YRvbdA/edit |
 | synthblade-concept-on.jpg (image) | WIP concept art | 2026-11-16T17:11:45Z | 12:11 PM | https://drive.google.com/file/d/1NVCYrg2y2ljCyi5xIAPrbSWF8TD6Dw3M/view |
 | synthblade-concept-off.jpg (image) | WIP concept art | 2026-11-16T17:17:09Z | 12:17 PM | https://drive.google.com/file/d/11Xu8hvcSGKZTzeLU1ZTe7Xj_WVoBe21W/view |
