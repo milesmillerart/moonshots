@@ -1,7 +1,11 @@
 <!doctype html>
 <html lang="en" data-build="{{BUILD}}"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
 <title>WARDEN: keep the law of the Ninth Ward</title>
 <meta name="description" content="WARDEN is a free cyber-medieval action RPG in your browser. Pass judgment, wield the synthblade, purge the abominations of the Rot. Improved every day.">
 <meta name="theme-color" content="#07090d">
@@ -28,7 +32,7 @@
     <div class="bar sta"><div id="sta-fill"></div></div>
     <div class="bar chg" id="chg"><div id="chg-fill"></div><span>CHARGE</span></div>
     <div class="bar xp"><div id="xp-fill"></div></div>
-    <div class="res"><span>⬢ <b id="scrap">0</b> scrap</span><span>✚ <b id="stims">3</b> stims [R]</span></div>
+    <div class="res"><span>⬢ <b id="scrap">0</b> scrap</span><span>✚ <b id="stims">3</b> stims<i class="kb"> [R]</i></span></div>
     <div id="pts" class="gold"></div>
   </div>
   <div id="objective"></div>
@@ -43,5 +47,6 @@
 <div id="dialogue" class="hidden"></div>
 <div id="panel" class="panel hidden"></div>
 <div id="fade"></div>
+<div id="rotate"><div class="ph"></div><div class="rt">Turn your phone sideways</div><div class="rs">WARDEN is played in landscape</div></div>
 <script type="module" src="src/main.js?v={{BUILD}}"></script>
 </body></html>

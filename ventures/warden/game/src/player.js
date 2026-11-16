@@ -66,7 +66,8 @@ export class Player {
 
     if (this.state === 'move') {
       const sprint = inp.sprint && moving && this.sta > 5;
-      const speed = (sprint ? 6.6 : 4.3) * (this.stimT > 0 ? 0.6 : 1);
+      const analog = inp.joy && inp.joy.m != null && !sprint ? Math.max(0.4, Math.min(1, inp.joy.m * 1.15)) : 1;
+      const speed = (sprint ? 6.6 : 4.3) * (this.stimT > 0 ? 0.6 : 1) * analog;
       if (sprint) { this.sta -= 14 * dt; this.staDelay = 0.3; }
       const target = moving ? mv.clone().multiplyScalar(speed) : new THREE.Vector3();
       this.vel.x = damp(this.vel.x, target.x, 12, dt); this.vel.z = damp(this.vel.z, target.z, 12, dt);

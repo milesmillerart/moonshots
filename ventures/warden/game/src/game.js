@@ -6,6 +6,7 @@ import { Player, posePoster } from './player.js';
 import { Enemy, Projectile } from './enemies.js';
 import { FX } from './fx.js';
 import { UI } from './ui.js';
+import { TouchControls, detectTouch } from './touch.js';
 import { audio } from './audio.js';
 import { STORY, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
 import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, effectiveRarity, upgradeCost, salvageValue, MAX_UPGRADE } from './items.js';
@@ -17,11 +18,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export class Game {
   constructor(renderer, composer, bloom, scene, camera) {
     Object.assign(this, { renderer, composer, bloom, scene, camera });
-    this.settings = Object.assign({ bloom: true, shadows: true, invertY: false, sens: 1, scale: 1, mute: false }, JSON.parse(localStorage.getItem(SET_KEY) || '{}'));
+    this.isTouch = detectTouch();
+    // phones default to a lighter render scale; saved settings always win
+    this.settings = Object.assign({ bloom: true, shadows: true, invertY: false, sens: 1, scale: this.isTouch ? 0.85 : 1, mute: false }, JSON.parse(localStorage.getItem(SET_KEY) || '{}'));
     audio.setMuted(this.settings.mute);
     bloom.enabled = this.settings.bloom;
     renderer.shadowMap.enabled = this.settings.shadows;
-    this.world = buildWorld(scene, renderer, { shadows: this.settings.shadows });
+    this.world = buildWorld(scene, renderer, { shadows: this.settings.shadows, lowRain: this.isTouch, mobile: this.isTouch });
     this.fx = new FX(scene, camera);
     this.ui = new UI(this);
     this.player = new Player(this);
@@ -49,6 +52,13 @@ export class Game {
     this.cacheMarker = buildLoot('#ffb547', false, 2); this.cacheMarker.position.copy(POI.cache); scene.add(this.cacheMarker);
     fetch('data/changelog.json').then((r) => r.json()).then((j) => (this.changelog = j)).catch(() => (this.changelog = []));
     this.bindInput();
+    // iOS/Android only start WebAudio inside a real gesture (touchend/click), so unlock on the first ones
+    const unlock = () => audio.init();
+    for (const ev of ['touchend', 'click', 'keydown']) addEventListener(ev, unlock, { passive: true, capture: true });
+    this.touch = new TouchControls(this);
+    if (this.isTouch) this.touch.enable();
+    // a touch on a desktop-detected device (tablet with keyboard, touchscreen laptop) switches touch controls on
+    addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch' && !this.touch.on) { this.isTouch = true; this.touch.enable(); } }, true);
   }
   // ---- save -------------------------------------------------------------------
   hasSave() { try { return !!JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { return false; } }
@@ -149,7 +159,7 @@ export class Game {
     this.startPlay();
     this.spawnWave('A');
     await this.fade(false, 500);
-    this.ui.toast('Click the game to capture the mouse. Esc to pause.');
+    this.ui.toast(this.touch?.on ? 'Left thumb moves. Drag right to look. Tap STRIKE to fight.' : 'Click the game to capture the mouse. Esc to pause.');
   }
 
   // ---- waves & objectives --------------------------------------------------
@@ -405,7 +415,7 @@ export class Game {
     if (k === 'scale') this.onResize?.();
     localStorage.setItem(SET_KEY, JSON.stringify(this.settings));
   }
-  onPanelClosed() { if (this.state === 'play' && !document.pointerLockElement) this.requestLock?.(); }
+  onPanelClosed() { if (this.state === 'play' && !document.pointerLockElement && !this.touch?.on) this.requestLock?.(); }
 
   // ---- input --------------------------------------------------------------------------
   bindInput() {
@@ -444,7 +454,7 @@ export class Game {
     document.addEventListener('pointerlockchange', () => {
       if (!document.pointerLockElement && this.state === 'play' && !this.ui.isOpen && !this.dialogueOpen && this.player.state !== 'dead') this.ui.open('pause');
     });
-    this.requestLock = () => { try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch {} };
+    this.requestLock = () => { if (this.touch?.on) return; try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch {} };
   }
   interact() {
     if (this.nearForge) { this.save.stims = 3; this.ui.open('forge'); return; }
@@ -483,7 +493,7 @@ export class Game {
       const block = this.dialogueOpen;
       const inp = block ? {} : {
         f: k.KeyW || k.ArrowUp, b: k.KeyS || k.ArrowDown, l: k.KeyA || k.ArrowLeft, r: k.KeyD || k.ArrowRight,
-        sprint: k.ShiftLeft || k.ShiftRight, dodge: this.consume('Space'), light: this.consume('light'), heavy: this.consume('heavy'),
+        sprint: k.ShiftLeft || k.ShiftRight || !!this.touch?.sprint, dodge: this.consume('Space'), light: this.consume('light'), heavy: this.consume('heavy'),
         stim: this.consume('KeyR'), joy: this.joy,
       };
       if (!block && this.consume('KeyF')) this.overload();

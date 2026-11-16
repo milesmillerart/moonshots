@@ -26,9 +26,9 @@ export class UI {
       <button data-act="new" class="${hasSave ? '' : 'primary'}">${hasSave ? 'New Warden' : 'Take the Oath'}</button>
       <button data-act="news">What's new</button>
       <button data-act="controls">Controls</button>`;
-    this.hud.classList.add('hidden');
+    this.hud.classList.add('hidden'); t.classList.remove('naming-on');
   }
-  hideTitle() { $('#title').classList.add('hidden'); }
+  hideTitle() { $('#title').classList.add('hidden'); $('#title').classList.remove('naming-on'); }
   onTitleClick(e) {
     const b = e.target.closest('button'); if (!b) return;
     audio.init(); audio.ui();
@@ -48,11 +48,12 @@ export class UI {
     $('#menu').innerHTML = `
       <div class="naming">
         <label for="wname">Name your Warden</label>
-        <input id="wname" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Kade" />
+        <input id="wname" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Kade" />
         <p class="hint">The Ninth Ward will know you by this name. A real name, a title, anything you like.</p>
         <button data-act="oath" class="primary">Take the Oath</button>
         <button data-act="back">Back</button>
       </div>`;
+    if (this.g.touch?.on) $('#title').classList.add('naming-on');
     const inp = $('#wname'); inp.focus();
     inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') $('[data-act="oath"]').click(); });
   }
@@ -66,7 +67,7 @@ export class UI {
         const who = L.who === 'Warden' ? `Warden ${name}` : L.who;
         const last = i === lines.length - 1;
         this.dlg.innerHTML = `${who ? `<div class="who">${esc(who)}</div>` : ''}<div class="line ${who ? '' : 'narr'}">${esc(L.text.replaceAll('{name}', name))}</div>
-          ${last && choices ? `<div class="choices">${choices.map((c, k) => `<button data-c="${k}"><span class="k">${k + 1}</span>${esc(c.label)}</button>`).join('')}</div>` : '<div class="more">Click or press Space ▸</div>'}`;
+          ${last && choices ? `<div class="choices">${choices.map((c, k) => `<button data-c="${k}"><span class="k">${k + 1}</span>${esc(c.label)}</button>`).join('')}</div>` : `<div class="more">${this.g.touch?.on ? 'Tap to continue' : 'Click or press Space'} ▸</div>`}`;
         this.dlg.classList.remove('hidden');
       };
       const advance = (k) => {
@@ -105,13 +106,16 @@ export class UI {
       $('#xp-fill').style.width = pct(sv.xp, g.xpNeed());
       $('#scrap').textContent = fmt(sv.scrap);
       $('#stims').textContent = sv.stims;
-      $('#pts').textContent = sv.points ? `${sv.points} skill point${sv.points > 1 ? 's' : ''} [K]` : '';
+      const T = !!g.touch?.on;
+      $('#pts').textContent = sv.points ? `${sv.points} skill point${sv.points > 1 ? 's' : ''}${T ? '' : ' [K]'}` : '';
       $('#objective').innerHTML = g.objective || '';
       const b = g.boss && !g.boss.dead && g.boss.aggro ? g.boss : null;
       $('#boss').classList.toggle('hidden', !b);
       if (b) { $('#boss-fill').style.width = pct(b.hp, b.maxHp); $('#boss-name').textContent = b.def.name; }
-      $('#prompt').textContent = g.prompt || ''; $('#prompt').classList.toggle('hidden', !g.prompt);
+      const pr = T ? (g.prompt || '').replace('[E] ', 'Tap USE: ') : g.prompt || '';
+      $('#prompt').textContent = pr; $('#prompt').classList.toggle('hidden', !g.prompt);
       $('#lock').classList.toggle('hidden', !g.lockTarget);
+      if (T) g.touch.update();
     }
   }
   toast(text, cls = '', color) {
@@ -137,8 +141,9 @@ export class UI {
   close() { this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = ''; audio.ui(); this.g.onPanelClosed(); }
   toggle(name) { if (this.screen === name) this.close(); else this.open(name); }
   tabs() {
-    const t = [['armory', 'Armory [I]'], ['skills', 'Skills [K]']];
-    if (this.g.nearForge) t.push(['forge', 'Forge [E]']);
+    const T = !!this.g.touch?.on;
+    const t = [['armory', T ? 'Armory' : 'Armory [I]'], ['skills', T ? 'Skills' : 'Skills [K]']];
+    if (this.g.nearForge) t.push(['forge', T ? 'Forge' : 'Forge [E]']);
     return `<div class="tabs">${t.map(([k, l]) => `<button data-tab="${k}" class="${this.screen === k ? 'on' : ''}">${l}</button>`).join('')}<button data-act="close" class="x">✕</button></div>`;
   }
   render() {
@@ -246,7 +251,7 @@ export class UI {
       }).join('')}</div>`;
   }
   pauseHtml() {
-    const st = this.g.settings;
+    const st = this.g.settings, T = !!this.g.touch?.on;
     return `<div class="card center"><h2>Paused</h2>
       <button data-act="resume" class="primary">Resume</button>
       <button data-tab="armory">Armory</button><button data-tab="skills">Skills</button>
@@ -254,11 +259,12 @@ export class UI {
       <div class="settings">
         <label><input type="checkbox" data-set="bloom" ${st.bloom ? 'checked' : ''}> Bloom glow</label>
         <label><input type="checkbox" data-set="shadows" ${st.shadows ? 'checked' : ''}> Shadows (reload)</label>
-        <label><input type="checkbox" data-set="invertY" ${st.invertY ? 'checked' : ''}> Invert mouse Y</label>
-        <label><input type="checkbox" data-set="mute" ${audio.muted ? 'checked' : ''}> Mute [M]</label>
-        <label>Mouse sensitivity <input type="range" min="0.3" max="2.5" step="0.1" value="${st.sens}" data-set="sens"></label>
+        <label><input type="checkbox" data-set="invertY" ${st.invertY ? 'checked' : ''}> Invert ${T ? 'look' : 'mouse'} Y</label>
+        <label><input type="checkbox" data-set="mute" ${audio.muted ? 'checked' : ''}> Mute${T ? '' : ' [M]'}</label>
+        <label>${T ? 'Look' : 'Mouse'} sensitivity <input type="range" min="0.3" max="2.5" step="0.1" value="${st.sens}" data-set="sens"></label>
         <label>Render scale <input type="range" min="0.5" max="1.5" step="0.05" value="${st.scale}" data-set="scale"></label>
       </div>
+      ${T && document.fullscreenEnabled ? `<button data-act="fullscreen">${document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'}</button>` : ''}
       <button data-act="title">Save and quit to title</button></div>`;
   }
   newsHtml() {
@@ -268,6 +274,10 @@ export class UI {
       ${log.map((e) => `<div class="entry"><div class="ed">${esc(e.date)} · build ${esc(e.build)}</div><h4>${esc(e.title)}</h4><ul>${e.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`;
   }
   controlsHtml() {
+    if (this.g.touch?.on) {
+      const tr = [['Left thumb', 'Move (push to the edge to sprint)'], ['Drag right side', 'Look around'], ['Tap right side / STRIKE', 'Light strike (hold STRIKE to keep the combo going)'], ['HEAVY', 'Heavy strike'], ['ROLL', 'Dodge roll (roll through an attack at the last instant for a Riposte)'], ['LOCK', 'Lock on to the nearest enemy'], ['STIM', 'Inject a stim (heal)'], ['OVERLOAD', 'Shock nova (Circuit perk)'], ['USE / FORGE', 'Appears near the Forge or a cache'], ['ARMORY · SKILLS · ❚❚', 'Gear, perks and pause (top right)']];
+      return `<div class="card"><div class="tabs"><b>Touch controls</b><button data-act="close" class="x">✕</button></div><table class="ctl">${tr.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}</table><p class="muted">Play in landscape. Keyboard and mouse also work.</p></div>`;
+    }
     const rows = [['W A S D', 'Move'], ['Shift', 'Sprint'], ['Mouse', 'Look (click the game to capture the mouse)'], ['Left click', 'Light strike (chain three for a combo)'], ['Right click', 'Heavy strike'], ['Space', 'Dodge roll (brief invulnerability)'], ['Q', 'Lock on to the nearest enemy'], ['R', 'Inject a stim (heal)'], ['F', 'Overload (Circuit perk)'], ['E', 'Interact / use the Forge'], ['I or Tab', 'Armory'], ['K', 'Skills'], ['Esc', 'Pause'], ['M', 'Mute']];
     return `<div class="card"><div class="tabs"><b>Controls</b><button data-act="close" class="x">✕</button></div><table class="ctl">${rows.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}</table></div>`;
   }
@@ -288,6 +298,7 @@ export class UI {
       if (a === 'extract') g.extract(this.forgeSel, +act.dataset.i);
       if (a === 'respawn') { g.respawn(); return; }
       if (a === 'title') { g.toTitle(); return; }
+      if (a === 'fullscreen') { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation?.lock?.('landscape').catch(() => {}))).catch(() => {}).finally(() => setTimeout(() => this.render(), 300)); return; }
       this.render(); return;
     }
     const item = e.target.closest('[data-item]');

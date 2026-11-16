@@ -138,3 +138,123 @@ button[disabled] { opacity: 0.35; cursor: default; }
 table.ctl { border-collapse: collapse; font-size: 14px; } table.ctl td { padding: 6px 10px; border-bottom: 1px solid var(--line); }
 kbd { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); padding: 2px 8px; font-family: var(--font); font-size: 12px; }
 @media (max-width: 900px) { .cols3, .tree { grid-template-columns: 1fr; } }
+
+/* ---- touch / mobile (only applies when html.touch is set, or on small landscape screens) ---- */
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+body { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; overscroll-behavior: none; }
+#cv { width: 100%; height: 100%; }
+html.touch, html.touch body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+html.touch #cv { touch-action: none; }
+html.touch .panel, html.touch .card, html.touch .bag, html.touch #title, html.touch #dialogue, html.touch .col, html.touch .branch { touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+html.touch .kb, html.touch #hud .keys { display: none; }
+html.touch button { touch-action: manipulation; }
+html.touch #menu button:hover, html.touch .card button:hover, html.touch .acts button:hover, html.touch .choices button:hover { border-color: var(--line); background: rgba(255, 255, 255, 0.04); }
+html.touch #menu button:active, html.touch .card button:active, html.touch .acts button:active, html.touch .choices button:active, html.touch .forge-acts button:active { border-color: var(--red); background: rgba(255, 42, 85, 0.14); }
+
+#touch { position: fixed; inset: 0; z-index: 12; pointer-events: none; }
+#touch .zone { position: absolute; inset: 0; pointer-events: auto; touch-action: none; }
+#touch.dlg .zone, #touch.dlg .tact, #touch.dlg .tmenu { display: none; }
+#touch .stick { position: absolute; width: 132px; height: 132px; margin: -66px 0 0 -66px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.22); background: radial-gradient(circle, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.25)); pointer-events: none; }
+#touch .stick.sprint { border-color: rgba(255, 181, 71, 0.7); box-shadow: 0 0 14px rgba(255, 181, 71, 0.4); }
+#touch .knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; border-radius: 50%; background: rgba(255, 255, 255, 0.28); border: 1px solid rgba(255, 255, 255, 0.5); transform: translate(-50%, -50%); }
+#touch .tmenu { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); display: flex; gap: 8px; pointer-events: auto; }
+#touch .tmenu button { position: relative; min-width: 44px; height: 40px; padding: 0 10px; background: rgba(6, 8, 12, 0.72); border: 1px solid rgba(255, 255, 255, 0.16); color: var(--ink); font-size: 10px; letter-spacing: 0.12em; touch-action: manipulation; }
+#touch .tmenu button:active { border-color: var(--red); }
+#touch .tmenu i { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--gold); color: #000; font: 700 11px/18px var(--font); font-style: normal; letter-spacing: 0; }
+#touch .tmenu i:empty { display: none; }
+#touch .tact { position: absolute; right: calc(14px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); width: 236px; height: 214px; pointer-events: none; }
+#touch .tb { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; display: grid; place-items: center; padding: 0;
+  background: rgba(6, 8, 12, 0.55); border: 2px solid rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.85); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; -webkit-user-select: none; }
+#touch .tb.pr { transform: scale(0.92); background: rgba(255, 42, 85, 0.3); border-color: var(--red); }
+#touch .b-light { right: 0; bottom: 0; width: 92px; height: 92px; border-color: rgba(255, 42, 85, 0.75); box-shadow: 0 0 16px rgba(255, 42, 85, 0.25), inset 0 0 18px rgba(255, 42, 85, 0.18); font-size: 12px; }
+#touch .b-heavy { right: 104px; bottom: 6px; width: 70px; height: 70px; border-color: rgba(255, 42, 85, 0.45); }
+#touch .b-dodge { right: 14px; bottom: 104px; width: 70px; height: 70px; border-color: rgba(220, 228, 240, 0.5); }
+#touch .b-lock { right: 104px; bottom: 90px; width: 54px; height: 54px; font-size: 9px; }
+#touch .b-lock.on { border-color: var(--red); color: var(--red); }
+#touch .b-stim { right: 170px; bottom: 54px; width: 54px; height: 54px; font-size: 9px; border-color: rgba(120, 255, 160, 0.4); }
+#touch .b-over { right: 92px; bottom: 156px; width: 58px; height: 58px; font-size: 8px; border-color: rgba(70, 240, 224, 0.4); color: var(--cyan); }
+#touch .b-over.ready { border-color: var(--cyan); box-shadow: 0 0 14px rgba(70, 240, 224, 0.5); }
+#touch .b-use { right: 156px; bottom: 132px; width: 66px; height: 66px; border-color: var(--gold); color: var(--gold); box-shadow: 0 0 14px rgba(255, 181, 71, 0.35); animation: pulse 0.9s infinite alternate; }
+
+/* rotate prompt: touch devices held in portrait */
+#rotate { display: none; position: fixed; inset: 0; z-index: 200; background: #07090d; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 24px; }
+#rotate .ph { width: 46px; height: 80px; border: 3px solid var(--ink); border-radius: 9px; position: relative; animation: rot 2.2s ease-in-out infinite; }
+#rotate .ph::after { content: ''; position: absolute; left: 50%; bottom: 5px; width: 10px; height: 3px; margin-left: -5px; background: var(--red); }
+#rotate .rt { font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-size: 15px; }
+#rotate .rs { color: var(--dim); font-size: 12px; letter-spacing: 0.12em; }
+@keyframes rot { 0%, 25% { transform: rotate(0deg); } 55%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) { html.touch #rotate { display: flex; } }
+
+/* safe areas (notch / home bar) */
+#hud .tl { left: calc(22px + env(safe-area-inset-left)); top: calc(20px + env(safe-area-inset-top)); }
+#title { padding-left: calc(8vw + env(safe-area-inset-left)); }
+
+/* small screens: keep the objective clear of the name/bars block (fixes overlap) */
+@media (max-width: 1100px) {
+  #objective { left: 340px; right: 22px; transform: none; text-align: center; font-size: 11px; letter-spacing: 0.1em; }
+}
+html.touch #objective { left: calc(226px + env(safe-area-inset-left)); right: calc(250px + env(safe-area-inset-right)); top: calc(14px + env(safe-area-inset-top)); text-align: center; font-size: 11px; letter-spacing: 0.08em; transform: none; line-height: 1.35; }
+html.touch #lock { top: auto; bottom: 30%; }
+html.touch #prompt { bottom: calc(40% ); font-size: 12px; max-width: 46vw; text-align: center; }
+html.touch #boss { top: calc(58px + env(safe-area-inset-top)); bottom: auto; width: min(420px, 44vw); }
+html.touch #boss-name { font-size: 11px; letter-spacing: 0.25em; }
+html.touch #toasts { top: calc(58px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: min(280px, 34vw); }
+html.touch .toast { font-size: 11px; padding: 6px 10px; }
+html.touch .toast:nth-child(n+4) { display: none; }
+html.touch #hud .tl { width: 200px; top: calc(10px + env(safe-area-inset-top)); left: calc(14px + env(safe-area-inset-left)); }
+html.touch #pname { font-size: 11px; } html.touch #plevel { font-size: 10px; margin: 1px 0 5px; }
+html.touch .bar { height: 8px; margin-bottom: 4px; } html.touch .bar.hp { height: 12px; } html.touch .bar.chg { height: 6px; } html.touch .bar.xp { height: 3px; }
+html.touch .res { font-size: 11px; gap: 10px; margin-top: 4px; }
+html.touch #pts { font-size: 11px; }
+html.touch #banner .t { font-size: 28px; letter-spacing: 0.35em; } html.touch #banner { top: 22%; }
+html.touch .dmg { font-size: 15px; } html.touch .dmg.crit { font-size: 20px; }
+
+/* short landscape screens (phones): compact title, dialogue and panels */
+@media (max-height: 520px) {
+  #title { justify-content: center; overflow-y: auto; padding-top: calc(12px + env(safe-area-inset-top)); padding-bottom: 36px; }
+  #title h1 { font-size: clamp(38px, 7vw, 64px); }
+  #title .tag { margin-top: 10px; font-size: 10px; letter-spacing: 0.4em; }
+  #menu { margin-top: 18px; gap: 7px; width: min(330px, 56vw); }
+  #menu button { padding: 9px 14px; font-size: 12px; }
+  #menu .sub { margin-top: 2px; font-size: 11px; }
+  #title .foot { bottom: calc(8px + env(safe-area-inset-bottom)); font-size: 10px; left: calc(8vw + env(safe-area-inset-left)); }
+  #title.naming-on { justify-content: flex-start; }
+  #title.naming-on .logo, #title.naming-on .foot { display: none; }
+  .naming input { font-size: 20px; padding: 8px 12px; }
+  .naming .hint { margin: 0 0 4px; font-size: 11px; }
+  #dialogue { bottom: calc(8px + env(safe-area-inset-bottom)); width: min(760px, 86vw); padding: 12px 18px; max-height: 78vh; overflow-y: auto; }
+  #dialogue .who { font-size: 11px; margin-bottom: 4px; }
+  #dialogue .line { font-size: 15px; line-height: 1.4; }
+  #dialogue .more { margin-top: 6px; }
+  .choices { margin-top: 10px; gap: 6px; }
+  .choices button { padding: 10px 12px; font-size: 13px; }
+  .panel { inset: calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left)); padding: 10px 12px; }
+  .panel.armory, .panel.forge, .panel.skills { display: flex; flex-direction: column; overflow: hidden; }
+  .tabs { margin-bottom: 8px; padding-bottom: 6px; flex: none; }
+  .tabs button { padding: 9px 12px; font-size: 11px; }
+  .tabs .x { font-size: 18px; padding: 6px 14px; }
+  .cols3, .tree { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; flex: 1; min-height: 0; }
+  .col, .branch { overflow-y: auto; min-height: 0; padding-right: 2px; }
+  .bag { max-height: none; overflow: visible; }
+  .col h3, .branch h3, .forge-acts h3 { font-size: 11px; margin-bottom: 6px; }
+  .slot { grid-template-columns: 1fr; gap: 2px; margin-bottom: 5px; }
+  .slot .sl { font-size: 9px; }
+  .item { padding: 8px 8px; font-size: 12px; gap: 6px; }
+  .detail { padding: 10px; } .detail .dn { font-size: 15px; } .detail ul { font-size: 12px; margin: 6px 0; }
+  .acts button, .forge-acts button, .card button { padding: 10px 12px; font-size: 12px; }
+  .stats { font-size: 11px; margin-top: 8px; padding-top: 6px; }
+  .skills-head { margin-bottom: 6px; font-size: 12px; flex: none; flex-wrap: wrap; gap: 4px; }
+  .skills-head .muted { font-size: 10px; }
+  .perk { padding: 8px; margin-top: 6px; } .perk .pd { font-size: 11px; margin: 3px 0 6px; }
+  .perk button { padding: 8px 14px; font-size: 11px; }
+  .card { padding: 16px 18px; max-height: calc(100% - 12px); }
+  .panel.pause, .panel.dead, .panel.news, .panel.controls { inset: 0; padding: 6px; }
+  .card h2 { font-size: 18px; margin-bottom: 4px; }
+  .settings { margin: 4px 0; font-size: 12px; gap: 6px; }
+  .settings input[type=checkbox] { width: 18px; height: 18px; vertical-align: middle; }
+  table.ctl { font-size: 12px; } table.ctl td { padding: 5px 8px; }
+}
+@media (max-height: 520px) and (max-width: 700px) {
+  .cols3, .tree { gap: 7px; }
+  .item .sk { display: none; }
+}

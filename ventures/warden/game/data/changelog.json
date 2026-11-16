@@ -1,6 +1,21 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.3",
+    "title": "Mobile controls: Warden on your phone",
+    "items": [
+      "Play on phones and tablets in landscape. Touch controls only appear on touch devices; keyboard and mouse are unchanged.",
+      "Floating left thumbstick: it appears wherever you put your thumb. Push it to the edge to sprint, ease off to walk.",
+      "Drag anywhere on the right side to look around. A quick tap there is a light strike.",
+      "Thumb buttons: STRIKE (hold to keep the combo going), HEAVY, ROLL, LOCK and STIM. OVERLOAD appears once you learn it, and a glowing FORGE / SEARCH button appears when there is something to use.",
+      "GEAR, SKILLS and pause buttons in the top corner. Every menu (naming, judgment, Armory, Forge, Skills, What's new) fits small landscape screens and scrolls.",
+      "Phones start at a lighter render scale with quarter-resolution bloom, lighter shadows and less rain, and the game still drops resolution on its own if it struggles.",
+      "Hold the phone upright and the game pauses and asks you to turn it sideways. Sound starts on your first tap, including on iPhone.",
+      "The objective no longer covers your name on smaller screens, and the HUD respects notches and rounded corners."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.2",
     "title": "Combat feel: Perfect Dodge and the last blow",
     "items": [

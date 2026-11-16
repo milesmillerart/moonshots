@@ -188,7 +188,7 @@ export function buildWorld(scene, renderer, opts = {}) {
   const moon = new THREE.DirectionalLight(0x8fa6d8, 0.55);
   moon.position.set(-20, 40, 15);
   moon.castShadow = !!opts.shadows;
-  moon.shadow.mapSize.set(1024, 1024);
+  moon.shadow.mapSize.set(opts.mobile ? 512 : 1024, opts.mobile ? 512 : 1024);
   const sc = moon.shadow.camera; sc.left = -18; sc.right = 18; sc.top = 18; sc.bottom = -18; sc.near = 1; sc.far = 90;
   moon.shadow.bias = -0.0008;
   scene.add(moon, moon.target);
@@ -423,7 +423,7 @@ export function buildWorld(scene, renderer, opts = {}) {
   }
 
   // ---- rain (GPU-animated line drops) --------------------------------
-  const N = opts.lowRain ? 2500 : 6000, AREA = 44, HGT = 26;
+  const N = opts.lowRain ? 2200 : 6000, AREA = 44, HGT = 26;
   const pos = new Float32Array(N * 2 * 3), seed = new Float32Array(N * 2 * 3), endA = new Float32Array(N * 2);
   for (let i = 0; i < N; i++) {
     const sx = Math.random() * AREA, sy = Math.random() * HGT, sz = Math.random() * AREA;

@@ -13,7 +13,16 @@ let NOISE = null;
 export const audio = {
   get ready() { return !!ctx; },
   init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) {
+      if (ctx.state !== 'running') {
+        ctx.resume().catch(() => {});
+        // older iOS also wants a sound started inside the gesture
+        try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0); } catch {}
+      }
+      return;
+    }
+    // iOS: play through the ringer/silent switch like a game, not like a notification
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ctx = new AC();

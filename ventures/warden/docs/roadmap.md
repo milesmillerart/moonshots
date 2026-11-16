@@ -1,13 +1,13 @@
 # WARDEN roadmap: daily improvement backlog
 
-Rule: every night ships one or two visible improvements (graphics a little at a time, feel, content). Each gets a line in `game/data/changelog.json`. Run `tools/shots.py` before shipping; zero console errors.
+Rule: every night ships one or two visible improvements (graphics a little at a time, feel, content). Each gets a line in `game/data/changelog.json`. Run `tools/shots.py` (desktop) and `tools/mobile_test.py` (phone emulation) before shipping; zero console errors.
 
 ## Now (next 7 nights, highest impact first)
 1. ~~**Combat feel pass**~~ shipped 2026-11-16 (build 0.2): perfect dodge (0.24 s window, enemy time-dilation, guaranteed-crit Riposte), final-kill slow-mo + FOV punch, heavy wind-up crouch/lean + blade charge, enemy hit-react flinch, dodge-cancel windows, trail only during the cut. Follow-ups: a true parry on heavy-attack timing, and per-move recovery tuning once gamepad lands.
 2. **Warden model v2**: bevelled plate pieces, a proper backplate and gorget, a real helmet silhouette (smooth dome, flared neck guard), cape cloth with gravity and wind, and the red mist particles around the blade like the poster.
 3. **Puddle reflections**: planar reflections (Reflector) or screen-space reflections on the wet street so neon reflects. Splash rings where rain hits.
 4. **Abomination art v2**: real silhouettes (exposed ribs, cables, tumorous plating), death dissolve shader, and individual attack telegraphs that read from a distance.
-5. **Touch and gamepad controls**: Gamepad API mapping, plus a virtual stick and buttons on mobile.
+5. ~~**Touch controls**~~ shipped 2026-11-16 (build 0.3): floating stick (edge = sprint, analog walk), right-side drag look + tap-to-strike, thumb buttons (STRIKE hold-repeat, HEAVY, ROLL, LOCK, STIM, OVERLOAD, contextual FORGE/SEARCH), GEAR/SKILLS/pause, compact landscape menus, rotate prompt + auto-pause in portrait, iOS audio unlock, mobile render defaults (0.85 scale, DPR cap 1.25, quarter-res bloom, 512 shadows, 2200 rain). Test: `tools/mobile_test.py`. Follow-ups: **Gamepad API** mapping; haptics (navigator.vibrate on hits, Android only); customizable button size/left-handed layout; a real portrait layout; test on a physical iPhone and a mid-range Android for FPS.
 6. **Loot feel**: drops arc out of the corpse, rarity sounds, beam heights, a compare tooltip on pickup, and gear visibly changing the Warden (helm and pauldron variants, mantle colors).
 7. **Performance**: merge static city geometry into a few draw calls, instance the windows and lamps, a quality preset menu (Low/Medium/High), and an FPS meter toggle.
 
@@ -31,10 +31,11 @@ Rule: every night ships one or two visible improvements (graphics a little at a 
 ## Shipped log
 - 2026-11-16 build 0.1: vertical slice.
 - 2026-11-16 build 0.2: combat feel pass (perfect dodge + Riposte, last-kill slow-mo, heavy wind-up weight, hit-reacts, cancel windows).
+- 2026-11-16 build 0.3: mobile touch controls and small-screen layout.
 
 ## Known gaps in the vertical slice (v0.1)
 - Animation is procedural (no skeletal rig or mocap), so poses read as stiff.
 - No real collision against props beyond simple circles. The camera can clip props.
-- No gamepad or touch yet.
+- No gamepad yet (touch shipped in 0.3).
 - Enemy pathing is direct: no navmesh, so they can get stuck on corners.
 - Only one district and one elite. The story is one scene plus the breach.

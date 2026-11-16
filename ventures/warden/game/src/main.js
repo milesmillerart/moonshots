@@ -2,6 +2,8 @@
 import * as THREE from '../vendor/three-warden.r187.min.js';
 import { Game } from './game.js';
 import * as Items from './items.js';
+import { detectTouch } from './touch.js';
+import { POI } from './world.js';
 
 const BUILD = document.documentElement.dataset.build || 'dev';
 let renderer;
@@ -20,21 +22,25 @@ const composer = new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene, camera));
 const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.85, 0.55, 0.88);
 composer.addPass(bloom);
+if (detectTouch()) { const bs = bloom.setSize.bind(bloom); bloom.setSize = (w, h) => bs(w / 2, h / 2); } // quarter-res bloom mips on phones
 composer.addPass(new THREE.OutputPass());
 
 const game = new Game(renderer, composer, bloom, scene, camera);
 let dyn = 1; // dynamic resolution factor
 function resize() {
-  const pr = Math.min(devicePixelRatio || 1, 1.5) * game.settings.scale * dyn;
+  const pr = Math.min(devicePixelRatio || 1, game.isTouch ? 1.25 : 1.5) * game.settings.scale * dyn;
+  const bq = game.isTouch ? 4 : 2; // bloom works at a quarter resolution on phones
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight, false);
   composer.setPixelRatio(pr);
   composer.setSize(innerWidth, innerHeight);
-  bloom.resolution.set(innerWidth / 2, innerHeight / 2);
+  bloom.resolution.set(innerWidth / bq, innerHeight / bq);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 }
 game.onResize = resize;
 addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 250));
+window.visualViewport?.addEventListener('resize', () => setTimeout(resize, 50));
 resize();
 
 let last = performance.now(), acc = 0, frames = 0, slow = 0;
@@ -49,7 +55,8 @@ function frame(now) {
   if (acc > 2) {
     stats.fps = frames / acc;
     if (!window.__wardenNoDyn) {
-      if (stats.fps < 40 && dyn > 0.6) { dyn = Math.max(0.6, dyn - 0.15); resize(); slow++; }
+      const floor = game.isTouch ? 0.5 : 0.6;
+      if (stats.fps < 40 && dyn > floor) { dyn = Math.max(floor, dyn - 0.15); resize(); slow++; }
       else if (stats.fps > 58 && dyn < 1) { dyn = Math.min(1, dyn + 0.1); resize(); }
     }
     acc = 0; frames = 0;
@@ -62,3 +69,4 @@ requestAnimationFrame(frame);
 // Test / debug hooks (used by the automated smoke test).
 window.__warden = { game, THREE, build: BUILD, stats, renderer };
 window.__wardenItems = Items;
+window.__wardenPOI = POI;
