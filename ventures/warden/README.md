@@ -25,7 +25,7 @@ Canon lives in `docs/lore.md` (synced from Don's Drive lore folder; it overrides
 - `tools/build.py` copies `game/` to `public/` and cache-busts module URLs
 - `tools/shots.py` headless Chromium smoke test + screenshots
 - `tools/save_test.py`, `tools/inventory_test.py`, `tools/skills_test.py`, `tools/mobile_test.py` save, Armory, skill tree and phone (touch) tests
-- `tools/rarity_test.py` (0.8 rarity migration, no Core promotion, defeat wording, blade states; `--mobile`), `tools/blade_shots.py` (Synthblade Dormant/Awakened close-ups)
+- `tools/rarity_test.py` (0.8 rarity migration, no Core promotion, defeat wording, blade states; `--mobile`), `tools/blade_shots.py` (Synthblade Dormant/Awakened close-ups), `tools/reference_compare.py` (side-by-side vs Don's Drive concept/cover art)
 - `jobs/daily-improve.sh` nightly rebuild + deploy
 - `docs/roadmap.md` prioritized daily backlog, `docs/lore.md` canon (overrides `docs/bible.md`, the v0.4 snapshot)
 

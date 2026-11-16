@@ -23,7 +23,7 @@ STUDIO = """async (k) => { const T = window.__warden.THREE, g = window.__warden.
   r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
   const sc = new T.Scene(); sc.background = new T.Color(0x3c3c3c);
   // soft studio environment: grey room with two bright panels, so the dark steel reads like the concept sheet
-  const env = new T.Scene(); const room = new T.Mesh(new T.BoxGeometry(10, 10, 10), new T.MeshBasicMaterial({ color: 0x2a2a2a, side: T.BackSide })); env.add(room);
+  const env = new T.Scene(); const room = new T.Mesh(new T.BoxGeometry(10, 10, 10), new T.MeshBasicMaterial({ color: 0x555555, side: T.BackSide })); env.add(room);
   for (const [x, y, z, s] of [[-3, 3, 4, 3], [4, 1, 2, 2], [0, 4.5, -2, 4]]) { const p = new T.Mesh(new T.PlaneGeometry(s, s), new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide })); p.position.set(x, y, z); p.lookAt(0, 0, 0); env.add(p); }
   const pm = new T.PMREMGenerator(r); sc.environment = pm.fromScene(env, 0.04).texture;
   const key = new T.DirectionalLight(0xffffff, 1.4); key.position.set(-2, 3, 4); sc.add(key);

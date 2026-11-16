@@ -386,7 +386,7 @@ export class Player {
     if (aw > 0.25 && Math.random() < 0.25 + act * 0.5) sw2.crackle(0.4 + act * 0.8 + heat * 0.5); else sw2.arcs.geometry.setDrawRange(0, 0);
     sw2.tick(dt, this.t, act * aw, heat);
     // trail sample
-    if (this.titleMode) { u.visorMat.color.setRGB(2.6, 0.07, 0.11); return; }
+    if (this.titleMode) { u.visorMat.color.setRGB(1.25, 0.015, 0.04); return; }
     const b = u.sword.localToWorld(tmpA.copy(sw2.baseLocal));
     const tp = u.sword.localToWorld(tmpB.copy(sw2.tipLocal));
     const cutting = this.state === 'attack' && this.t * (1 + this.stats.aspd / 100) >= this.atk.t[0] * 0.75;
@@ -394,7 +394,7 @@ export class Player {
     audio.setHum(Math.min(1, this.bladeSpeed / 15));
     this.lastTip.copy(tp);
     // hurt flash on visor
-    u.visorMat.color.setRGB(this.hurtT > 0 ? 6 : 2.6, this.hurtT > 0 ? 1.4 : 0.07, this.hurtT > 0 ? 0.3 : 0.11);
+    u.visorMat.color.setRGB(this.hurtT > 0 ? 3.2 : 1.25, this.hurtT > 0 ? 0.6 : 0.015, this.hurtT > 0 ? 0.2 : 0.04); // deep red T-visor (cover art)
   }
   bladeTip() { return this.lastTip; }
   // In combat: swinging, dodging, riposte window, locked on, or an aggressive abomination close by.

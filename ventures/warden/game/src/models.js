@@ -163,7 +163,7 @@ export const MAT = {
   plateDull: () => patch(new THREE.MeshStandardMaterial({ color: 0x131417, metalness: 0.45, roughness: 0.7, side: THREE.DoubleSide }), { rim: [0.06, 0.08, 0.12] }),
   leather: () => new THREE.MeshStandardMaterial({ color: 0x1a1411, roughness: 0.82, metalness: 0.05 }),
   cloth: () => new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.95, side: THREE.DoubleSide }),
-  visor: () => glow(1.5, 0.02, 0.045),
+  visor: () => glow(1.0, 0.01, 0.03),
 };
 
 function capeAlpha() {
@@ -302,7 +302,7 @@ function makeMotes(n, size) {
 // (contained barrier in the channel). Shape and size never change. Statues are always Dormant stone.
 export function buildSword({ statue = false, stone = null } = {}) {
   const g = new THREE.Group();
-  const steel = stone || new THREE.MeshStandardMaterial({ color: 0x2a2e35, metalness: 1, roughness: 0.34, roughnessMap: grunge(), envMapIntensity: 1.9 });
+  const steel = stone || new THREE.MeshStandardMaterial({ color: 0x4a5059, metalness: 1, roughness: 0.4, roughnessMap: grunge(), envMapIntensity: 1.9 });
   const web = stone || new THREE.MeshStandardMaterial({ color: 0x0b0c0f, metalness: 0.85, roughness: 0.5, envMapIntensity: 0.8 });
   const dark = stone || MAT.plate(), trim = stone || MAT.trim();
   const leather = stone || new THREE.MeshStandardMaterial({ color: 0x120d0b, roughness: 0.9 });
@@ -312,7 +312,7 @@ export function buildSword({ statue = false, stone = null } = {}) {
   // grip, leather wraps, faceted pommel with a synth gem
   mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.3, 10), leather, 0, 0, 0, g);
   for (let k = 0; k < 7; k++) put(mesh(new THREE.TorusGeometry(0.029, 0.0055, 4, 10), wrap, 0, -0.13 + k * 0.043, 0, g), Math.PI / 2, 0, 0.2);
-  mesh(lathe([[0.001, -0.252], [0.034, -0.244], [0.05, -0.208], [0.046, -0.172], [0.026, -0.156], [0.02, -0.148]], 8), dark, 0, 0, 0, g);
+  mesh(lathe([[0.001, -0.29], [0.026, -0.282], [0.04, -0.245], [0.042, -0.2], [0.03, -0.165], [0.02, -0.148]], 8), dark, 0, 0, 0, g); // long faceted pommel (concept)
   const pommelGem = mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 3).rotateX(-Math.PI / 2), gem, 0, -0.205, 0.044, g);
   // crossguard (concept art): a flat, wide forged bar with squared ends that turn down, and a
   // triangular synth gem on each face pointing down the blade
@@ -553,7 +553,7 @@ export function buildWarden({ statue = false } = {}) {
     arms.push({ side, upper, fore, shoulder: V(side * 0.33, 0.52, 0) });
   }
   // ---- cape: tattered cloth, simulated by the Player (verlet), pinned under the pauldrons
-  const CW = LOW ? 5 : 7, CH = LOW ? 10 : 14, CWID = 0.78, CLEN = 1.5;
+  const CW = LOW ? 5 : 7, CH = LOW ? 10 : 14, CWID = 0.92, CLEN = 1.55;
   const capeGeo = new THREE.PlaneGeometry(CWID, CLEN, CW, CH);
   capeGeo.translate(0, -CLEN / 2, 0);
   { const p = capeGeo.attributes.position;

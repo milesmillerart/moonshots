@@ -8,7 +8,8 @@
       "Effect slots: Rare gear has 1, Legendary 2, Exalted 3. For now Cores fill them; Base and Uncommon gear has none. Any Cores already installed in your gear stay right where they are.",
       "Cores no longer raise an item's rarity, and Power counts each item's own rarity. Every Core keeps its effect.",
       "Exalted gear will also grant a buff while equipped. That buff isn't designed yet, so its line reads as a placeholder.",
-      "The Synthblade is rebuilt to match the concept art: a real steel longsword with a channel cut along its one synth edge. In a fight the edge Awakens and a contained red barrier fills the channel. Out of combat it settles Dormant: the channel goes dark and it is simply a sword. Its shape never changes.",
+      "The Synthblade is rebuilt to match the concept art: a broad steel longsword with a flared shoulder, a flat forged crossguard with a triangular synth gem, and a channel cut along its one synth edge. In a fight the edge Awakens and a contained red barrier fills the channel. Out of combat it settles Dormant: the channel goes dark and it is simply a sword. Its shape never changes.",
+      "The Warden looks closer to the cover art: a deep red T-visor, a cloth cowl around the shoulders and a wider, longer cape.",
       "Defeat no longer implies coming back from the dead. You are Defeated, and the game resumes from your last synchronization point with everything kept.",
       "Hallowmere is now the capital of a much larger Ninth Ward, and these streets are a few of its sites. \"The Rot\" is what the street calls the abominations, and that they were people once is only what some believe.",
       "Placeholder titles are gone from item names: no more Kings, Saints or Old Kingdom. Your existing items are renamed to match (for example Vael's Hearthplate, Ossery's Verdict). Kade is still the default name, and you can rename your Warden as before."
