@@ -71,7 +71,7 @@ def desktop(p):
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(1)
     s = pg.evaluate(snap_js())
     compare(s, v04, CORE, "v0.4 migration", strip=True)
-    assert pg.evaluate("window.__warden.game.save.schema") == 3 and pg.evaluate("Object.values(window.__warden.game.save.equip).every(i => typeof i.got === 'number' && i.fav === false)")
+    assert pg.evaluate("window.__warden.game.save.schema") == 4 and pg.evaluate("Object.values(window.__warden.game.save.equip).every(i => typeof i.got === 'number' && i.fav === false)")
     assert s["pos"] == [-30, 0.5], s["pos"]; print("  OK position restored", s["pos"])
     # 2. make progress
     G("g.allowUnlockedAttack = true; g.noLock = true; g.applySetting('scale', 0.5);")

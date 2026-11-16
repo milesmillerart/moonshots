@@ -5,7 +5,7 @@ import { detectTouch } from './touch.js';
 
 const LOWFX = detectTouch();
 // Swing trail: a tapered additive ribbon, Catmull-Rom smoothed between frames so fast cuts stay
-// round even at low frame rates. Hot pink-white at the edge, deep red toward the inside, fades with age.
+// round even at low frame rates. 0.8: deep red, hot only at the very edge (motion of the synth edge, not a beam).
 const TRAIL_VS = `attribute vec3 aT; varying vec3 vT; void main(){ vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const TRAIL_FS = `varying vec3 vT;
 void main(){
@@ -13,9 +13,9 @@ void main(){
   float fade = pow(1.0 - k, 2.2);
   float edge = pow(s, 2.2);
   float streak = 0.72 + 0.28 * sin(k * 70.0 + s * 9.0);
-  vec3 col = mix(vec3(0.5, 0.0, 0.1), vec3(3.6, 0.45, 1.25), edge) + vec3(3.0, 2.0, 2.4) * pow(s, 16.0) * (1.0 - k);
+  vec3 col = mix(vec3(0.42, 0.0, 0.05), vec3(3.1, 0.22, 0.5), edge) + vec3(2.2, 1.0, 1.3) * pow(s, 16.0) * (1.0 - k);
   float inner = smoothstep(0.0, 0.35, s);
-  gl_FragColor = vec4(col * a * fade * (0.035 + 0.75 * edge * edge) * inner * streak, 1.0);
+  gl_FragColor = vec4(col * a * fade * (0.03 + 0.55 * edge * edge) * inner * streak, 1.0);
 }`;
 const CR = (p0, p1, p2, p3, t) => { const t2 = t * t, t3 = t2 * t; return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3); };
 

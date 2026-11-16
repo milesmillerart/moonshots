@@ -3,7 +3,7 @@
 Desktop 1600x900: a 0.5 (schema 2) save migrates to schema 3 (got/seen/fav on every item, nothing lost);
 I opens the Armory; live 3D paper-doll renders (non-blank pixels); stat sheet matches the game's stat math;
 hover shows compare with green/red deltas; slot + tier filters and all 4 sorts; click-again equips; Lock blocks
-salvage and survives reload; salvage needs a confirm tap; bulk salvage of unlocked Issued; Forge entry.
+salvage and survives reload; salvage needs a confirm tap; bulk salvage of unlocked Base; Forge entry.
 Mobile (iPhone 13, Pixel 7, iPhone SE landscape, real touch): GEAR button, tap selects (no hover), tap again
 equips, filter chips, every control on screen, zero console errors.
 Usage: python3 tools/inventory_test.py [URL] [OUTDIR]"""
@@ -55,8 +55,8 @@ def desktop(p):
     ids = start(pg, G)
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(1)
     s = G("return { schema: g.save.schema, n: g.save.bag.length, all: [...Object.values(g.save.equip), ...g.save.bag].every(it => typeof it.got === 'number' && it.seen === true && it.fav === false), up: g.save.equip.blade.upgrade, bag: g.save.bag.map(x => x.uid) }")
-    assert s["schema"] == 3 and s["n"] == 12 and s["all"] and s["up"] == 2 and s["bag"] == ids["bag"], s
-    print("  OK 0.5 save migrated to schema 3: 12 items keep order, every item got got/seen/fav, Temper intact")
+    assert s["schema"] == 4 and s["n"] == 12 and s["all"] and s["up"] == 2 and s["bag"] == ids["bag"], s
+    print("  OK 0.5 save migrated to schema 4: 12 items keep order, every item got got/seen/fav, Temper intact")
     G("g.allowUnlockedAttack = true; g.noLock = true; g.save.bag.push(window.__wardenItems.makeItem('helm', 3, 8, { noCores: true })); g.save.bag.push(window.__wardenItems.makeCore('ember', 3));")
     pg.keyboard.press("i"); time.sleep(2.5)
     assert G("return g.ui.screen") == "armory"
@@ -68,13 +68,13 @@ def desktop(p):
     assert int(dmg) == want, (dmg, want); print(f"  OK stat sheet matches game math (damage {dmg}), Power {pw}")
     assert pg.locator(".tile.new").count() == 2; print("  OK new pickups marked NEW")
     pg.screenshot(path=str(OUT / "desktop-01-overview.png"))
-    # hover the Sovereign blade -> compare
+    # hover the Exalted blade -> compare
     sov = ids["bag"][0]
     pg.hover(f".tile[data-item='{sov}']"); time.sleep(0.5)
     assert pg.locator("#invdetail .cmp2").count() == 1 and pg.locator("#invdetail .dl.up").count() >= 1, "no compare deltas"
     print("  OK hover shows compare vs equipped:", pg.inner_text("#invdetail .cmp2").replace("\n", " | ")[:160])
     pg.screenshot(path=str(OUT / "desktop-02-compare.png"))
-    weak = ids["bag"][9]  # Issued blade -> red deltas
+    weak = ids["bag"][9]  # Base blade -> red deltas
     pg.hover(f".tile[data-item='{weak}']"); time.sleep(0.4)
     assert pg.locator("#invdetail .dl.dn").count() >= 1; print("  OK weaker item shows red deltas")
     pg.mouse.move(800, 880); time.sleep(0.2)
@@ -82,18 +82,18 @@ def desktop(p):
     pg.click(".chips [data-v=helm]"); time.sleep(0.4)
     n = pg.locator("#invgrid .tile").count(); assert n == G("return g.save.bag.filter(x => x.slot === 'helm').length") == 3, n
     pg.click(".rchips [data-v='3']"); time.sleep(0.4)
-    exp = G("const I = window.__wardenItems; return g.save.bag.filter(x => x.slot === 'helm' && I.effectiveRarity(x) === 3).length")
+    exp = G("const I = window.__wardenItems; return g.save.bag.filter(x => x.slot === 'helm' && I.tierOf(x) === 3).length")
     assert exp >= 1 and pg.locator("#invgrid .tile").count() == exp
     pg.screenshot(path=str(OUT / "desktop-03-filter.png"))
     pg.click(".rchips [data-v='-1']"); pg.click(".chips [data-v=core]"); time.sleep(0.3)
     assert pg.locator("#invgrid .tile").count() == 3; pg.click(".chips [data-v=all]"); time.sleep(0.3)
-    print("  OK slot + tier filters (helm=3, helm+Relic=1, cores=3)")
+    print("  OK slot + tier filters (helm=3, helm+Legendary=1, cores=3)")
     for srt in ["newest", "rarity", "power", "slot"]:
         pg.click(f".sorts [data-v={srt}]"); time.sleep(0.3)
         order = pg.evaluate("[...document.querySelectorAll('#invgrid .tile')].map(t => t.dataset.item)")
         exp = G(f"return g.ui.armory.list().map(x => x.uid)"); assert order == exp
         if srt == "rarity":
-            rs = G("const I = window.__wardenItems; return g.ui.armory.list().map(x => I.effectiveRarity(x))"); assert rs == sorted(rs, reverse=True), rs
+            rs = G("const I = window.__wardenItems; return g.ui.armory.list().map(x => I.tierOf(x))"); assert rs == sorted(rs, reverse=True), rs
         if srt == "newest": assert order[0] in G("return g.save.bag.slice(-2).map(x => x.uid)")
     print("  OK sorts: newest, rarity, power, slot")
     # double-click equip
@@ -117,7 +117,7 @@ def desktop(p):
     # bulk salvage skips locked
     pg.click("[data-inv=bulk]"); time.sleep(0.2); pg.click("[data-inv=bulk]"); time.sleep(0.4)
     left = G("return g.save.bag.filter(x => x.kind === 'gear' && x.rarity === 0).map(x => x.uid)")
-    assert left == [tgt], left; print("  OK bulk salvage of unlocked Issued keeps the locked one")
+    assert left == [tgt], left; print("  OK bulk salvage of unlocked Base keeps the locked one")
     # forge entry: far away -> hint; near -> forge tab
     pg.click(".pfoot .forge-btn"); time.sleep(0.3)
     assert "Forge" in pg.inner_text("#toasts")
