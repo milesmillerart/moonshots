@@ -89,14 +89,14 @@ def main():
         assert r0 == [0, 0, 0], r0
         print("  OK Cores never promote: tier/Power use base rarity; Core into Rare keeps Rare; Base gear has no effect slot")
         # Armory text
-        pg.keyboard.press("i"); time.sleep(1.2)
+        G("g.ui.toggle('armory')"); time.sleep(1.2)
         G("const cu = g.save.equip.cuirass; g.ui.armory.sel = cu.uid; g.ui.render();"); time.sleep(0.6)
-        txt = pg.inner_text(".panel")
-        assert "Rare" in txt and "raised by Cores" not in txt and "Issued" not in txt and "Sovereign" not in txt, txt[:400]
+        txt = pg.inner_text(".panel").lower()
+        assert "rare" in txt and "raised by cores" not in txt and "issued" not in txt and "sovereign" not in txt, txt[:400]
         pg.screenshot(path=str(OUT / f"{tag}-armory-rare.png"))
         G("const it = g.save.bag.find(x => x.rarity === 4 && x.slot === 'blade'); g.ui.armory.sel = it.uid; g.ui.render();"); time.sleep(0.6)
-        txt = pg.inner_text(".panel")
-        assert "Exalted" in txt and "not designed yet" in txt, txt[:500]
+        txt = pg.inner_text(".panel").lower()
+        assert "exalted" in txt and "not designed yet" in txt, txt[:500]
         pg.screenshot(path=str(OUT / f"{tag}-armory-exalted.png"))
         print("  OK Armory shows new tier names, effect slots, Exalted buff placeholder")
         G("g.ui.close()"); time.sleep(0.4)

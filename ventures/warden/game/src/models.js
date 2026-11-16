@@ -190,7 +190,7 @@ function moteTex() {
 
 // ---- Synthblade ---------------------------------------------------------------------------------
 // Blade along +Y from the guard, dark steel spine on -X, the ONE synth edge on +X.
-const BL = 1.12, B0 = 0.24, BW = 0.074, BT = 0.019, TIPY = B0 + BL + 0.14, TIPX = -BW * 0.16;
+const BL = 1.12, B0 = 0.24, BW = 0.092, BT = 0.019, TIPY = B0 + BL + 0.14, TIPX = -BW * 0.16;
 const yOf = (u) => B0 + u * (TIPY - B0);
 function backX(u) { const b = (v) => -BW * 0.5 * (1 - 0.12 * v); return u < 0.9 ? b(u) : b(0.9) + (TIPX - b(0.9)) * ((u - 0.9) / 0.1); }
 export function edgeX(u) { const e = (v) => BW * 0.5 * (1 - 0.16 * v); return u < 0.78 ? e(u) : e(0.78) + (TIPX - e(0.78)) * Math.pow((u - 0.78) / 0.22, 1.4); }
@@ -272,10 +272,10 @@ void main(){
   float wall = exp(-pow(x * 14.0, 2.0)) * 0.35;                  // faint line where it meets the steel wall
   float vein = smoothstep(0.82, 0.98, n(vec2(a * 60.0 - uTime * 6.0, x * 9.0 + uTime * 2.0))) * 0.9;
   float ends = smoothstep(0.0, 0.035, a) * smoothstep(1.0, 0.965, a);
-  float fill = 0.42 + 0.35 * flow;
+  float fill = 0.34 + 0.3 * flow;
   float hot = clamp(seam * 0.95 + vein * 0.7 + uHeat * 0.3, 0.0, 1.0);
   vec3 col = mix(uColor, uHot, hot);
-  float I = (fill + seam * 1.3 + wall + vein) * flick * ends * uAwake * (1.0 + uHeat * 0.9);
+  float I = (fill + seam * 0.85 + wall + vein * 0.6) * flick * ends * uAwake * (1.0 + uHeat * 0.9);
   gl_FragColor = vec4(col * I, 1.0);
 }`;
 function edgeMaterial(U) {
@@ -328,7 +328,7 @@ export function buildSword({ statue = false, stone = null } = {}) {
   mesh(bladeGeo(), steel, 0, 0, 0, g);
   void web;
   // the synth barrier: one animated shader confined to the channel
-  const U = { uTime: { value: 0 }, uHeat: { value: 0 }, uAwake: { value: statue ? 0 : 1 }, uColor: { value: new THREE.Color(1.9, 0.03, 0.09) }, uHot: { value: new THREE.Color(4.2, 1.15, 1.75) } };
+  const U = { uTime: { value: 0 }, uHeat: { value: 0 }, uAwake: { value: statue ? 0 : 1 }, uColor: { value: new THREE.Color(1.05, 0.02, 0.055) }, uHot: { value: new THREE.Color(2.6, 0.62, 0.95) } };
   const edgeMat = edgeMaterial(U);
   const keep = (m) => { m.userData.keep = true; m.castShadow = false; return m; };
   const barrier = statue ? null : keep(mesh(barrierGeo(), edgeMat, 0, 0, 0, g));
@@ -337,7 +337,7 @@ export function buildSword({ statue = false, stone = null } = {}) {
   const MAXV = LOW ? 48 : 140;
   const arcGeo = new THREE.BufferGeometry();
   arcGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXV * 3), 3));
-  const arcMat = new THREE.LineBasicMaterial({ color: new THREE.Color(4.5, 1.6, 2.6), transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const arcMat = new THREE.LineBasicMaterial({ color: new THREE.Color(2.6, 0.9, 1.4), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
   const arcs = new THREE.LineSegments(arcGeo, arcMat);
   arcs.frustumCulled = false; arcs.visible = !statue; g.add(arcs);
   const light = new THREE.PointLight(0xff1838, statue ? 0 : 2.2, 4, 2); light.position.set(0.06, 0.75, 0); g.add(light);
