@@ -224,10 +224,17 @@ reversible starting point but not formally decided · **[OPEN]** still undecided
      strictly linear; short underground entrances in the Ruins may tease deeper areas). Ruins =
      inhabited/exploited decline, not a monster wasteland. One coherent explorable area beats
      many unfinished ones.
+   - [ESTABLISHED — Don update, 2026-11-16 ~3:47 PM ET] **Ruins are NOT next.** Complete the first
+     area (Hallowmere, the capital) before any new zone; the Ruins come later (the City → Ruins →
+     Subterranean order above still stands, it just starts after Hallowmere is finished).
+   - [AWAITING DON'S INPUT] **The opening / start of the game.** Don wants to shape it himself.
+     0.8 only applied the canon fixes to the intro text (capital, the Rot as slang, belief not
+     fact); no further rework of the intro, title flow or first minutes until he weighs in.
 6. **Priorities (ESTABLISHED order):** (1) rarity names/colours/effect slots; (2) remove
    Core-driven rarity promotion; (3) Synthblade dormant/awakened visuals; (4) remove resurrection
    implications from defeat text; (5) Ninth Ward geography + "the Rot" references; (6) begin
-   replacing placeholder political/religious terms. Then a focused Ruins expansion. The
+   replacing placeholder political/religious terms. Then (Don, original direction) a focused Ruins
+   expansion; superseded by the 3:47 PM update: complete Hallowmere first. The
    Prismatic Order influences NPCs, dialogue, environment, institutions and lore only — **no
    reputation/membership/faction/college system yet**.
 
@@ -448,7 +455,8 @@ Source: https://docs.google.com/document/d/1CepYHrX481or4ncRpdMg89XGGWY-FIFQjV-u
 15. `docs/bible.md` is the old v0.4 snapshot. This file overrides it.
 
 # Open questions for Don (collected)
-- Final approval of checkpoint defeat (recommended), and of Ruins first (recommended).
+- Final approval of checkpoint defeat (recommended). Zone order: Hallowmere first is now established; Ruins after it.
+- The game's opening / start: awaiting Don's input.
 - Cores long-term: Don recommends distinct modules with tradeoffs and compatibility rules. Details
   pending. Should Cores keep occupying effect slots once status effects exist?
 - The Exalted buff pool. The first status-effect list. Awakening thresholds. Attunement as binary or

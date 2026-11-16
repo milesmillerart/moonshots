@@ -163,7 +163,7 @@ export const MAT = {
   plateDull: () => patch(new THREE.MeshStandardMaterial({ color: 0x131417, metalness: 0.45, roughness: 0.7, side: THREE.DoubleSide }), { rim: [0.06, 0.08, 0.12] }),
   leather: () => new THREE.MeshStandardMaterial({ color: 0x1a1411, roughness: 0.82, metalness: 0.05 }),
   cloth: () => new THREE.MeshStandardMaterial({ color: 0x0b0b0d, roughness: 0.95, side: THREE.DoubleSide }),
-  visor: () => glow(2.6, 0.07, 0.11),
+  visor: () => glow(1.5, 0.02, 0.045),
 };
 
 function capeAlpha() {
@@ -190,9 +190,10 @@ function moteTex() {
 
 // ---- Synthblade ---------------------------------------------------------------------------------
 // Blade along +Y from the guard, dark steel spine on -X, the ONE synth edge on +X.
-const BL = 1.12, B0 = 0.24, BW = 0.092, BT = 0.019, TIPY = B0 + BL + 0.14, TIPX = -BW * 0.16;
+const BL = 1.12, B0 = 0.24, BW = 0.125, BT = 0.019, TIPY = B0 + BL + 0.14, TIPX = -BW * 0.16;
 const yOf = (u) => B0 + u * (TIPY - B0);
-function backX(u) { const b = (v) => -BW * 0.5 * (1 - 0.12 * v); return u < 0.9 ? b(u) : b(0.9) + (TIPX - b(0.9)) * ((u - 0.9) / 0.1); }
+function backX(u) { const b = (v) => -BW * 0.5 * (1 - 0.12 * v) * (1 + 0.42 * (1 - c01(v / 0.17)) ** 2); // flared shoulder under the guard (concept art)
+  return u < 0.9 ? b(u) : b(0.9) + (TIPX - b(0.9)) * ((u - 0.9) / 0.1); }
 export function edgeX(u) { const e = (v) => BW * 0.5 * (1 - 0.16 * v); return u < 0.78 ? e(u) : e(0.78) + (TIPX - e(0.78)) * Math.pow((u - 0.78) / 0.22, 1.4); }
 const thick = (u) => BT * (1 - 0.55 * u);
 // cross-section, back (0) to edge (1): flat spine, a fuller groove, a squared wall, then the edge.
@@ -200,8 +201,8 @@ const thick = (u) => BT * (1 - 0.55 * u);
 // edge. Along most of the blade the steel past the wall (fx >= 0.6) is cut down to a thin web: that
 // recess is the channel. At the guard and the tip the steel is full (the metal "notches" in Don's
 // concept art), so the silhouette never changes between Dormant and Awakened.
-const PROF = [[0, 0.5], [0.1, 0.5], [0.2, 0.2], [0.34, 0.2], [0.44, 0.47], [0.58, 0.45], [0.6, 0.43], [1, 0], [0.6, -0.43], [0.58, -0.45], [0.44, -0.47], [0.34, -0.2], [0.2, -0.2], [0.1, -0.5], [0, -0.5]];
-const CH_IN = 0.6, CH_FLOOR = 0.11, CH_U0 = 0.045, CH_U1 = 0.885; // channel inner wall (fraction), web half-thickness, start/end along blade
+const PROF = [[0, 0.5], [0.1, 0.5], [0.2, 0.2], [0.34, 0.2], [0.4, 0.47], [0.48, 0.45], [0.5, 0.43], [1, 0], [0.5, -0.43], [0.48, -0.45], [0.4, -0.47], [0.34, -0.2], [0.2, -0.2], [0.1, -0.5], [0, -0.5]];
+const CH_IN = 0.5, CH_FLOOR = 0.11, CH_U0 = 0.045, CH_U1 = 0.885; // channel inner wall (fraction), web half-thickness, start/end along blade
 const chDepth = (u) => c01((u - CH_U0) / 0.03) * c01((CH_U1 - u) / 0.035); // 0 = full steel, 1 = channel
 const chZ = (u) => CH_FLOOR * thick(u) + 0.0009; // barrier sits just above the web, inside the recess
 function bladeGeo() {
@@ -210,7 +211,7 @@ function bladeGeo() {
     const u = i / S, xb = backX(u), xe = edgeX(u), t = thick(u), y = yOf(u), ring = [], d = chDepth(u);
     for (const [fx, fz0] of PROF) {
       let fz = fz0;
-      if (fx > 0.15 && fx < 0.4) fz = Math.sign(fz0) * (Math.abs(fz0) + (0.47 - Math.abs(fz0)) * c01((u - 0.6) / 0.15)); // fuller runs out
+      if (fx > 0.15 && fx < 0.36) fz = Math.sign(fz0) * (Math.abs(fz0) + (0.47 - Math.abs(fz0)) * c01((u - 0.6) / 0.15)); // fuller runs out
       if (fx >= CH_IN) fz = Math.sign(fz0) * (Math.abs(fz0) + (Math.max(CH_FLOOR * (fx === 1 ? 0.4 : 1), 0) - Math.abs(fz0)) * d); // cut the channel
       ring.push([xb + (xe - xb) * fx, y, fz * t]);
     }
@@ -301,7 +302,7 @@ function makeMotes(n, size) {
 // (contained barrier in the channel). Shape and size never change. Statues are always Dormant stone.
 export function buildSword({ statue = false, stone = null } = {}) {
   const g = new THREE.Group();
-  const steel = stone || new THREE.MeshStandardMaterial({ color: 0x17191e, metalness: 1, roughness: 0.3, roughnessMap: grunge(), envMapIntensity: 1.5 });
+  const steel = stone || new THREE.MeshStandardMaterial({ color: 0x2a2e35, metalness: 1, roughness: 0.34, roughnessMap: grunge(), envMapIntensity: 1.9 });
   const web = stone || new THREE.MeshStandardMaterial({ color: 0x0b0c0f, metalness: 0.85, roughness: 0.5, envMapIntensity: 0.8 });
   const dark = stone || MAT.plate(), trim = stone || MAT.trim();
   const leather = stone || new THREE.MeshStandardMaterial({ color: 0x120d0b, roughness: 0.9 });
@@ -312,20 +313,32 @@ export function buildSword({ statue = false, stone = null } = {}) {
   mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.3, 10), leather, 0, 0, 0, g);
   for (let k = 0; k < 7; k++) put(mesh(new THREE.TorusGeometry(0.029, 0.0055, 4, 10), wrap, 0, -0.13 + k * 0.043, 0, g), Math.PI / 2, 0, 0.2);
   mesh(lathe([[0.001, -0.252], [0.034, -0.244], [0.05, -0.208], [0.046, -0.172], [0.026, -0.156], [0.02, -0.148]], 8), dark, 0, 0, 0, g);
-  const pommelGem = mesh(new THREE.SphereGeometry(0.02, 8, 6), gem, 0, -0.205, 0.045, g);
-  // crossguard: forged block, swept quillons with knobs, a gem on each face
-  mesh(rbox(0.11, 0.075, 0.07), dark, 0, 0.195, 0, g);
-  mesh(rbox(0.13, 0.02, 0.078), trim, 0, 0.165, 0, g);
+  const pommelGem = mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 3).rotateX(-Math.PI / 2), gem, 0, -0.205, 0.044, g);
+  // crossguard (concept art): a flat, wide forged bar with squared ends that turn down, and a
+  // triangular synth gem on each face pointing down the blade
+  const tri = (r, d) => new THREE.CylinderGeometry(r, r, d, 3).rotateX(-Math.PI / 2); // flat triangle in XY, point toward the blade
+  mesh(rbox(0.1, 0.07, 0.072), dark, 0, 0.2, 0, g);
+  mesh(rbox(0.12, 0.02, 0.078), trim, 0, 0.168, 0, g);
   for (const s of [-1, 1]) {
-    put(mesh(new THREE.CylinderGeometry(0.017, 0.029, 0.17, 8), dark, s * 0.125, 0.205, 0, g), 0, 0, -s * (Math.PI / 2 - 0.2));
-    mesh(new THREE.SphereGeometry(0.026, 8, 6), trim, s * 0.205, 0.228, 0, g);
+    put(mesh(rbox(0.13, 0.036, 0.052), dark, s * 0.11, 0.214, 0, g), 0, 0, s * 0.05);
+    put(mesh(rbox(0.12, 0.008, 0.056), trim, s * 0.11, 0.236, 0, g), 0, 0, s * 0.05);
+    put(mesh(rbox(0.075, 0.036, 0.056), dark, s * 0.2, 0.226, 0, g), 0, 0, s * 0.6); // ends bend toward the blade
   }
-  for (const z of [-1, 1]) mesh(new THREE.SphereGeometry(0.019, 8, 6), gem, 0, 0.198, z * 0.036, g);
+  for (const z of [-1, 1]) mesh(tri(0.026, 0.012), gem, 0, 0.2, z * 0.034, g);
   // ricasso collar + engraved vents along the spine (dark steel; they no longer glow)
-  mesh(rbox(0.088, 0.05, 0.032), trim, -0.002, 0.262, 0, g);
+  mesh(rbox(BW * 1.12, 0.05, 0.032), trim, -0.004, 0.262, 0, g);
   for (let k = 0; k < 3; k++) mesh(rbox(0.012, 0.024, 0.024), trim, backX(0.05) + 0.012, 0.31 + k * 0.045, 0, g);
   // the blade itself (steel body with the channel cut into its edge side) + the dark web at the channel floor
   mesh(bladeGeo(), steel, 0, 0, 0, g);
+  for (const z of [-1, 1]) {
+    const wall = [], spine = [];
+    for (let i = 0; i <= 12; i++) { const u = CH_U0 + (i / 12) * (CH_U1 - CH_U0), xb = backX(u), xe = edgeX(u);
+      wall.push([xb + (xe - xb) * (CH_IN - 0.06), yOf(u), z * (0.47 * thick(u) + 0.0012)]);
+      if (u < 0.6) spine.push([xb + (xe - xb) * 0.27, yOf(u), z * (0.2 * thick(u) + 0.0012)]); }
+    mesh(tube(wall, 0.0021, 24, 3), trim, 0, 0, 0, g); mesh(tube(spine, 0.0016, 16, 3), trim, 0, 0, 0, g);
+    for (const u of [0.3, 0.33, 0.36]) { const xb = backX(u), xe = edgeX(u); // chevron vents
+      put(mesh(rbox(0.022, 0.004, 0.002), trim, xb + (xe - xb) * 0.27, yOf(u), z * (0.2 * thick(u) + 0.0012), g), 0, 0, 0.5); }
+  }
   void web;
   // the synth barrier: one animated shader confined to the channel
   const U = { uTime: { value: 0 }, uHeat: { value: 0 }, uAwake: { value: statue ? 0 : 1 }, uColor: { value: new THREE.Color(1.05, 0.02, 0.055) }, uHot: { value: new THREE.Color(2.6, 0.62, 0.95) } };
@@ -479,6 +492,10 @@ export function buildWarden({ statue = false } = {}) {
   mesh(shell(0.13, 0.172, 0.06, 0, TAU), plate, 0, 0.655, 0, torso);
   mesh(shell(0.108, 0.142, 0.055, 0, TAU), trim, 0, 0.7, 0, torso);
   mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.14, 10), dull, 0, 0.74, 0, torso);
+  // cloth cowl draped round the neck and over the shoulders, open at the chest (cover art)
+  { const cowl = stone || cloth.clone(); if (!statue) cowl.side = THREE.DoubleSide;
+    put(mesh(shell(0.15, 0.31, 0.2, 0.75, TAU - 1.5), cowl, 0, 0.64, -0.01, torso), 0, 0, 0, 1, 1, 0.74);
+    put(mesh(shell(0.2, 0.33, 0.07, 0.95, TAU - 1.9), cowl, 0, 0.555, -0.02, torso), 0, 0, 0, 1, 1, 0.76); }
   for (const side of [-1, 1]) {
     const pd = new THREE.Group(); pd.position.set(side * 0.36, 0.578, 0); pd.rotation.z = -side * 0.42; torso.add(pd);
     put(mesh(sphere(0.19, SEG, 10, 0, Math.PI / 2), plate, 0, 0, 0, pd), 0, 0, 0, 1, 0.8, 1.12);
