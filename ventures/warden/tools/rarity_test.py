@@ -108,12 +108,13 @@ def main():
         print("  OK new loot: slots 0/0/1/2/3, no placeholder names in 600 rolls")
         # 5. blade dormant / awakened
         G("for (const e of g.enemies) e.dispose(); g.enemies = []; g.lockTarget = null; g.player.forceAwake = null; g.player.state = 'move';")
-        time.sleep(6)
+        # sim time runs slowly under SwiftShader (dt is capped per frame), so wait on the state, not the clock
+        pg.wait_for_function("window.__warden.game.player.u.sword.userData.awake < 0.08", timeout=150000)
         d = G("return g.player.u.sword.userData.awake")
         assert d < 0.08, d
         G("""const T = window.__warden.THREE; return import('./src/enemies.js?v=' + window.__warden.build).then(({ Enemy }) => {
              const e = new Enemy(g, 'husk', g.player.pos.clone().add(new T.Vector3(0, 0, 6)), 1); e.aggro = true; g.enemies.push(e); });""")
-        time.sleep(4)
+        pg.wait_for_function("window.__warden.game.player.u.sword.userData.awake > 0.85", timeout=150000)
         a = G("return g.player.u.sword.userData.awake")
         assert a > 0.85, a
         sv = G("let s = null; g.scene.traverse(o => { if (o.userData && o.userData.statue === true && o.userData.setAwake) s = o.userData.awake; }); return s")
@@ -124,7 +125,7 @@ def main():
         G("for (const e of g.enemies) e.dispose(); g.enemies = []; const p = g.player; p.iframes = 0; p.hp = 1; p.state = 'move'; p.takeHit(99999, p.pos.clone().setX(p.pos.x + 1), 0);")
         pg.wait_for_function("document.querySelector('.panel.dead')", timeout=60000); time.sleep(0.8)
         dt = pg.inner_text(".panel.dead")
-        assert "Defeated" in dt and "Rise" not in dt and "fallen" not in dt.lower() and "synchronization point" in dt, dt
+        dl = dt.lower(); assert "defeated" in dl and "rise" not in dl and "fallen" not in dl and "synchronization point" in dl, dt
         pg.screenshot(path=str(OUT / f"{tag}-defeat.png"))
         pg.click("[data-act=respawn]"); time.sleep(0.5)
         bn = pg.inner_text("#banner")

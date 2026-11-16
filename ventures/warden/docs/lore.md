@@ -398,69 +398,62 @@ Source: https://docs.google.com/document/d/1CepYHrX481or4ncRpdMg89XGGWY-FIFQjV-u
 
 ---
 
-# Conflicts with current build (v0.7) and needed game changes
+# Conflicts with current build (status after 0.8)
 
-Listed by priority. None of these are implemented yet; each needs its own planned task.
+0.8 (2026-11-16) implemented Don's priorities 1-6. Each change is reversible.
 
-1. **Rarity tiers** — build: Issued (grey) / Forged (green) / Tempered (blue) / Relic (violet) /
-   Sovereign (gold) with sockets 1/1/2/2/3 and affixes 0–4 (`data.js RARITIES`, `PREFIXES`,
-   `SOVEREIGN_NAMES`, inventory "Salvage Issued", icons, save data). Canon: Base silver /
-   Uncommon blue / Rare purple / Legendary gold / Exalted orange; effect slots 0/0/1/2/3;
-   Exalted equip-only buff. Needs save migration (old index 0–4 → new 0–4 maps cleanly by
-   position; colours and names change).
-2. **Cores raise rarity** — build: `effectiveRarity = rarity + cores.length` (`items.js`) and the
-   power score uses it. Canon: retired. Cores stay provisionally as a separate component; their
-   relationship to effects/runes is undecided → **ask Don before redesigning Cores**; the minimal
-   compliant change is to stop Cores raising tier.
-3. **Synthblade look & behaviour** — build: edge glow always on, glow "grows with rarity and
-   Cores", described as red/magenta. Canon: contained red edge in an incut channel on one side
-   only, Dormant vs Awakened states, no change in silhouette. Needs a modelled channel, a
-   Dormant state (e.g., sheathed/out of combat or before awakening), and an awakening rule.
-4. **Death / respawn** — build: "You have fallen… the forge-wardens drag you back to the Plaza.
-   Rise, Warden." Canon: saves must not imply resurrection; reconcile (e.g., being dragged back
-   wounded is fine; anything implying revival from death is not). Ask Don how he wants defeat
-   framed.
-5. **Opening narration / scale** — build intro: "HALLOWMERE. THE NINTH WARD." and bible.md calls
-   Hallowmere "a walled city" with the Ninth Ward as a district by the Grave Gate. Canon: the
-   Ninth Ward is a province-scale territory; Hallowmere is its capital; current map = sites in
-   the capital. Rewrite intro text and bible.md geography.
-6. **"Things that were once people" / Rot fuses people with scrap** — build intro and bible.md
-   assert abominations come from people via the Rot (teal Rot bioluminescence). Canon: the Rot
-   is folk slang and abomination origin is open. Soften the narration to in-world belief
-   ("they say…") rather than fact. The Bellwright line ("It was a bell-ringer once") is v0.4
-   detail the World doc keeps as "known context" — leave it but don't generalize.
-7. **King / Old Kingdom placeholders** — "Hearthplate of King Vael", prefix "Old Kingdom"
-   contradict the approved "Paramount, not King" (the pre-order polity was an *empire*). Replace
-   (e.g., imperial-era phrasing) — names need Don's OK. Also "Saint Ossery", "Saint-Wired",
-   "Cathedral" imply an established church; the synth religion is deferred, so treat as
-   placeholders to review.
-8. **"Tribunal" prefix and "Hands of the Tribunal"** — fine as names, but nothing should imply the
-   Tribunal is the Presidium or central government.
-9. **Character progression lacks Attunement / Synth Proficiency** — build has XP, perks (Blade /
-   Bulwark / Circuit) and no attunement stat. Canon introduces Innate Attunement (inborn) and
-   Wielder Synth Proficiency (learned). The Circuit branch is the natural home, but thresholds
-   are open → design task + Don's sign-off.
-10. **Affixes and status effects** — build rolls random stat affixes on every non-Issued tier
-    (Forged gets 1). Canon: Base/Uncommon have 0 effect slots; status effects are learned and
-    slotted only at the Forge. Affixes as "baseline stats" may survive; the effect-slot system
-    is new work.
-11. **Tempering** — matches (+1..+10, scrap, Forge). Keep. Ensure Temper never raises rarity
-    (it doesn't today).
-12. **Not yet in game (future features from canon):** material proficiency on synth gear; rune
-    inscription at the Forge; Echo sequences; archive sync points as diegetic saves (could
-    re-skin the 0.5 save system once Don approves); Ruins / Subterranean / Countryside zones;
-    "clean" anti-augment faction; Dissonance.
-13. **docs/bible.md** — its "Systems vocabulary" and "Hallowmere" sections are now outdated; it is
-    kept as the v0.4 snapshot, and this file overrides it.
+**Resolved in 0.8**
+1. ~~Rarity tiers~~: now Base (silver) / Uncommon (blue) / Rare (purple) / Legendary (gold) / Exalted
+   (orange). Effect slots are 0/0/1/2/3. Save schema 4 maps old tiers by position.
+2. ~~Cores raise rarity~~: removed. Power uses base rarity. Core effects are unchanged. *Provisional:*
+   effect slots hold Cores until status effects are designed. Cores already installed on Base or
+   Uncommon gear in old saves are kept (that item keeps one slot per installed Core).
+3. ~~Synthblade~~: a steel longsword with an inset channel along its one edge. Awakened = a contained
+   red barrier inside the channel (lightning stays in the channel; no wide glow sheath, no mist).
+   Dormant = a dark channel and dark gems. The shape is identical in both states. It wakes in combat
+   (attacking, dodging, the riposte window, lock-on, or an aggressive abomination within 16 m) and
+   settles about 2.5 s after. There is no ritual or tutorial. The "glow grows with rarity/Cores"
+   behaviour is gone. The statue blade is always Dormant.
+4. ~~Death / respawn~~: "Defeated" → resume from the last synchronization point (Statute Plaza) with
+   everything kept → "SYNCHRONIZATION RESTORED" banner. No penalties. (Don: recommended, pending.)
+5. ~~Opening narration / scale~~: "THE NINTH WARD. HALLOWMERE, ITS CAPITAL." The Ward runs out to
+   ruins, depths and countryside, and the map is a few sites in the capital. Banners and objectives
+   now say Hallowmere or "the capital".
+6. ~~"Things that were once people" / Rot as fact~~: now "The street calls it the Rot. Some swear the
+   things were people once." The Bellwright line is "They say it was a bell-ringer once." Objectives
+   say "Hunt the abominations".
+7. ~~King / Saint / Old Kingdom / Cathedral placeholders~~, each reviewed on its own:
+   "Hearthplate of King Vael" → "Vael's Hearthplate" (Vael's identity left unresolved; not made
+   Paramount). "Saint Ossery's Verdict" → "Ossery's Verdict" (no evidence Ossery is a scholar, so not
+   made a Prism). "Saint-Wired" prefix → "Lattice-Wired". "Cathedral" prefix → "Spire-Wrought". "Old
+   Kingdom" → "Elder-Wrought". "Crown of the Unblinking" → "Visor of the Unblinking" (royalty
+   implied). The "Tempered" prefix → "Quenched" (it clashed with Tempering). Old saves are renamed in
+   migration. Kade stays the default name and can be edited.
+
+**Still open / not yet in game**
+8. Tribunal names (the "Tribunal" prefix, "Hands of the Tribunal") stay as names. Nothing implies the
+   Tribunal is the Presidium.
+9. No Innate Attunement or Synth Proficiency stats yet. The player is not a chosen one. Awakening
+   conditions are to be discovered through play (pending Don).
+10. Affixes stay as "baseline stats". Status effects as a separate learned, Forge-slotted system are not
+    built; Cores stand in for them.
+11. Tempering matches canon (+1..+10, scrap, Forge) and never raises rarity.
+12. Not built yet: material proficiency, runes/Inscription, the Exalted buff (placeholder line in the
+    UI), Echo sequences, archive sync points as in-world save points, Ruins/Subterranean/Countryside,
+    the "Clean" faction, Dissonance, Prismatic Order NPCs.
+13. Synth colour: the Order doc says synth is purple-pink/fuchsia by default, but the approved
+    Synthblade concept art is red-to-pink, so 0.8 follows the art for the blade. Other synth (Order
+    emblems, future items) should default to purple-pink.
+14. The neon "ROT" sign at the Grave Gate stays as street graffiti, which fits slang usage.
+15. `docs/bible.md` is the old v0.4 snapshot. This file overrides it.
 
 # Open questions for Don (collected)
-- Defeat/death framing given "no resurrection".
-- What Cores become (keep as a 4th system? fold into runes or effects? retire?).
-- How a synth item is Dormant vs Awakened in play (combat stance? attunement gate at story start?).
-  Is the player's Warden innately attuned?
-- Replacement names for King Vael / Old Kingdom / Saint items, and whether default name "Kade" stays.
-- Is the current Grave Gate/Statute Plaza map the City, or should the next zone be Ruins or
-  Subterranean?
-- Tribunal's role; what the Oath says; the Ward's universal compact.
-- Exalted buff examples; first status-effect list to implement.
-- Plus every "Open" item listed in B1–B4.
+- Final approval of checkpoint defeat (recommended), and of Ruins first (recommended).
+- Cores long-term: Don recommends distinct modules with tradeoffs and compatibility rules. Details
+  pending. Should Cores keep occupying effect slots once status effects exist?
+- The Exalted buff pool. The first status-effect list. Awakening thresholds. Attunement as binary or
+  a spectrum.
+- Identities of Vael and Ossery (renamed neutrally for now). Whether any existing NPC (Brann, Mira)
+  is a Prism (default: no).
+- The Tribunal's role; the Oath's text; the Ward's universal compact.
+- Plus every "Open" item listed in B1–B4 and B7.

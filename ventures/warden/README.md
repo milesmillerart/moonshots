@@ -2,7 +2,9 @@
 
 A cyber-medieval 3D third-person action RPG in the browser. Live at https://moon.sparelimbstudios.com/warden/
 
-You are the Warden of Hallowmere's Ninth Ward: unapologetic, ruthless, fair, professional. You carry the Synthblade, a longsword with one synth edge that cuts almost anything, and you keep the law against the abominations of the Rot.
+You are the Warden of the Ninth Ward, a province-sized territory whose capital is Hallowmere: unapologetic, ruthless, fair, professional. You carry the Synthblade, a steel longsword with a synth channel along one edge (Dormant out of combat, Awakened in it), and you keep the law against the abominations the street calls the Rot.
+
+Canon lives in `docs/lore.md` (synced from Don's Drive lore folder; it overrides everything else). Don's direction: `docs/direction-2026-11-16.md`.
 
 ## Layout
 - `game/`: the source, served as plain ES modules (no bundler needed)
@@ -23,8 +25,9 @@ You are the Warden of Hallowmere's Ninth Ward: unapologetic, ruthless, fair, pro
 - `tools/build.py` copies `game/` to `public/` and cache-busts module URLs
 - `tools/shots.py` headless Chromium smoke test + screenshots
 - `tools/save_test.py`, `tools/inventory_test.py`, `tools/skills_test.py`, `tools/mobile_test.py` save, Armory, skill tree and phone (touch) tests
+- `tools/rarity_test.py` (0.8 rarity migration, no Core promotion, defeat wording, blade states; `--mobile`), `tools/blade_shots.py` (Synthblade Dormant/Awakened close-ups)
 - `jobs/daily-improve.sh` nightly rebuild + deploy
-- `docs/roadmap.md` prioritized daily backlog, `docs/bible.md` world and tone
+- `docs/roadmap.md` prioritized daily backlog, `docs/lore.md` canon (overrides `docs/bible.md`, the v0.4 snapshot)
 
 ## Dev
     python3 tools/build.py && (cd public && python3 -m http.server 8765)
