@@ -42,26 +42,12 @@ def run(p, devname, tag, full):
     # title buttons must fit on screen
     for bb in [pg.locator(s).bounding_box() for s in ["#menu button >> nth=-1"]]:
         assert bb["y"] + bb["height"] <= vh, f"title menu overflows: {bb}"
-    tap_el("#menu button[data-act=new]")
-    pg.wait_for_selector("#wname")
-    tap_el("#wname"); pg.keyboard.type("Aldric Vane")
-    if full: pg.screenshot(path=str(OUT / f"{tag}-02-naming.png"))
-    bb = pg.locator("[data-act=oath]").bounding_box(); assert bb["y"] + bb["height"] <= vh, "oath button off screen"
-    tap_el("[data-act=oath]")
-    pg.wait_for_selector("#dialogue:not(.hidden)", timeout=30000)
-    for _ in range(14):
-        if pg.query_selector("#dialogue .choices"): break
-        time.sleep(0.5); tap(vw * 0.5, vh * 0.25)  # tap the scene to advance
-    pg.wait_for_selector("#dialogue .choices button", timeout=20000); time.sleep(1.5)
-    if full: pg.screenshot(path=str(OUT / f"{tag}-03-judgment.png"))
-    last = pg.locator("#dialogue .choices button").last.bounding_box()
-    assert last["y"] + last["height"] <= vh, f"judgment choices off screen: {last}"
-    tap_el("#dialogue .choices button[data-c='2']")
-    for _ in range(20):
-        time.sleep(0.7)
-        if G("return g.state") == "play" and not G("return g.dialogueOpen"): break
-        if pg.query_selector("#dialogue:not(.hidden)"): tap_el("#dialogue")
-    time.sleep(1.2)
+    tap_el("#menu button[data-act=new]")  # 0.10: straight into the cold open (opening_test.py --mobile plays it)
+    pg.wait_for_selector("#dialogue:not(.hidden)", timeout=60000)
+    assert not pg.query_selector("#wname"), "naming should not appear at the title"
+    time.sleep(0.5); tap(vw * 0.5, vh * 0.25); time.sleep(1.0)  # a tap advances the dialogue
+    if full: pg.screenshot(path=str(OUT / f"{tag}-03-cold-open.png"))
+    G("g.debugSkipOpening('Aldric Vane', 'inquest')"); time.sleep(1.5)
     assert G("return g.state") == "play", "did not reach play"
     assert G("return g.save.trait") == "inquest"
     assert pg.is_visible("#touch .b-light"), "touch buttons not visible"

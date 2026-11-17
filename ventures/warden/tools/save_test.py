@@ -30,7 +30,7 @@ V04 = """() => { const I = window.__wardenItems;
 def snap_js():
     return """(() => { const g = window.__warden.game, s = g.save; return JSON.parse(JSON.stringify({
       name: s.name, level: s.level, xp: s.xp, points: s.points, perks: s.perks, scrap: s.scrap, stims: s.stims, trait: s.trait,
-      flags: s.flags, kills: s.kills, equip: s.equip, bag: s.bag, slot: g.slot,
+      flags: Object.fromEntries(Object.entries(s.flags).filter(([k]) => !['opening', 'named'].includes(k))), kills: s.kills, equip: s.equip, bag: s.bag, slot: g.slot,
       pos: [Math.round(g.player.pos.x * 10) / 10, Math.round(g.player.pos.z * 10) / 10],
       ground: g.loot.map(l => l.item.uid).sort(), playTime: s.playTime })) })()"""
 
@@ -71,8 +71,17 @@ def desktop(p):
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(1)
     s = pg.evaluate(snap_js())
     compare(s, v04, CORE, "v0.4 migration", strip=True)
-    assert pg.evaluate("window.__warden.game.save.schema") == 4 and pg.evaluate("Object.values(window.__warden.game.save.equip).every(i => typeof i.got === 'number' && i.fav === false)")
+    assert pg.evaluate("window.__warden.game.save.schema") == 5 and pg.evaluate("Object.values(window.__warden.game.save.equip).every(i => typeof i.got === 'number' && i.fav === false)")
     assert s["pos"] == [-30, 0.5], s["pos"]; print("  OK position restored", s["pos"])
+    # schema 5 (0.10): a judged Warden is marked legacy and never replays the cold open; a mid-open save round-trips its flags
+    assert pg.evaluate("window.__warden.game.save.flags.opening") == "legacy" and pg.evaluate("window.__warden.game.state") == "play"
+    m5 = pg.evaluate("""() => { const S = window.__wardenSave;
+      const a = S.migrate({ schema: 4, v: 4, name: 'X', level: 1, flags: {} });
+      const b = S.migrate({ schema: 5, v: 5, name: '', level: 1, flags: { opening: 'act1', named: false, judged: true } });
+      const c = S.importCode(S.exportCode(b));
+      return { a: [a.flags.opening, a.flags.named, a.name], b: [b.flags.opening, b.name, S.chapterOf(b)], c: [c.flags.opening, c.name, c.flags.judged] }; }""")
+    assert m5["a"] == ["act1", True, "X"] and m5["b"][:2] == ["act1", ""] and "cold open" in m5["b"][2] and m5["c"] == ["act1", "", True], m5
+    print("  OK schema 5: judged -> legacy (open world), unjudged old save -> cold open with its name kept, nameless mid-open save survives export/import", m5)
     # 2. make progress
     G("g.allowUnlockedAttack = true; g.noLock = true; g.applySetting('scale', 0.5);")
     G("""const I = window.__wardenItems, P = window.__wardenPOI;
@@ -154,16 +163,8 @@ def desktop(p):
     pg.click("#menu button[data-act=back]"); time.sleep(0.2)
     pg.click("#menu button[data-act=new]"); time.sleep(0.3)
     pg.click(".slotcard[data-slot='2'] [data-act=slot-new]"); time.sleep(0.3)
-    pg.fill("#wname", "Sera Quill"); pg.click("[data-act=oath]")
-    pg.wait_for_selector("#dialogue:not(.hidden)", timeout=30000)
-    for _ in range(14):
-        if pg.query_selector("#dialogue .choices"): break
-        G("g.debugAdvance && g.debugAdvance()"); time.sleep(0.4)
-    pg.keyboard.press("1")
-    for _ in range(10):
-        time.sleep(0.5)
-        if G("return g.state") == "play": break
-        G("g.debugAdvance && g.debugAdvance()")
+    pg.wait_for_selector("#dialogue:not(.hidden)", timeout=60000)  # 0.10: the cold open starts; opening_test.py covers it
+    G("g.debugSkipOpening('Sera Quill', 'dread')"); time.sleep(1.0)
     assert G("return g.slot") == 2 and pg.evaluate("window.__wardenSave.readSlot(2).trait") == "dread"
     print("  OK new Warden in slot 3, verdict autosaved")
     G("g.gainXp(200)"); G("g.toTitle()"); time.sleep(0.8)

@@ -24,24 +24,12 @@ def main():
         def settle(sec): time.sleep(sec)
         settle(3)
         pg.screenshot(path=str(OUT / "01-title.png"))
-        # new game -> naming
+        # new game -> the 0.10 cold open (no naming at the title); opening_test.py plays the opening itself.
         pg.click("#menu button[data-act=new]")
-        pg.fill("#wname", "Aldric Vane")
-        pg.screenshot(path=str(OUT / "02-naming.png"))
-        pg.click("[data-act=oath]")
-        pg.wait_for_selector("#dialogue:not(.hidden)", timeout=20000)
+        pg.wait_for_selector("#dialogue:not(.hidden)", timeout=60000)
         settle(2.5)
         pg.screenshot(path=str(OUT / "03-story.png"))
-        for _ in range(12):
-            if pg.query_selector("#dialogue .choices"): break
-            G("g.debugAdvance && g.debugAdvance()"); settle(0.5)
-        settle(2.5)
-        pg.screenshot(path=str(OUT / "04-judgment.png"))
-        pg.keyboard.press("3")  # Inquest
-        for _ in range(8):
-            settle(0.6)
-            if G("return g.state") == "play": break
-            G("g.debugAdvance && g.debugAdvance()")
+        G("g.debugSkipOpening('Aldric Vane', 'inquest')")
         settle(1.5)
         assert G("return g.state") == "play", "did not reach play state"
         st = G("return {trait: g.save.trait, enemies: g.enemies.length, name: g.save.name}")

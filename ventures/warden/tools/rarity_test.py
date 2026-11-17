@@ -61,7 +61,7 @@ def main():
         m = G("""const all = [...Object.values(g.save.equip), ...g.save.bag].filter(x => x.kind === 'gear');
           return { schema: g.save.schema, items: all.map(x => [x.slot, x.rarity, x.sockets, x.cores.length, x.name]),
                    cores: [...Object.values(g.save.equip), ...g.save.bag].reduce((a, it) => a + (it.cores ? it.cores.length : 0), 0) }""")
-        assert m["schema"] == 4, m
+        assert m["schema"] == 5, m
         assert m["cores"] == info["cores"], (m["cores"], info)
         names = [x[4] for x in m["items"]]
         for bad in ["King", "Saint", "Old Kingdom", "Cathedral", "Tempered ", "Crown"]:
