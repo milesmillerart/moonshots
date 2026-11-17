@@ -236,7 +236,7 @@ export class UI {
     else if (s === 'controls') this.panel.innerHTML = this.controlsHtml();
     else if (s === 'export') this.panel.innerHTML = this.exportHtml();
     else if (s === 'import') this.panel.innerHTML = this.importHtml();
-    else if (s === 'dead') this.panel.innerHTML = `<div class="card center defeat"><h2 class="red">Defeated</h2><p>Your journey resumes from the last synchronization point, Statute Plaza. Your gear, levels and progress are kept.</p><button data-act="respawn" class="primary">Resume from checkpoint</button></div>`;
+    else if (s === 'dead') this.panel.innerHTML = `<div class="card center defeat"><h2 class="red">Defeated</h2><p>${this.g.inOpening?.() ? 'You return to the gaol, the last checkpoint. Nothing is lost.' : 'Your journey resumes from the last synchronization point, Statute Plaza. Your gear, levels and progress are kept.'}</p><button data-act="respawn" class="primary">Resume from checkpoint</button></div>`;
     this.panel.className = 'panel ' + s;
     if (s === 'armory') this.armory.afterRender();
     if (s === 'skills') this.skills.afterRender();

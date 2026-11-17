@@ -11,6 +11,9 @@ and iPhone SE landscape with real CDP touch taps. Grows with each 0.10.x milesto
   civilians), trait applied at character creation and listed there.
 0.10.5 (Synth Charge + Cauterize): ~55-70 Charge after the skirmish, decay after 3 s idle, CAUTERIZE (C / button) spends
   50 Charge on a directed sear that marks enemies Cauterized, out-of-combat health regen.
+0.10.6 (THE CLOT): after the verdict the three Husk bodies fuse on camera (~9 s), banner, 600-750 HP mass with Slam/Spit,
+  a shard splits at 50%, uncauterized shards rejoin, cauterized wounds cap its regen, defeat returns to the boss
+  checkpoint, reload mid-fight resumes the fight, the Bellwright never auto-starts for new Wardens.
   Checks: nameless new Warden ("Warden"), schema 5 + flags.opening 'act1', mid-open reloads resume at the last beat
   (case / skirmish / creation), creation names the Warden and opens the capital, legacy judged saves skip the cold open
   ('legacy'), a named-but-unjudged old save plays the cold open and keeps its name (no name field). Zero console errors.
@@ -65,6 +68,44 @@ def run(p, devname, tag):
             if pg.query_selector("#dialogue:not(.hidden) .more"): press("#dialogue")
             else: time.sleep(0.5)
         return G(f"return !!({cond_js})")
+    def wait_clot(limit=120):
+        for _ in range(limit):
+            if G("return g.state === 'play' && g.boss && g.boss.type === 'clot' && !g.boss.dead"): return True
+            if pg.query_selector("#dialogue:not(.hidden) .more"): press("#dialogue")
+            else: time.sleep(0.5)
+        return False
+    def fight_clot(full):
+        ok(wait_clot(), "after the verdict the Husks fuse into the Clot and the fight starts")
+        st = G("return { hp: g.boss.maxHp, banner: document.getElementById('banner').textContent, bell: g.enemies.some(e => e.type === 'bellwright'), merged: g.save.flags.merged }")
+        ok(600 <= st["hp"] <= 750 and "THE CLOT" in st["banner"] and "not seen" in st["banner"] and not st["bell"] and st["merged"], f"THE CLOT: banner + 600-750 HP {st}")
+        if full:
+            pg.screenshot(path=str(OUT / f"{tag}-clot.png"))
+            if SHOT and SHOTAT == "clot" and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
+            # reload mid-fight resumes the fight
+            boot(clear=False); press("#menu button[data-act=continue]")
+            ok(wait_clot(), "reload during the boss resumes the Clot fight")
+            # cauterize caps regen
+            G("const b = g.boss, p = g.player; p.pos.set(b.pos.x, 0, b.pos.z + 3.2); p.face = Math.PI; p.charge = 60; g.lockTarget = b;")
+            if MOBILE: press("#touch .b-caut")
+            else: pg.keyboard.press("c")
+            time.sleep(0.6)
+            st = G("return { sear: Math.round(g.boss.searDmg || 0), max: g.boss.maxHp, caut: !!g.boss.cauterized }")
+            ok(st["caut"] and 0.14 * st["max"] <= st["sear"] <= 0.21 * st["max"], f"Cauterize sears 15-20% of the Clot's HP {st}")
+            G("g.boss.hp = g.boss.maxHp; g.boss.lastHitT = g.time - 5"); time.sleep(1.0)
+            ok(G("return g.boss.hp <= g.boss.maxHp - g.boss.searDmg + 0.5"), "cauterized wounds do not reseal")
+            # phase 2: a shard splits off; an uncauterized shard crawls back
+            G("g.boss.hp = g.boss.maxHp * 0.45; g.boss.lastHitT = g.time"); time.sleep(1.0)
+            ok(G("return g.boss.phase2 && g.enemies.some(e => e.type === 'shard' && !e.dead)"), "at half health a shard splits off and the mass speeds up")
+            G("const sh = g.enemies.find(e => e.type === 'shard' && !e.dead); sh.age = 20; sh.pos.set(g.boss.pos.x + 1.4, 0, g.boss.pos.z); window.__hp0 = g.boss.hp;")
+            time.sleep(1.0)
+            ok(G("return !g.enemies.some(e => e.type === 'shard' && !e.dead) && g.boss.hp > window.__hp0"), "an uncauterized shard rejoins the mass")
+            # defeat returns to the boss checkpoint
+            G("g.player.iframes = 0; g.player.state = 'move'; g.player.takeHit(99999, g.boss.pos, 1)")
+            pg.wait_for_selector("#panel [data-act=respawn]", timeout=30000); press("#panel [data-act=respawn]"); time.sleep(1.0)
+            ok(G("return g.state === 'play' && g.boss && g.boss.type === 'clot' && g.boss.hp === g.boss.maxHp && g.player.hp > 0"), "defeat returns to the boss checkpoint with a fresh Clot")
+        G("g.boss.hurt(99999, g.player.pos, 1, false)")
+        time.sleep(1.0)
+        ok(G("return g.save.flags.bossDown"), "the Clot dies")
     def kill_wave():
         G("for (const e of g.enemies) if (!e.dead) e.hurt(99999, g.player.pos, 999, false);")
     pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
@@ -130,7 +171,8 @@ def run(p, devname, tag):
     ok(len(labels) == 3 and "The sentence is death" in labels[0] and "Mark her" in labels[1] and "Ward key" in labels[2] and not any(w in " ".join(labels) for w in ("Execute", "Sentence her", "Question her")), f"the verdict is offered only now, sentences only: {labels}")
     ok("Your verdict" in G("return document.querySelector('#dialogue').textContent"), "Brann asks for the verdict")
     press("#dialogue .choices button[data-c='2']")
-    ok(advance_until("document.querySelector('#title.create-on #wname')", 50), "the verdict leads to character creation")
+    fight_clot(True)
+    ok(advance_until("document.querySelector('#title.create-on #wname')", 50), "the Clot's death leads to character creation")
     led = G("return g.save.flags.ledger")
     ok(G("return g.save.trait") is None and G("return g.save.flags.pendingTrait") == "inquest" and led["verdict"] == "inquest" and "brann" in led["witnesses"] and "civiliansDead" in led, f"verdict recorded in the ledger, trait waits for the handoff {led}")
     ok("Inquest" in G("return document.querySelector('#title .naming').textContent"), "creation lists the trait factually")
@@ -196,6 +238,7 @@ def run(p, devname, tag):
     led = G("return g.save.flags.ledger")
     ok(led["civiliansDead"] == 0 and all(v == "safe" for v in led["civilians"].values()), f"protected, every civilian lives {led}")
     ok(advance_until("document.querySelector('#dialogue .choices')", 60), "…verdict after the skirmish"); press("#dialogue .choices button[data-c='1']")
+    fight_clot(False)
     pg.wait_for_selector("#title.create-on [data-act=oath]", timeout=60000)
     ok(not pg.query_selector("#wname"), "creation skips the name field for a Warden who already chose one")
     press("[data-act=oath]"); time.sleep(1.0)

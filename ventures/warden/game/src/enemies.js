@@ -118,6 +118,7 @@ export class Enemy {
       const fx = Math.sin(this.face), fz = Math.cos(this.face);
       moveCircle(this.pos, (fx * dir + fz * strafe) * sp * dt, (fz * dir - fx * strafe) * sp * dt, this.def.radius);
       if (this.cd <= 0 && dist < this.def.range && Math.abs(angleDiff(this.face, want)) < 0.6) this.beginAttack(dist);
+      else if (T === 'clot' && this.cd <= 0 && dist > 4.6 && dist < 12 && Math.random() < dt * 0.7) this.beginAttack(dist);
     }
     this.model.rotation.y = this.face;
     this.animate(dt);
@@ -132,7 +133,13 @@ export class Enemy {
       this.windT = { swipe: 0.75, slam: 1.15, charge: 0.85 }[this.move] * (this.phase2 ? 0.8 : 1);
       if (this.move === 'slam') { this.game.fx.telegraph(this.pos.clone(), 3.2, this.windT, 0xff2040); audio.bell(); }
       if (this.move === 'charge') this.chargeDir = Math.atan2(this.game.player.pos.x - this.pos.x, this.game.player.pos.z - this.pos.z);
-    } else this.windT = { husk: 0.6, skitter: 0.45, spitter: 0.7 }[T];
+    } else if (T === 'clot') {
+      // Slam (0.8-1.0 s wind-up, red ring + bell) up close; a telegraphed Spit (the mass swells) at range
+      this.move = dist > 4.6 || Math.random() < 0.25 ? 'spit' : 'slam';
+      this.windT = this.move === 'slam' ? (this.phase2 ? 0.8 : 0.95) : 0.85;
+      if (this.move === 'slam') { this.game.fx.telegraph(this.pos.clone(), 4.2, this.windT, 0xff2040); audio.bell(); }
+      else audio.spit();
+    } else this.windT = { husk: 0.6, skitter: 0.45, spitter: 0.7, shard: 0.5 }[T];
     audio.growl(T === 'bellwright' ? 0.45 : T === 'skitter' ? 1.8 : 1);
   }
   attackUpdate(dt, dist, want, toP) {
@@ -142,10 +149,12 @@ export class Enemy {
       if (this.t >= this.windT) { this.state = 'attack'; this.t = 0; this.telegraphing = false;
         if (T === 'spitter') this.spit(); if (T === 'skitter') this.leapDir = this.face;
         if (T === 'bellwright' && this.move === 'slam') this.slam();
+        if (T === 'clot') { if (this.move === 'slam') this.slam(4.2, 1.2); else this.spitVolley(); }
       }
     } else if (this.state === 'attack') {
       const fx = Math.sin(this.face), fz = Math.cos(this.face);
-      if (T === 'husk' || (T === 'bellwright' && this.move === 'swipe')) {
+      if (T === 'clot') { if (this.t > 0.45) this.endAttack(this.phase2 ? 1.0 : 1.5); }
+      else if (T === 'husk' || T === 'shard' || (T === 'bellwright' && this.move === 'swipe')) {
         moveCircle(this.pos, fx * 2 * dt, fz * 2 * dt, this.def.radius);
         if (!this.hitDone && this.t > 0.05 && dist < this.def.range + 0.3 && Math.abs(angleDiff(this.face, want)) < 1.2) {
           this.hitDone = true;
@@ -190,12 +199,20 @@ export class Enemy {
     const tgt = p.pos.clone().addScaledVector(p.vel, 0.5);
     g.spawnProjectile(from, tgt, this.dmg);
   }
-  slam() {
+  spitVolley() {
+    const g = this.game, p = g.player, from = this.pos.clone().setY(2.0);
+    const n = this.phase2 ? 3 : 1;
+    for (let i = 0; i < n; i++) {
+      const off = new THREE.Vector3((i - (n - 1) / 2) * 1.8, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.face);
+      g.spawnProjectile(from, p.pos.clone().addScaledVector(p.vel, 0.4).add(off), this.dmg * 0.8);
+    }
+  }
+  slam(r = 9, k = 1.35) {
     const g = this.game;
-    g.fx.ring(this.pos.clone(), 9, 0.8, 0xff3050);
-    g.fx.burst(this.pos.clone().setY(0.3), 40, 0x8899aa, 9, 2, 0.8);
+    g.fx.ring(this.pos.clone(), r, 0.8, 0xff3050);
+    g.fx.burst(this.pos.clone().setY(0.3), 40, this.type === 'clot' ? 0x46f0e0 : 0x8899aa, r, 2, 0.8);
     g.shake(0.6);
-    g.shockwaves.push({ c: this.pos.clone(), t: 0, dur: 0.8, maxR: 9, dmg: this.dmg * 1.35, hit: false });
+    g.shockwaves.push({ c: this.pos.clone(), t: 0, dur: 0.8, maxR: r, dmg: this.dmg * k, hit: false });
     audio.bell();
   }
   animate(dt) {
@@ -241,6 +258,15 @@ export class Enemy {
     this.model.rotation.z = 0.16 * r * this.reactSide;
     if (u.head) u.head.rotation.x = (u.headBase || 0) - 0.6 * r;
     if (T !== 'spitter' && u.body) { const sq = 0.09 * r; u.body.scale.set(1 + sq, 1 - sq, 1 + sq); }
+    if (u.current) {
+      // the off-color current flickers under the skin; the mass swells before a Spit
+      const fl = Math.random() < 0.08 ? 2.2 : 0.6 + 0.4 * Math.sin(this.ph * 9 + Math.sin(this.ph * 2.3) * 3);
+      u.current.color.setRGB(1.6 * fl, 0.35 * fl, 2.4 * fl);
+      if (u.body) {
+        const sw = this.state === 'windup' && this.move === 'spit' ? 0.22 * wk : 0, wob = Math.sin(this.ph * 2.1) * 0.05;
+        u.body.scale.set(1 + wob + sw, 1 - wob + sw * 0.6, 1 + wob * 0.6 + sw);
+      }
+    }
     if (u.bellMat) u.bellMat.emissive.setRGB(this.telegraphing ? 1.2 : 0.05, this.telegraphing ? 0.1 : 0.02, 0.05);
   }
   dispose() { this.game.scene.remove(this.model); }

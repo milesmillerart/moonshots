@@ -101,7 +101,7 @@ def main():
         # plaza wave + overload + boss fight shot
         G("g.player.pos.set(0,0,10); g.player.face=Math.PI; g.camYaw=Math.PI;"); settle(2)
         G("g.player.charge = 100; g.edge.KeyF = true;"); settle(0.5)
-        G("""g.save.flags.waveA=g.save.flags.waveB=g.save.flags.waveC=true; for(const e of g.enemies) e.dispose(); g.enemies=[]; g.wave='C';
+        G("""g.save.flags.opening='legacy'; g.save.flags.waveA=g.save.flags.waveB=g.save.flags.waveC=true; for(const e of g.enemies) e.dispose(); g.enemies=[]; g.wave='C';
              g.player.pos.set(0,0,-60); g.player.face=Math.PI; g.camYaw=Math.PI; g.camPitch=0.18;""")
         settle(1.5)
         G("g.debugAdvance && g.debugAdvance()"); settle(0.5)

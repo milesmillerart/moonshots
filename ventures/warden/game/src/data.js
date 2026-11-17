@@ -112,6 +112,9 @@ export const ENEMIES = {
   husk: { name: 'Hollowed Husk', hp: 60, dmg: 12, speed: 2.3, range: 1.9, xp: 20, scrap: [4, 8], poise: 3, radius: 0.55 },
   skitter: { name: 'Skitter', hp: 30, dmg: 8, speed: 4.6, range: 5.5, xp: 12, scrap: [2, 5], poise: 1, radius: 0.5 },
   spitter: { name: 'Bile Spitter', hp: 48, dmg: 14, speed: 1.9, range: 11, xp: 18, scrap: [4, 7], poise: 2, radius: 0.7 },
+  // 0.10.6 cold-open boss (working name): three Husks fused into one mass; cause deliberately unexplained
+  clot: { name: 'The Clot', hp: 680, dmg: 18, speed: 1.9, range: 3.0, xp: 180, scrap: [0, 0], poise: 30, radius: 1.35, elite: true },
+  shard: { name: 'Clot Shard', hp: 70, dmg: 8, speed: 3.0, range: 1.6, xp: 0, scrap: [0, 0], poise: 2, radius: 0.5 },
   bellwright: { name: 'The Bellwright', hp: 900, dmg: 22, speed: 2.5, range: 3.6, xp: 260, scrap: [55, 70], poise: 26, radius: 1.5, elite: true },
 };
 

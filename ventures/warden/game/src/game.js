@@ -1,7 +1,7 @@
 // Game orchestration: states, story, waves, combat resolution, loot, saving.
 import * as THREE from '../vendor/three-warden.r187-09.min.js';
 import { buildWorld, POI, walkable } from './world.js';
-import { buildWarden, buildPerson, buildLoot } from './models.js';
+import { buildWarden, buildPerson, buildLoot, buildEnemy } from './models.js';
 import { Player, posePoster } from './player.js';
 import { Enemy, Projectile } from './enemies.js';
 import { FX } from './fx.js';
@@ -147,6 +147,7 @@ export class Game {
     if (!f.waveA) { this.player.pos.set(0, 0, 40); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI; this.spawnWave('A'); return; }
     this.spawnCivilians(f.ledger);
     if (!f.judged) { this.runVerdict(); return; }
+    if (!f.bossDown) { this.hideCast(); if (f.merged) this.startClot(); else this.runMerge(); return; }
     this.player.pos.set(0, 0, 24); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI;
     this.beginCreation();
   }
@@ -309,9 +310,99 @@ export class Game {
     await this.ui.say(ch.after);
     if (!live()) return;
     this.hideCast();
-    this.cine = null; this.startPlay();
-    this.beginCreation();
+    this.runMerge();
   }
+  // ---- 0.10.6: the Husks' bodies crawl together and fuse into THE CLOT (cause deliberately unexplained) ----
+  async runMerge() {
+    const gen = this.openGen = (this.openGen || 0) + 1, live = () => gen === this.openGen && this.state !== 'title';
+    this.state = 'story'; this.combatOn = false; this.keys = {};
+    this.ui.hud.classList.add('hidden'); this.touch?.root?.classList.add('hidden');
+    for (const e of this.enemies) e.dispose(); this.enemies = [];
+    const C = new THREE.Vector3(0, 0, 28), p = this.player;
+    p.pos.set(0, 0, 38.5); p.face = Math.PI; p.state = 'move'; p.vel?.set?.(0, 0, 0);
+    const spots = this.huskFell?.length === 3 ? this.huskFell : [new THREE.Vector3(-2.5, 0, 30), new THREE.Vector3(2.5, 0, 27), new THREE.Vector3(0, 0, 23)];
+    const bodies = spots.map((at, i) => { const m = buildEnemy('husk'); m.position.copy(at).setY(0.05); m.rotation.set(1.35, i * 2.1, 0); this.scene.add(m); return { m, from: at.clone() }; });
+    const clot = buildEnemy('clot'); clot.position.copy(C); clot.scale.setScalar(0.05); this.scene.add(clot);
+    this.cine = { pos: new THREE.Vector3(1.2, 2.6, 37.5), look: new THREE.Vector3(0, 0.8, 27), blend: true };
+    await this.fade(false, 500);
+    const T = 9.0; let t = 0, last = performance.now();
+    audio.growl(0.4);
+    while (t < T) {
+      if (!live()) { for (const b of bodies) this.scene.remove(b.m); this.scene.remove(clot); return; }
+      await sleep(33); const now = performance.now(); t += Math.min(0.1, (now - last) / 1000); last = now;
+      const k = t / T;
+      bodies.forEach((b, i) => {
+        const pull = clamp((k - 0.12 - i * 0.05) / 0.6, 0, 1), ease = pull * pull * (3 - 2 * pull);
+        b.m.position.lerpVectors(b.from, C, ease * 0.92); b.m.position.y = 0.05 + Math.sin(t * 7 + i) * 0.04 * (1 - ease);
+        b.m.rotation.z = Math.sin(t * (5 + i)) * 0.25 * (1 - ease); // twitching as they drag
+        b.m.scale.setScalar(Math.max(0.05, 1 - clamp((k - 0.55) / 0.35, 0, 1)));
+        if (Math.random() < 0.25) this.fx.burst(b.m.position.clone().setY(0.5), 2, i % 2 ? 0x46f0e0 : 0xa040ff, 1.5, 1, 0.5);
+      });
+      const g = clamp((k - 0.35) / 0.6, 0, 1); clot.scale.setScalar(0.05 + 0.95 * g * g * (3 - 2 * g));
+      clot.rotation.y += 0.004;
+      if (clot.userData.current) { const fl = Math.random() < 0.15 ? 2.4 : 0.7; clot.userData.current.color.setRGB(1.6 * fl, 0.35 * fl, 2.4 * fl); }
+      if (Math.random() < 0.06) { this.shake(0.15); audio.growl(0.5 + Math.random() * 0.4); }
+      this.cine.look.set(0, 0.8 + g * 0.8, 27.5);
+      this.cine.pos.set(1.2 + g * 0.6, 2.6 + g * 0.5, 37.5 - (1 - g) * 1.5);
+    }
+    for (const b of bodies) this.scene.remove(b.m); this.scene.remove(clot);
+    this.save.flags.merged = true; this.persist('boss');
+    this.startClot();
+  }
+  startClot() {
+    const f = this.save.flags, p = this.player;
+    for (const e of this.enemies) e.dispose(); this.enemies = []; this.projectiles = []; this.shockwaves = [];
+    const e = new Enemy(this, 'clot', new THREE.Vector3(0, 0, 28), 1); e.wave = 'CLOT'; e.aggro = true; e.face = 0; e.searDmg = 0; e.lastHitT = this.time;
+    this.enemies.push(e); this.boss = e; this.clot = { shards: 0, phase2At: 0, lastSear: -99 };
+    if (p.pos.z < 34 || p.state === 'dead') { p.pos.set(0, 0, 38.5); p.face = Math.PI; }
+    p.state = 'move'; p.hp = this.stats.hp; p.charge = Math.max(p.charge, f.openCharge || 60);
+    this.cine = null; this.startPlay(); this.camYaw = Math.PI;
+    this.ui.banner('THE CLOT', 'Something the Ward has not seen.'); audio.bell(); this.shake(0.4);
+    this.objective = 'Destroy <b>the Clot</b>';
+    if (!f.tipClot) { f.tipClot = true; setTimeout(() => this.ui.toast(this.touch?.on ? 'It heals what you cut. CAUTERIZE seals the wound.' : 'It heals what you cut. Cauterize (C) seals the wound.', 'cyan'), 2600); }
+  }
+  clotUpdate(dt) {
+    const b = this.boss, S = this.clot;
+    if (!b || b.type !== 'clot' || !S) return;
+    if (b.dead) return;
+    // phase 1: slow regen of uncauterized damage (cauterized wounds never reseal)
+    const cap = b.maxHp - (b.searDmg || 0);
+    if (!b.phase2 && this.time - (b.lastHitT || 0) > 2 && b.hp < cap) b.hp = Math.min(cap, b.hp + 6 * dt);
+    if (!b.phase2 && b.hp < b.maxHp * 0.5) {
+      b.phase2 = true; S.phase2At = this.time; this.splitShard(b);
+      this.ui.toast('A shard tears loose from the mass.', 'red'); audio.bell(); this.shake(0.5);
+    }
+    if (b.phase2 && S.shards < 2 && this.time - S.phase2At > 12 && this.time - S.lastSear > 12) { this.splitShard(b); this.ui.toast('Another shard splits off.', 'red'); }
+    // phase 2: shards that were not cauterized crawl back and rejoin
+    for (const sh of this.enemies) {
+      if (sh.type !== 'shard' || sh.dead) continue;
+      sh.age = (sh.age || 0) + dt;
+      if (sh.cauterized) continue;
+      if (sh.age > 9) {
+        sh.prey = { pos: b.pos, dead: false, hurt: () => {} };
+        if (sh.pos.distanceTo(b.pos) < b.def.radius + 0.9) {
+          b.hp = Math.min(b.maxHp - (b.searDmg || 0), b.hp + sh.hp + 50); sh.hp = 0; sh.dead = true; sh.state = 'dead'; sh.deadT = 9;
+          this.fx.burst(b.pos.clone().setY(1.2), 30, 0xa040ff, 4, 2, 0.6); this.ui.toast('The shard rejoins the mass.', 'red');
+        }
+      }
+    }
+  }
+  splitShard(b) {
+    const S = this.clot; S.shards++;
+    const a = Math.random() * 6.28, at = b.pos.clone().add(new THREE.Vector3(Math.sin(a) * 2.4, 0, Math.cos(a) * 2.4));
+    const sh = new Enemy(this, 'shard', at, 1); sh.wave = 'CLOT'; sh.aggro = true; sh.age = 0; this.enemies.push(sh);
+    this.fx.burst(at.clone().setY(1), 40, 0x46f0e0, 5, 2, 0.6);
+  }
+  async onClotDown() {
+    const f = this.save.flags;
+    for (const e of this.enemies) if (!e.dead) { e.hp = 0; e.dead = true; e.state = 'dead'; e.deadT = 0; }
+    f.bossDown = true; this.boss = null; this.objective = ''; this.persist('boss');
+    await sleep(2400);
+    if (!this.inOpening() || this.state !== 'play') return;
+    this.afterClot();
+  }
+  // 0.10.6: the street is safe; (0.10.7 adds the loot) then character creation
+  afterClot() { this.beginCreation(); }
   // legacy entry point (0.9 and older flows call this): the cold open now starts with the case
   runIntro() { return this.runCase(); }
 
@@ -436,7 +527,7 @@ export class Game {
       setTimeout(() => this.spawnWave('C'), 1200);
     }
     if (this.wave === 'C' && !this.waveAlive('C') && !f.waveC) { f.waveC = true; this.persist('progress'); this.objective = 'Enter the <b>Grave Gate</b> court'; }
-    if (f.waveC && !f.boss && !this.boss && p.z < -58) { this.spawnWave('BOSS'); this.ui.say(STORY.bossIntro).then(() => { this.boss.aggro = true; }); this.ui.banner('THE BELLWRIGHT', 'Abomination of the Sump'); audio.bell(); }
+    if (f.waveC && !f.boss && !this.boss && p.z < -58 && f.opening === 'legacy') { this.spawnWave('BOSS'); this.ui.say(STORY.bossIntro).then(() => { this.boss.aggro = true; }); this.ui.banner('THE BELLWRIGHT', 'Abomination of the Sump'); audio.bell(); }
     if (this.boss && !this.boss.dead && !this.boss.phase2 && this.boss.hp < this.boss.maxHp * 0.5) {
       this.boss.phase2 = true; this.ui.toast('The Bellwright tolls. More of them answer.', 'red'); audio.bell();
       for (const x of [-5, 5]) { const e = new Enemy(this, 'skitter', new THREE.Vector3(x, 0, -84), this.save.level); e.aggro = true; e.wave = 'BOSS'; this.enemies.push(e); }
@@ -489,7 +580,7 @@ export class Game {
     const crit = !A?.nocrit && (!!A?.riposte || Math.random() * 100 < s.crit);
     if (crit) dmg *= 1 + s.critDmg / 100;
     dmg *= rand(0.92, 1.08);
-    e.hurt(dmg, p.pos, A ? A.poise : 0.5, crit);
+    e.hurt(dmg, p.pos, A ? A.poise : 0.5, crit); e.lastHitT = this.time;
     const hp = e.pos.clone().lerp(p.pos, 0.35); hp.y = e.elite ? 2.2 : 1.1;
     this.fx.number(hp, Math.round(dmg) + (crit ? '!' : ''), crit ? 'crit' : src === 'arc' ? 'arc' : '');
     if (src === 'blade') {
@@ -552,7 +643,10 @@ export class Game {
       // 15-20% of a big body's max HP; ordinary Hollowed take a heavy searing hit
       const sear = e.elite ? e.maxHp * 0.175 : Math.max(e.maxHp * 0.175, this.stats.dmgFinal * 2.2);
       e.cauterized = true; e.cauterT = this.time; n++;
+      const before = e.hp;
       this.hitEnemy(e, { mult: sear / Math.max(1, this.stats.dmgFinal), poise: 8, nocrit: true }, 'arc');
+      e.searDmg = (e.searDmg || 0) + Math.max(0, before - Math.max(0, e.hp));
+      if (this.clot && (e.type === 'clot' || e.type === 'shard')) this.clot.lastSear = this.time;
       this.fx.burst(e.pos.clone().setY(1.2), 30, 0xffd0a0, 4, 2, 0.6);
       e.onCauterized?.();
     }
@@ -597,6 +691,13 @@ export class Game {
   onPlayerDeath() { audio.death(); this.lockTarget = null; setTimeout(() => this.ui.open('dead'), 1400); }
   respawn() {
     const p = this.player;
+    if (this.inOpening() && this.save.flags.merged && !this.save.flags.bossDown) {
+      // defeat by the Clot returns to the boss checkpoint: a fresh mass, full health
+      p.state = 'move'; p.hp = this.stats.hp; p.sta = this.stats.sta; p.pos.set(0, 0, 38.5); p.face = Math.PI; this.save.stims = 3;
+      this.ui.close(); this.startClot(); this.persist('respawn');
+      this.ui.banner('SYNCHRONIZATION RESTORED', 'Back at the gaol. The Clot waits in the street');
+      return;
+    }
     p.state = 'move'; p.hp = this.stats.hp; p.sta = this.stats.sta; p.pos.copy(POI.respawn); p.face = Math.PI;
     this.save.stims = 3;
     for (const e of this.enemies) { e.aggro = false; if (e.elite) { e.hp = e.maxHp; e.pos.copy(e.home); e.phase2 = false; } }
@@ -623,6 +724,8 @@ export class Game {
     if (this.perk('verdict')) { p.sta = Math.min(s.sta, p.sta + 25); p.hp = Math.min(s.hp, p.hp + s.hp * 0.04); }
     if (this.perk('leech_protocol')) p.hp = Math.min(s.hp, p.hp + s.hp * 0.06);
     // loot
+    if (e.type === 'clot') { this.onClotDown(e); this.persist('boss'); return; }
+    if (e.type === 'husk' && this.inOpening()) (this.huskFell = this.huskFell || []).push(e.pos.clone().setY(0));
     if (e.elite) {
       this.dropAt(e.pos.clone().add(new THREE.Vector3(1.2, 0, 0)), randomGear(sv.level + 1, 6));
       this.dropAt(e.pos.clone().add(new THREE.Vector3(-1.2, 0, 0.5)), makeItem('blade', Math.random() < 0.35 ? 4 : 3, sv.level + 1));
@@ -842,6 +945,7 @@ export class Game {
       this.cacheMarker.visible = !this.save.flags.cache;
       this.prompt = this.nearForge ? '[E] Use the Forge (temper gear, install Cores, refill stims)' : this.nearCache ? '[E] Search the cache' : '';
       if (!paused && this.civs && this.inOpening()) this.skirmishUpdate(dt);
+      if (!paused && this.clot && this.boss?.type === 'clot') this.clotUpdate(dt);
       this.chargeTick(dt);
       if (!paused) this.progress();
       // play time counts wall-clock seconds (dt is clamped on slow frames), capped so a backgrounded tab doesn't count

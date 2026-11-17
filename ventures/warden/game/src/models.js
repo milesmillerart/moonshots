@@ -636,6 +636,8 @@ const PALS = {
   skitter: [C(0x433b3b), C(0x120f11), C(0x4d1d21)],
   spitter: [C(0x6a6d52), C(0x23241a), C(0x6f5a28)],
   bellwright: [C(0x7a6b68), C(0x2a2022), C(0x7a2e2a)],
+  clot: [C(0x2d6a66), C(0x0b1a1d), C(0x5b2c70)],
+  shard: [C(0x2d6a66), C(0x0b1a1d), C(0x5b2c70)],
 };
 function enemyMats(dissolve) {
   const flesh = patch(new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.62, metalness: 0.05, emissive: 0x000000 }), { rim: [0.03, 0.08, 0.08], power: 3.2, dissolve });
@@ -800,6 +802,28 @@ export function buildEnemy(type) {
       put(mesh(new THREE.ConeGeometry(0.018, 0.08, 4), bone, side * 0.36, 0.3, 0, leg), 0, 0, -side * 0.6);
       parts.limbs.push({ g: leg, side, i });
     }
+    parts.body = body;
+  } else if (type === 'clot' || type === 'shard') {
+    // an asymmetric gelatinous mass: lumps of fused Hollowed flesh, teal veins and a wrong-colored current under the skin
+    const big = type === 'clot', S = big ? 1 : 0.32;
+    flesh.transparent = true; flesh.opacity = 0.9; flesh.roughness = 0.25; flesh.metalness = 0.1;
+    const current = patch(new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.35, 2.4), toneMapped: false }), { dissolve });
+    current.userData.noShadow = true; parts.current = current;
+    const body = B(root, 0, 1.05 * S, 0);
+    const lumps = big ? [[0, 0, 0, 1.05], [0.75, -0.25, 0.2, 0.7], [-0.6, 0.15, -0.3, 0.8], [0.2, 0.7, -0.2, 0.62], [-0.35, -0.45, 0.55, 0.5], [0.55, 0.35, -0.6, 0.45], [-0.9, -0.5, 0.25, 0.42]]
+      : [[0, 0, 0, 1.0], [0.5, -0.2, 0.2, 0.6], [-0.4, 0.2, -0.2, 0.55]];
+    lumps.forEach(([x, y, z, r], i) => mesh(blob(r * S, pal, 0.14, 2.4, 91 + i), flesh, x * S, y * S, z * S, body));
+    pustules(body, vein, big ? (LOW ? 10 : 16) : 4, 0.95 * S, 0, 0, 0, 0.04 * S * 2, 0.11 * S * 2, 97, 0.9, 1.05);
+    for (let i = 0; i < (big ? 6 : 2); i++) {
+      const a = i * 1.9, y0 = -0.6 + (i % 3) * 0.45;
+      mesh(tube([[Math.cos(a) * 0.5 * S, y0 * S, Math.sin(a) * 0.5 * S], [Math.cos(a + 0.6) * 0.95 * S, (y0 + 0.3) * S, Math.sin(a + 0.6) * 0.95 * S], [Math.cos(a + 1.1) * 0.7 * S, (y0 + 0.75) * S, Math.sin(a + 1.1) * 0.7 * S]], 0.03 * S * 1.6, 12, 5), current, 0, 0, 0, body);
+    }
+    // three half-sunk Husk faces in the big mass (it was three of them)
+    if (big) for (const [x, y, z, ry] of [[0.35, 0.35, 0.85, 0.3], [-0.65, 0.05, 0.6, -0.7], [0.85, -0.2, 0.35, 1.0]]) {
+      const h = put(mesh(blob(0.17, PALS.husk, 0.08, 3, 4), flesh, x, y, z, body), 0, ry, 0, 0.85, 0.95, 1.2);
+      mesh(new THREE.SphereGeometry(0.035, 7, 5), vein, 0.06, 0.02, 0.18, h);
+    }
+    for (let i = 0; i < (big ? 4 : 2); i++) { const leg = B(body, (i - 1.5) * 0.5 * S, -0.8 * S, (i % 2 ? 0.4 : -0.3) * S); mesh(blob(0.32 * S, pal, 0.12, 3, 120 + i), flesh, 0, -0.1 * S, 0, leg); parts.limbs.push({ g: leg, side: i % 2 ? 1 : -1, arm: false }); }
     parts.body = body;
   } else if (type === 'spitter') {
     const body = B(root, 0, 0.85, 0);
