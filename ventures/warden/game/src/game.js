@@ -138,6 +138,15 @@ export class Game {
     this.startPlay(); this.camYaw = Math.PI; this.camPitch = 0.22;
     this.resumeProgress();
   }
+  // Tests: advance the sim without waiting on animation frames (SwiftShader can run at <1 fps).
+  debugSimulate(seconds, step = 0.05) {
+    if (this._simulating) return;
+    this._simulating = true;
+    try {
+      const n = Math.max(1, Math.round(seconds / step));
+      for (let i = 0; i < n; i++) this.update(step);
+    } finally { this._simulating = false; }
+  }
   // Mid-open reload: pick up at the last beat checkpoint instead of restarting the whole cold open.
   resumeOpening() {
     const f = this.save.flags;

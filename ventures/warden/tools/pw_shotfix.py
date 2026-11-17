@@ -20,7 +20,7 @@ def _patch():
     def launch(self, *args, **kwargs):
         kwargs["headless"] = False
         flags = list(kwargs.get("args") or [])
-        for f in ("--no-sandbox", "--disable-dev-shm-usage", "--no-first-run"):
+        for f in ("--no-sandbox", "--disable-dev-shm-usage", "--no-first-run", "--force-device-scale-factor=1"):
             if f not in flags:
                 flags.append(f)
         kwargs["args"] = flags

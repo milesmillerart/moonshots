@@ -91,6 +91,7 @@ let last = performance.now(), acc = 0, frames = 0, slow = 0;
 const stats = { fps: 0 };
 function frame(now) {
   requestAnimationFrame(frame);
+  if (game._simulating) { last = now; return; }
   const real = (now - last) / 1000, dt = Math.min(0.05, real); last = now;
   game.update(dt);
   grade.uniforms.uTime.value = now / 1000;

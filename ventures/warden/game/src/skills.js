@@ -234,15 +234,26 @@ export class SkillTree {
     setTimeout(() => f.remove(), 900);
   }
   zoomTo(view) {
+    if (this._zoomRaf) cancelAnimationFrame(this._zoomRaf);
+    clearTimeout(this._zoomTimer);
     const from = (this.vb || VB[this.view]).slice(), to = VB[view]; this.view = view;
     const t0 = performance.now(), dur = 380;
+    const apply = (vb, done = false) => {
+      this.vb = done ? null : vb;
+      document.getElementById('sksvg')?.setAttribute('viewBox', vb.join(' '));
+    };
     const step = () => {
       const k = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-      this.vb = from.map((v, i) => v + (to[i] - v) * e);
-      document.getElementById('sksvg')?.setAttribute('viewBox', this.vb.join(' '));
-      if (k < 1) requestAnimationFrame(step); else this.vb = null;
+      apply(from.map((v, i) => v + (to[i] - v) * e), k >= 1);
+      if (k < 1) this._zoomRaf = requestAnimationFrame(step); else this._zoomRaf = 0;
     };
-    requestAnimationFrame(step);
+    this._zoomRaf = requestAnimationFrame(step);
+    // SwiftShader CI can stall rAF for seconds; snap so the tab still lands.
+    this._zoomTimer = setTimeout(() => {
+      if (this._zoomRaf) cancelAnimationFrame(this._zoomRaf);
+      this._zoomRaf = 0;
+      if (this.view === view) apply(to, true);
+    }, dur + 30);
     document.querySelectorAll('.sk-views button').forEach((b) => b.classList.toggle('on', b.dataset.v === view));
     document.getElementById('sksvg')?.setAttribute('data-focus', view);
   }

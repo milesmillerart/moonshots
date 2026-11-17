@@ -41,16 +41,23 @@ def main():
         pg.screenshot(path=str(OUT / "05-gameplay.png"))
         G("g.applySetting('scale', 0.4)")
         t0 = time.time(); shot = False
-        while time.time() - t0 < 240:
-            alive = G("""const p=g.player; const es=g.enemies.filter(e=>!e.dead); if(!es.length) return 0;
-              es.sort((a,b)=>a.pos.distanceTo(p.pos)-b.pos.distanceTo(p.pos)); const e=es[0];
-              g.camYaw=Math.atan2(e.pos.x-p.pos.x,e.pos.z-p.pos.z); p.hp=g.stats.hp; p.sta=g.stats.sta;
-              if (e.pos.distanceTo(p.pos)>2.4){ g.keys.KeyW=true; } else { g.keys.KeyW=false; g.edge[Math.random()<0.7?'light':'heavy']=true; }
-              return es.length;""")
-            if not shot and time.time() - t0 > 4 and G("return g.player.state==='attack' && g.player.activeHit"):
+        # Advance the sim in lockstep. Headed SwiftShader on the server often runs at <1 fps,
+        # and the 50 ms dt cap would otherwise leave wave A unfinished after four minutes.
+        while time.time() - t0 < 60:
+            alive = G("""const p=g.player;
+              for (let i = 0; i < 8; i++) {
+                const live = g.enemies.filter(e=>!e.dead);
+                if (!live.length) break;
+                live.sort((a,b)=>a.pos.distanceTo(p.pos)-b.pos.distanceTo(p.pos)); const e=live[0];
+                g.camYaw=Math.atan2(e.pos.x-p.pos.x,e.pos.z-p.pos.z); p.hp=g.stats.hp; p.sta=g.stats.sta;
+                if (e.pos.distanceTo(p.pos)>2.4){ g.keys.KeyW=true; } else { g.keys.KeyW=false; g.edge[Math.random()<0.7?'light':'heavy']=true; }
+                g.debugSimulate(0.12);
+              }
+              return g.enemies.filter(e=>!e.dead).length;""")
+            if not shot and G("return g.save.kills >= 1 || g.player.state==='attack'"):
                 G("g.applySetting('scale', 1)"); settle(0.3); pg.screenshot(path=str(OUT / "06-combat.png")); shot = True; G("g.applySetting('scale', 0.4)")
             if alive == 0: break
-            settle(0.12)
+            settle(0.05)
         G("g.keys.KeyW=false; g.applySetting('scale', 1)")
         if not shot: pg.screenshot(path=str(OUT / "06-combat.png"))
         res = G("return {kills: g.save.kills, xp: g.save.xp, level: g.save.level, scrap: g.save.scrap, bag: g.save.bag.length, wave: g.wave, waveA: !!g.save.flags.waveA, loot: g.loot.length}")

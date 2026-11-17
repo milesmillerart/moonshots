@@ -113,7 +113,7 @@ def desktop(p):
     print("  OK with 0 points nodes show 'open' (not available), learn refused; deep tier refused")
     G("g.save.points = 2; g.ui.render();"); time.sleep(0.5)
     # branch tabs zoom (viewBox is a fixed SVG camera, independent of the full-screen panel)
-    def wait_vb(pg, focus, w, h, ms=8000):
+    def wait_vb(pg, focus, w, h, ms=20000):
         pg.wait_for_function(
             """([focus, w, h]) => { const s = document.getElementById('sksvg'); if (!s) return false;
               const vb = (s.getAttribute('viewBox') || '').split(' ').map(Number);
@@ -202,10 +202,10 @@ def mobile(p, devname, tag):
         """() => { const s = document.getElementById('sksvg'); if (!s) return false;
           const vb = (s.getAttribute('viewBox') || '').split(' ').map(Number);
           return s.getAttribute('data-focus') === 'circuit' && Math.abs(vb[2] - 860) < 1; }""",
-        timeout=8000,
+        timeout=20000,
     )
     onscreen(".nd[data-perk=overclock] .hex"); tap(".sk-views button[data-v=all]")
-    pg.wait_for_function("""() => document.getElementById('sksvg')?.getAttribute('data-focus') === 'all'""", timeout=8000)
+    pg.wait_for_function("""() => document.getElementById('sksvg')?.getAttribute('data-focus') === 'all'""", timeout=20000)
     print("  OK branch tab zoom by touch")
     tap("[data-act=close]"); time.sleep(0.4); assert G("return g.ui.screen") is None
     b.close(); return errors
