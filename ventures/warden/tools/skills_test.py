@@ -112,17 +112,23 @@ def desktop(p):
     assert "open" in cls(pg, "overload") and "has" not in pg.get_attribute(".sk-pts", "class")
     print("  OK with 0 points nodes show 'open' (not available), learn refused; deep tier refused")
     G("g.save.points = 2; g.ui.render();"); time.sleep(0.5)
-    # branch tabs zoom
+    # branch tabs zoom (viewBox is a fixed SVG camera, independent of the full-screen panel)
+    def wait_vb(pg, focus, w, h, ms=8000):
+        pg.wait_for_function(
+            """([focus, w, h]) => { const s = document.getElementById('sksvg'); if (!s) return false;
+              const vb = (s.getAttribute('viewBox') || '').split(' ').map(Number);
+              return s.getAttribute('data-focus') === focus && Math.abs(vb[2] - w) < 1 && Math.abs(vb[3] - h) < 1; }""",
+            arg=[focus, w, h], timeout=ms,
+        )
     for br in ["blade", "bulwark", "circuit"]:
-        pg.click(f".sk-views [data-v={br}]"); time.sleep(2.5)
-        vb = [float(x) for x in pg.get_attribute("#sksvg", "viewBox").split()]
-        assert abs(vb[2] - 860) < 1 and abs(vb[3] - 245) < 1, vb
+        pg.locator(f".sk-views button[data-v={br}]").click()
+        wait_vb(pg, br, 860, 245)
         other = "circuit" if br != "circuit" else "blade"
         op = pg.evaluate(f"[+getComputedStyle(document.querySelector('.nd[data-b={br}]')).opacity, +getComputedStyle(document.querySelector('.nd[data-b={other}]')).opacity]")
         assert op[0] > 0.9 and op[1] < 0.3, op
         pg.screenshot(path=str(OUT / f"desktop-04-branch-{br}.png"))
-    pg.click(".sk-views [data-v=all]"); time.sleep(2.5)
-    assert pg.get_attribute("#sksvg", "viewBox").split()[2] == "1020", pg.get_attribute("#sksvg", "viewBox")
+    pg.locator(".sk-views button[data-v=all]").click()
+    wait_vb(pg, "all", 1020, 660)
     print("  OK Blade / Bulwark / Circuit tabs zoom the view and dim the other branches, All zooms back")
     perks = G("return JSON.stringify(g.save.perks)")
     # persistence
@@ -191,9 +197,15 @@ def mobile(p, devname, tag):
     wait(pg, "g.save.perks.second_wind === 1")
     cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []}); time.sleep(0.2)
     pg.screenshot(path=str(OUT / f"{tag}-03-unlock.png")); print("  OK touch hold learns Second Wind")
-    tap(".sk-views [data-v=circuit]"); time.sleep(2.5)
-    assert abs(float(pg.get_attribute("#sksvg", "viewBox").split()[2]) - 860) < 1
-    onscreen(".nd[data-perk=overclock] .hex"); tap(".sk-views [data-v=all]"); time.sleep(1.5)
+    tap(".sk-views button[data-v=circuit]")
+    pg.wait_for_function(
+        """() => { const s = document.getElementById('sksvg'); if (!s) return false;
+          const vb = (s.getAttribute('viewBox') || '').split(' ').map(Number);
+          return s.getAttribute('data-focus') === 'circuit' && Math.abs(vb[2] - 860) < 1; }""",
+        timeout=8000,
+    )
+    onscreen(".nd[data-perk=overclock] .hex"); tap(".sk-views button[data-v=all]")
+    pg.wait_for_function("""() => document.getElementById('sksvg')?.getAttribute('data-focus') === 'all'""", timeout=8000)
     print("  OK branch tab zoom by touch")
     tap("[data-act=close]"); time.sleep(0.4); assert G("return g.ui.screen") is None
     b.close(); return errors
