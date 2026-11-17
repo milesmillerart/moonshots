@@ -55,7 +55,7 @@ def desktop(p):
     ids = start(pg, G)
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(1)
     s = G("return { schema: g.save.schema, n: g.save.bag.length, all: [...Object.values(g.save.equip), ...g.save.bag].every(it => typeof it.got === 'number' && it.seen === true && it.fav === false), up: g.save.equip.blade.upgrade, bag: g.save.bag.map(x => x.uid) }")
-    assert s["schema"] == 4 and s["n"] == 12 and s["all"] and s["up"] == 2 and s["bag"] == ids["bag"], s
+    assert s["schema"] == 5 and s["n"] == 12 and s["all"] and s["up"] == 2 and s["bag"] == ids["bag"], s
     print("  OK 0.5 save migrated to schema 4: 12 items keep order, every item got got/seen/fav, Temper intact")
     G("g.allowUnlockedAttack = true; g.noLock = true; g.save.bag.push(window.__wardenItems.makeItem('helm', 3, 8, { noCores: true })); g.save.bag.push(window.__wardenItems.makeCore('ember', 3));")
     pg.keyboard.press("i"); time.sleep(2.5)

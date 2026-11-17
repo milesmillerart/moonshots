@@ -136,7 +136,7 @@ def main():
         print("  OK defeat: 'Defeated' (no resurrection wording), resume keeps progress, 'Synchronization restored'")
         # reload: migrated data persisted
         pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000)
-        sc = pg.evaluate("JSON.parse(localStorage.getItem('warden.slot.0')).schema"); assert sc == 4, sc
+        sc = pg.evaluate("JSON.parse(localStorage.getItem('warden.slot.0')).schema"); assert sc == 5, sc
         b.close()
     print("console errors:", len(errors))
     for e in errors: print("  ", e)

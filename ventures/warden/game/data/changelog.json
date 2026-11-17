@@ -1,6 +1,17 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.10.1",
+    "title": "The cold open begins: you meet the Ninth Ward before you name your Warden",
+    "items": [
+      "A new game now starts straight in Hallowmere. You are simply \"Warden\" through the opening, and you choose your name once the street is clear.",
+      "If you reload or quit partway through the opening, you pick up where you left off: at the case, in the fight, or at the naming.",
+      "Wardens who already judged Mira Toll carry on exactly where they were. Their saves never replay the opening.",
+      "This is the first step of a rebuilt opening. The scenes themselves are reworked one at a time in the next updates."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.9",
     "title": "The graphics foundation: real materials, Hallowmere's arches, and room for real 3D models",
     "items": [
