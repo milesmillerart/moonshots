@@ -227,7 +227,9 @@ export class Game {
     this.cine = { pos: new THREE.Vector3(3.4, 2.2, 46.0), look };
     this.storyInp = { joy: { x: 0, y: -1, m: 0.45 } };
     let walking = true;
-    const walk = (async () => { while (walking && live() && p.pos.z > 49.6) { look.set(p.pos.x, 1.4, p.pos.z - 1); await sleep(50); } this.storyInp = null; })();
+    // paced by wall-clock time (~7 s) so a slow frame rate never stretches the arrival
+    const t0 = performance.now();
+    const walk = (async () => { while (walking && live() && p.pos.z > 49.6) { const k = Math.min(1, (performance.now() - t0) / 7000); p.pos.z = 64 - 14.5 * k; p.pos.x = 0; look.set(p.pos.x, 1.4, p.pos.z - 1); await sleep(50); } this.storyInp = null; })();
     await this.fade(false, 900);
     if (!live()) return;
     await this.ui.say(COLD_OPEN.arrival);
