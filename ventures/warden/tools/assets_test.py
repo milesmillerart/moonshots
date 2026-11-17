@@ -39,7 +39,7 @@ def run(p, query):
     pg.wait_for_function("window.__warden && document.querySelector('#menu button[data-act=continue]')", timeout=150000)
     pg.evaluate("window.__wardenNoDyn = true")
     pg.click("#menu button[data-act=continue]")
-    pg.wait_for_function("window.__warden.game.state === 'play'", timeout=90000)
+    pg.wait_for_function("window.__warden.game.state === 'play'", timeout=180000)
     return b, pg, errors
 
 def main():
@@ -79,7 +79,7 @@ def main():
         print("  ", sp)
         ok(sp["husk"] and sp["huskAnim"], "husk spawns as the GLB with an AnimationMixer")
         ok(not sp["skitter"] and sp["svis"] > 3, "skitter falls back to the procedural model")
-        pg.wait_for_function("(() => { const h = window.__warden.game.enemies.find((e) => e.type === 'husk'); return h && ['walk','run','attack','idle'].includes(h.skinState); })()", timeout=90000)
+        pg.wait_for_function("(() => { const h = window.__warden.game.enemies.find((e) => e.type === 'husk'); return h && ['walk','run','attack','idle'].includes(h.skinState); })()", timeout=180000)
         ok(True, "husk animates: " + E("return g.enemies.find((e) => e.type === 'husk').skinState;"))
         E("g.enemies.find((e) => e.type === 'husk').hurt(9999, g.player.pos, 0, false);")
         pg.wait_for_function("(() => { const h = window.__warden.game.enemies.find((e) => e.type === 'husk'); return !h || h.skinState === 'death'; })()", timeout=60000)

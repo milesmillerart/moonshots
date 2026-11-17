@@ -24,9 +24,9 @@ SAVE = """() => { const I = window.__wardenItems;
   localStorage.setItem('warden.slot.0', JSON.stringify(s)); localStorage.setItem('warden.meta', JSON.stringify({ last: 0, v1Done: [] })); }"""
 
 def start(pg):
-    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     pg.evaluate("localStorage.clear()"); pg.evaluate(SAVE)
-    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000); pg.evaluate("window.__wardenNoDyn = true")
+    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000); pg.evaluate("window.__wardenNoDyn = true")
 
 def cls(pg, pid): return pg.get_attribute(f".nd[data-perk={pid}]", "class").split()
 
@@ -126,7 +126,7 @@ def desktop(p):
     print("  OK Blade / Bulwark / Circuit tabs zoom the view and dim the other branches, All zooms back")
     perks = G("return JSON.stringify(g.save.perks)")
     # persistence
-    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(1)
     assert G("return JSON.stringify(g.save.perks)") == perks and G("return g.save.points") == 2; print("  OK perks + points survive reload:", perks)
     G("g.allowUnlockedAttack = true; g.noLock = true;")

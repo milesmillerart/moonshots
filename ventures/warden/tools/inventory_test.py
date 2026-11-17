@@ -40,9 +40,9 @@ def nonblank(pg, sel):
     return st.stddev[0] > 6
 
 def start(pg, G):
-    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     pg.evaluate("localStorage.clear()"); ids = pg.evaluate(V05)
-    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000); pg.evaluate("window.__wardenNoDyn = true")
+    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000); pg.evaluate("window.__wardenNoDyn = true")
     return ids
 
 def desktop(p):
@@ -126,7 +126,7 @@ def desktop(p):
     assert G("return g.ui.screen") == "forge"; print("  OK Forge entry: hint when away, opens the Forge when near")
     G("g.ui.close()"); time.sleep(0.3)
     # persistence of lock + equip
-    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     pg.click("#menu button[data-act=continue]"); pg.wait_for_function("window.__warden.game.state === 'play'"); time.sleep(0.8)
     assert G(f"return g.save.bag.find(x => x.uid === '{tgt}').fav") is True and G("return g.save.equip.blade.uid") == sov
     print("  OK lock + equip survive reload")

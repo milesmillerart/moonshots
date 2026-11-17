@@ -64,13 +64,13 @@ def main():
         pg.on("console", lambda m: m.type == "error" and errors.append(f"[console] {m.text}"))
         pg.on("pageerror", lambda e: errors.append(f"[pageerror] {e}"))
         pg.goto(URL, wait_until="load")
-        pg.wait_for_function("window.__warden && window.__wardenItems && document.querySelector('#menu button')", timeout=90000)
+        pg.wait_for_function("window.__warden && window.__wardenItems && document.querySelector('#menu button')", timeout=180000)
         pg.evaluate("""() => { const I = window.__wardenItems;
           const s = { schema: 4, v: 4, name: 'Kade', level: 3, xp: 0, points: 0, perks: {}, equip: I.starterGear(), bag: [], scrap: 0, stims: 3,
             trait: 'inquest', flags: { judged: true, waveA: true, waveB: true, waveC: true, boss: true }, created: Date.now(), kills: 0, pos: [12, -4], hp: 999, ground: [], playTime: 1, saved: Date.now() };
           localStorage.setItem('warden.slot.0', JSON.stringify(s)); localStorage.setItem('warden.meta', JSON.stringify({ last: 0, v1Done: [] })); }""")
         pg.reload(wait_until="load")
-        pg.wait_for_function("window.__warden && document.querySelector('#menu button[data-act=continue]')", timeout=90000)
+        pg.wait_for_function("window.__warden && document.querySelector('#menu button[data-act=continue]')", timeout=180000)
         pg.evaluate("window.__wardenNoDyn = true")
         pg.click("#menu button[data-act=continue]")
         pg.wait_for_function("window.__warden.game.state === 'play'", timeout=60000)

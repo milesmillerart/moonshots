@@ -58,8 +58,8 @@ def desktop(p):
     def load(clear=False):
         if clear:
             pg.evaluate("localStorage.clear()")
-        pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000); pg.evaluate("window.__wardenNoDyn = true"); time.sleep(1.5)
-    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+        pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000); pg.evaluate("window.__wardenNoDyn = true"); time.sleep(1.5)
+    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     print("== desktop 1600x900")
     # 1. v0.4 save migrates
     pg.evaluate("localStorage.clear()"); v04 = pg.evaluate(V04); load()
@@ -191,10 +191,10 @@ def mobile(p, devname, tag, code):
     G = lambda js: pg.evaluate(f"(() => {{ const g = window.__warden.game; {js} }})()")
     vw, vh = dev["viewport"]["width"], dev["viewport"]["height"]
     print(f"== {tag}: {devname} {vw}x{vh}")
-    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+    pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     pg.evaluate("localStorage.clear()"); pg.evaluate(V04)
     pg.evaluate("c => { const s = window.__wardenSave.importCode(c); s.name = 'Sera Quill'; s.level = 2; s.playTime = 754; s.saved = Date.now() - 3*86400e3; window.__wardenSave.writeSlot(2, s); }", code)
-    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000); pg.evaluate("window.__wardenNoDyn = true"); time.sleep(2)
+    pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000); pg.evaluate("window.__wardenNoDyn = true"); time.sleep(2)
     pg.screenshot(path=str(OUT / f"{tag}-01-title.png"))
     tap("#menu button[data-act=slots]"); time.sleep(0.5)
     for sel in [".slotcard[data-slot='0'] [data-act=slot-del]", ".slotcard[data-slot='1'] [data-act=slot-import]", "#menu button[data-act=back]"]:

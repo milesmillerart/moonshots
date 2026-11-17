@@ -48,13 +48,13 @@ def main():
         pg.on("console", lambda m: m.type == "error" and errors.append(f"[console] {m.text}"))
         pg.on("pageerror", lambda e: errors.append(f"[pageerror] {e}"))
         pg.goto(URL, wait_until="load")
-        pg.wait_for_function("window.__warden && window.__wardenItems && document.querySelector('#menu button')", timeout=90000)
+        pg.wait_for_function("window.__warden && window.__wardenItems && document.querySelector('#menu button')", timeout=180000)
         pg.evaluate("""() => { const I = window.__wardenItems;
           const s = { v: 1, name: 'Aldric Vane', level: 3, xp: 0, points: 0, perks: {}, equip: I.starterGear(), bag: [], scrap: 0, stims: 3,
             trait: 'inquest', flags: { judged: true, waveA: true, waveB: true, waveC: true, boss: true }, created: Date.now(), kills: 0, pos: [12, -4], hp: 999 };
           localStorage.setItem('warden.save.v1', JSON.stringify(s)); }""")
         pg.reload(wait_until="load")
-        pg.wait_for_function("window.__warden && document.querySelector('#menu button[data-act=continue]')", timeout=90000)
+        pg.wait_for_function("window.__warden && document.querySelector('#menu button[data-act=continue]')", timeout=180000)
         time.sleep(2)
         pg.screenshot(path=str(OUT / f"{PRE}-00-title.png"))
         pg.evaluate("window.__wardenNoDyn = true")

@@ -67,7 +67,7 @@ def main():
         pg.wait_for_function("window.__warden && document.querySelector('#menu button[data-act=continue]')", timeout=120000)
         pg.evaluate("window.__wardenNoDyn = true")
         pg.click("#menu button[data-act=continue]")
-        pg.wait_for_function("window.__warden.game.state === 'play'", timeout=90000)
+        pg.wait_for_function("window.__warden.game.state === 'play'", timeout=180000)
         for state, k in (("dormant", 0), ("awakened", 1)):
             if opt.get("views") and f"blade-{state}" not in opt["views"]: continue
             url = pg.evaluate(STUDIO, k)

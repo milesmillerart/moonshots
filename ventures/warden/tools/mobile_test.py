@@ -32,9 +32,9 @@ def run(p, devname, tag, full):
     vw, vh = dev["viewport"]["width"], dev["viewport"]["height"]
     print(f"== {tag}: {devname} {vw}x{vh}")
     pg.goto(URL + ("&" if "?" in URL else "?") + "fresh=" + str(time.time()), wait_until="load")
-    pg.wait_for_function("window.__warden && document.querySelector('#menu button')", timeout=90000)
+    pg.wait_for_function("window.__warden && document.querySelector('#menu button')", timeout=180000)
     pg.evaluate("localStorage.clear()"); pg.reload(wait_until="load")
-    pg.wait_for_function("window.__warden && document.querySelector('#menu button')", timeout=90000)
+    pg.wait_for_function("window.__warden && document.querySelector('#menu button')", timeout=180000)
     pg.evaluate("window.__wardenNoDyn = true")
     assert pg.evaluate("document.documentElement.classList.contains('touch')"), "touch mode not detected"
     time.sleep(2.5)

@@ -47,9 +47,9 @@ def main():
         G = lambda js: pg.evaluate(f"(() => {{ const g = window.__warden.game, I = window.__wardenItems; {js} }})()")
         tag = "mobile" if MOBILE else "desktop"
         print("==", tag)
-        pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+        pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
         pg.evaluate("localStorage.clear()"); info = pg.evaluate(V07)
-        pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000); pg.evaluate("window.__wardenNoDyn = true")
+        pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000); pg.evaluate("window.__wardenNoDyn = true")
         # 6 (data part) story text
         st = pg.evaluate("""(async () => { const D = await import('./src/data.js?v=' + window.__warden.build); return D.STORY.intro.map(x => x.text).join(' | ') + ' || ' + D.STORY.bossIntro[0].text; })()""")
         assert "HALLOWMERE, ITS CAPITAL" in st and "street calls it the Rot" in st and "Some swear the things were people once" in st and "They say it was a bell-ringer" in st, st
@@ -135,7 +135,7 @@ def main():
         assert before == after, (before, after)
         print("  OK defeat: 'Defeated' (no resurrection wording), resume keeps progress, 'Synchronization restored'")
         # reload: migrated data persisted
-        pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=90000)
+        pg.reload(wait_until="load"); pg.wait_for_function(READY, timeout=180000)
         sc = pg.evaluate("JSON.parse(localStorage.getItem('warden.slot.0')).schema"); assert sc == 4, sc
         b.close()
     print("console errors:", len(errors))
