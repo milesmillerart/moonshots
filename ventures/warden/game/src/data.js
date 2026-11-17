@@ -141,6 +141,13 @@ export const COLD_OPEN = {
       { who: 'Mira Toll', text: 'I did what I had to.' } ] },
   ],
   silent: 'Say nothing.',
+  verdictPrompt: [{ who: 'Gaoler Brann', text: 'The stretch is still dark, Warden. Code still says hand or head. Your verdict.' }],
+  // the buttons carry only the sentence; ids map to the existing outcomes (STORY.choices[].after) and traits
+  verdicts: [
+    { id: 'dread', label: 'Theft from the Wall is theft from every life behind it. The sentence is death.' },
+    { id: 'measure', label: 'The cell goes back. She serves the Wall until the debt is paid. Mark her.' },
+    { id: 'inquest', label: 'Pylon locks need a Ward key. Who sold you one?' },
+  ],
   alarm: [
     { who: '', text: 'A scream cuts through the rain, close, down the street. Then the gaol bell, ringing hard.' },
     { who: 'Gaoler Brann', text: 'Hollowed, in the street! The dark stretch let them through.' },

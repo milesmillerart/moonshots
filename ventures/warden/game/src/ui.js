@@ -100,12 +100,13 @@ export class UI {
     else if (this.slotMode && $('#title').classList.contains('slots-on')) this.renderSlots();
   }
   // Character creation (0.10), after the cold open: the same Warden who just fought, now named.
-  showCreation({ needName = true } = {}) {
+  showCreation({ needName = true, trait = null } = {}) {
     return new Promise((resolve) => {
       const t = $('#title'); t.classList.remove('hidden', 'slots-on'); t.classList.add('naming-on', 'create-on');
       $('#menu').innerHTML = `
         <div class="naming create">
           <div class="ch">The street is quiet. For now.</div>
+          ${trait ? `<p class="trait">Trait: <b>${esc(trait.name)}</b>. ${esc(trait.desc)}</p>` : ''}
           ${needName ? `<label for="wname">Name your Warden</label>
           <input id="wname" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Kade" />
           <p class="hint">The Ninth Ward will know you by this name. A real name, a title, anything you like.</p>`

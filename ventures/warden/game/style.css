@@ -573,3 +573,5 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
 
 /* 0.10.3: the cold open hides gear, skills and XP until character creation */
 html.opening .tmenu [data-t=armory], html.opening .tmenu [data-t=skills], html.opening #hud .keys, html.opening #hud .bar.xp, html.opening #pts, html.opening #plevel { display: none !important; }
+.naming .trait { margin: 0 0 10px; font-size: 14px; color: #c9c2b4; max-width: 30em; }
+.naming .trait b { color: #ffb547; }

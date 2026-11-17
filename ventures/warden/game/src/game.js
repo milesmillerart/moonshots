@@ -8,7 +8,7 @@ import { FX } from './fx.js';
 import { UI } from './ui.js';
 import { TouchControls, detectTouch } from './touch.js';
 import { audio } from './audio.js';
-import { STORY, COLD_OPEN, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
+import { STORY, COLD_OPEN, TRAITS, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
 import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, tierOf, upgradeCost, salvageValue, MAX_UPGRADE } from './items.js';
 import { angleDiff, clamp, damp, dampAngle, rand, randi, pick } from './util.js';
 
@@ -172,8 +172,10 @@ export class Game {
     this.creating = true; this.state = 'story'; this.combatOn = false; this.keys = {};
     if (document.pointerLockElement) document.exitPointerLock?.();
     this.ui.hud.classList.add('hidden'); this.touch?.root?.classList.add('hidden');
-    this.ui.showCreation({ needName: !this.save.flags.named }).then(({ name }) => {
+    const pend = this.save.flags.pendingTrait || this.save.trait;
+    this.ui.showCreation({ needName: !this.save.flags.named, trait: pend ? TRAITS[pend] : null }).then(({ name }) => {
       const f = this.save.flags;
+      if (f.pendingTrait) { this.save.trait = f.pendingTrait; delete f.pendingTrait; this.refreshStats(); this.player.hp = this.stats.hp; }
       if (!f.named) { this.save.name = (name || '').trim().slice(0, 20) || 'Kade'; f.named = true; }
       f.created = true; f.opening = 'done'; this.creating = false;
       this.clearCivilians(); this.syncOpening();
@@ -208,7 +210,7 @@ export class Game {
   importToSlot(slot, sv) { return Save.writeSlot(slot, sv); }
   hideCast() {
     this.watch.visible = false;
-    if (this.save.trait === 'dread') { this.mira.visible = true; this.mira.rotation.set(-1.5, 0, 0); this.mira.position.set(0, 0.3, 45); }
+    if ((this.save.trait || this.save.flags?.pendingTrait) === 'dread') { this.mira.visible = true; this.mira.rotation.set(-1.5, 0, 0); this.mira.position.set(0, 0.3, 45); }
     else this.mira.visible = false;
     this.brann.position.set(5, 0, 46.5); this.brann.rotation.y = -1.2;
     if (this.cellProp) this.cellProp.visible = false;
@@ -287,10 +289,14 @@ export class Game {
     this.cine = { pos: new THREE.Vector3(3.6, 1.9, 48.8), look: new THREE.Vector3(0, 1.0, 45.0) };
     await this.fade(false, 500);
     if (!live()) return;
-    const k = await this.ui.say(STORY.judgment.filter((l) => l.who !== 'Mira Toll').slice(1), STORY.choices);
+    const k = await this.ui.say(COLD_OPEN.verdictPrompt, COLD_OPEN.verdicts);
     if (!live()) return;
-    const ch = STORY.choices[k];
-    this.save.trait = ch.id; this.save.flags.judged = true; this.refreshStats(); this.persist('verdict');
+    const v = COLD_OPEN.verdicts[k], ch = STORY.choices.find((c) => c.id === v.id);
+    const f = this.save.flags, led = f.ledger || {};
+    // the trait applies at character creation (handoff); the ledger keeps the verdict, who saw it, and the street's cost
+    f.judged = true; f.pendingTrait = ch.id;
+    f.ledger = { ...led, verdict: ch.id, witnesses: (led.present || ['brann', 'watchman', 'mira']).filter((w) => !(ch.id === 'dread' && w === 'mira')), civiliansDead: led.civiliansDead || 0 };
+    this.persist('verdict');
     if (ch.id === 'dread') {
       p.startAttack('heavy'); p.sta = this.stats.sta;
       await sleep(420); audio.hit(true, true); this.fx.burst(new THREE.Vector3(0, 1.1, 45.3), 50, 0xff2050, 5, 2, 0.7); this.hitstop = 0.15;

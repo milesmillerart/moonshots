@@ -7,6 +7,8 @@ and iPhone SE landscape with real CDP touch taps. Grows with each 0.10.x milesto
 0.10.3 (skirmish): three Husks, three civilians (vendor + two laborers) and the watchman; ignored civilians get hurt,
   protected ones live; ledger (civiliansDead, civilians, watchmanHurt, present); no Core/gear drops or XP in the opening;
   Armory/Skills hidden; soft gate keeps the Warden at the gaol stretch.
+0.10.4 (verdict): Brann's prompt, three sentence-only buttons, outcome recorded in the ledger (verdict, witnesses,
+  civilians), trait applied at character creation and listed there.
   Checks: nameless new Warden ("Warden"), schema 5 + flags.opening 'act1', mid-open reloads resume at the last beat
   (case / skirmish / creation), creation names the Warden and opens the capital, legacy judged saves skip the cold open
   ('legacy'), a named-but-unjudged old save plays the cold open and keeps its name (no name field). Zero console errors.
@@ -123,10 +125,13 @@ def run(p, devname, tag):
     ok(G("return g.loot.length") == 0 and G("return g.save.xp") == 0 and (G("return g.save.flags.deferredXp") or 0) > 0, "no Core or gear drops and no level-up in the opening (XP deferred)")
     ok(advance_until("document.querySelector('#dialogue .choices')", 60), "the street clears and the Warden returns to the case")
     labels = G("return [...document.querySelectorAll('#dialogue .choices button')].map(b => b.textContent)")
-    ok(len(labels) == 3, f"the verdict is offered only now: {labels}")
+    ok(len(labels) == 3 and "The sentence is death" in labels[0] and "Mark her" in labels[1] and "Ward key" in labels[2] and not any(w in " ".join(labels) for w in ("Execute", "Sentence her", "Question her")), f"the verdict is offered only now, sentences only: {labels}")
+    ok("Your verdict" in G("return document.querySelector('#dialogue').textContent"), "Brann asks for the verdict")
     press("#dialogue .choices button[data-c='2']")
     ok(advance_until("document.querySelector('#title.create-on #wname')", 50), "the verdict leads to character creation")
-    ok(G("return g.save.trait") == "inquest" and G("return g.save.flags.judged"), "verdict recorded")
+    led = G("return g.save.flags.ledger")
+    ok(G("return g.save.trait") is None and G("return g.save.flags.pendingTrait") == "inquest" and led["verdict"] == "inquest" and "brann" in led["witnesses"] and "civiliansDead" in led, f"verdict recorded in the ledger, trait waits for the handoff {led}")
+    ok("Inquest" in G("return document.querySelector('#title .naming').textContent"), "creation lists the trait factually")
     time.sleep(1.2)
     ok(G("return g.state") != "play" and not G("return g.save.flags.created"), "clearing the street opens character creation")
     if SHOT and SHOTAT == "creation" and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
@@ -138,6 +143,7 @@ def run(p, devname, tag):
     s = pg.evaluate("window.__wardenSave.readSlot(0)")
     ok(s["name"] == "Aldric Vane" and s["flags"]["created"] and s["flags"]["opening"] == "done" and G("return g.state") == "play", "Take the Oath names the Warden and opens the capital")
     ok("Statute Plaza" in G("return g.objective"), "objective points into the capital")
+    ok(G("return g.save.trait") == "inquest" and not G("return g.save.flags.pendingTrait"), "the verdict's trait applies at the handoff")
     boot(clear=False); press("#menu button[data-act=continue]"); time.sleep(2.0)
     ok(G("return g.state") == "play" and not G("return g.dialogueOpen") and not pg.query_selector("#title.create-on"), "after creation, Continue goes to the open world")
     # 6. legacy: a 0.9 (schema 4) Warden who judged Mira never replays the cold open
