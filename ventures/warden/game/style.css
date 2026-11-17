@@ -575,3 +575,8 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
 html.opening .tmenu [data-t=armory], html.opening .tmenu [data-t=skills], html.opening #hud .keys, html.opening #hud .bar.xp, html.opening #pts, html.opening #plevel { display: none !important; }
 .naming .trait { margin: 0 0 10px; font-size: 14px; color: #c9c2b4; max-width: 30em; }
 .naming .trait b { color: #ffb547; }
+/* 0.10.5 Cauterize: always available, lights up at 50 Charge */
+#touch .b-caut { right: 18px; bottom: 186px; width: 66px; height: 54px; font-size: 8px; border-color: rgba(255, 208, 160, 0.28); color: rgba(255, 208, 160, 0.55); }
+#touch .b-caut.ready { border-color: #ffd0a0; color: #ffd0a0; box-shadow: 0 0 16px rgba(255, 190, 120, 0.55); animation: pulse 0.9s infinite alternate; }
+#chg.ready span::after { content: ' · CAUTERIZE [C]'; }
+html.touch #chg.ready span::after { content: ' · CAUTERIZE'; }

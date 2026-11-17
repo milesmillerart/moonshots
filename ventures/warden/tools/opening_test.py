@@ -9,6 +9,8 @@ and iPhone SE landscape with real CDP touch taps. Grows with each 0.10.x milesto
   Armory/Skills hidden; soft gate keeps the Warden at the gaol stretch.
 0.10.4 (verdict): Brann's prompt, three sentence-only buttons, outcome recorded in the ledger (verdict, witnesses,
   civilians), trait applied at character creation and listed there.
+0.10.5 (Synth Charge + Cauterize): ~55-70 Charge after the skirmish, decay after 3 s idle, CAUTERIZE (C / button) spends
+  50 Charge on a directed sear that marks enemies Cauterized, out-of-combat health regen.
   Checks: nameless new Warden ("Warden"), schema 5 + flags.opening 'act1', mid-open reloads resume at the last beat
   (case / skirmish / creation), creation names the Warden and opens the capital, legacy judged saves skip the cold open
   ('legacy'), a named-but-unjudged old save plays the cold open and keeps its name (no name field). Zero console errors.
@@ -178,7 +180,19 @@ def run(p, devname, tag):
         else: time.sleep(0.5)
     ok(G("return g.state") == "play" and any("I did what I had to" in t for t in seen), "all three asked: answers shown, then the alarm and the skirmish")
     ok(G("return g.save.flags.asked") == ["dark", "brother", "how"], "questions recorded in the ledger")
+    # Cauterize: no perk needed; a directed sear in front of the Warden
+    G("const p = g.player, e = g.enemies.find(x => !x.dead); p.face = 0; e.pos.set(p.pos.x, 0, p.pos.z + 3); e.prey = null; p.charge = 60; p.chargeT = g.time;")
+    time.sleep(0.6)
+    ok(G("return document.querySelector('#chg').classList.contains('ready')"), "Charge bar shows Cauterize ready at 50+")
+    if MOBILE: press("#touch .b-caut")
+    else: pg.keyboard.press("c")
+    time.sleep(0.8)
+    st = G("return { c: Math.round(g.player.charge), caut: g.enemies.filter(e => e.cauterized).length }")
+    ok(st["caut"] >= 1 and st["c"] <= 12, f"CAUTERIZE spends 50 Charge and marks the Husk Cauterized {st}")
+    G("g.player.charge = 60; g.player.chargeT = g.time - 10"); time.sleep(1.5)
+    ok(G("return g.player.charge") < 59, "Charge decays after 3 s without a hit")
     kill_wave(); time.sleep(0.8)
+    ok(55 <= G("return g.player.charge") <= 70, "about 55-70 Charge carries out of the skirmish")
     led = G("return g.save.flags.ledger")
     ok(led["civiliansDead"] == 0 and all(v == "safe" for v in led["civilians"].values()), f"protected, every civilian lives {led}")
     ok(advance_until("document.querySelector('#dialogue .choices')", 60), "…verdict after the skirmish"); press("#dialogue .choices button[data-c='1']")

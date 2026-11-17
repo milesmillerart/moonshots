@@ -426,6 +426,7 @@ export class Game {
       if (this.inOpening()) { this.objective = ''; setTimeout(() => { if (!this.inOpening() || this.state !== 'play') return; if (!f.judged) this.runVerdict(); else this.beginCreation(); }, 1600); }
       else { this.objective = 'Push north into <b>Statute Plaza</b>'; this.ui.toast('The street is clear. Push north.'); }
       if (this.civs) this.closeSkirmish();
+      if (this.inOpening()) { const pl = this.player; pl.charge = clamp(pl.charge, 55, 70); f.openCharge = Math.round(pl.charge); }
       if (!f.starterCore && !this.inOpening()) { f.starterCore = true; this.dropAt(new THREE.Vector3(0, 0, 21), makeCore('arc', 1)); this.ui.toast('An Arc Core fell from the Hollowed. Install Cores at the Forge.', 'cyan'); }
     }
     if (f.waveA && !f.waveB && this.wave !== 'B' && p.z < 18 && !this.inOpening()) this.spawnWave('B');
@@ -484,8 +485,8 @@ export class Game {
     let dmg = s.dmgFinal * (A ? A.mult : 1) * mult;
     if (A?.finisher && this.perk('momentum')) dmg *= 1.6;
     if (A?.riposte) dmg *= 1.5;
-    if (e.hp / e.maxHp < 0.35) dmg *= 1 + 0.25 * this.perk('executioner');
-    const crit = !!A?.riposte || Math.random() * 100 < s.crit;
+    if (e.hp / e.maxHp < 0.35 && !A?.nocrit) dmg *= 1 + 0.25 * this.perk('executioner');
+    const crit = !A?.nocrit && (!!A?.riposte || Math.random() * 100 < s.crit);
     if (crit) dmg *= 1 + s.critDmg / 100;
     dmg *= rand(0.92, 1.08);
     e.hurt(dmg, p.pos, A ? A.poise : 0.5, crit);
@@ -497,7 +498,7 @@ export class Game {
       this.hitstop = Math.max(this.hitstop, (A.heavy ? 0.11 : 0.055) + (crit ? 0.03 : 0));
       this.shake(A.heavy ? 0.32 : 0.14);
       audio.hit(A.heavy, crit);
-      p.charge = Math.min(100, p.charge + 7 * (A.heavy ? 1.8 : 1) * (1 + 0.35 * this.perk('capacitor')));
+      this.addCharge((A.heavy ? 16 : 8) * (1 + 0.35 * this.perk('capacitor')));
       if (s.leech) p.hp = Math.min(s.hp, p.hp + dmg * s.leech / 100);
       if (s.ember) { e.burn = 3; e.burnDps = (dmg * s.ember / 100) / 3; }
       if (s.arc && Math.random() * 100 < s.arc) this.arcFrom(e, dmg * 0.6);
@@ -509,6 +510,54 @@ export class Game {
     this.fx.bolt(e.pos.clone().setY(1.2), near.pos.clone().setY(1.2));
     audio.zap();
     this.hitEnemy(near, null, 'arc', dmg / this.stats.dmgFinal);
+  }
+  // ---- 0.10.5 Synth Charge: hits and perfect dodges build it; Cauterize (no perk) and Overload spend it ----
+  cauterizeCost() { return 50; }
+  addCharge(n) {
+    const p = this.player, was = p.charge;
+    p.charge = Math.min(100, p.charge + n); p.chargeT = this.time;
+    if (was < this.cauterizeCost() && p.charge >= this.cauterizeCost()) this.chargeReady();
+  }
+  chargeReady() {
+    const p = this.player;
+    this.fx.burst(p.pos.clone().setY(1.2), 24, 0x46f0e0, 4, 1.6, 0.5); this.fx.ring(p.pos.clone(), 2.2, 0.35, 0x46f0e0, 0.2);
+    audio.charge(0.25); navigator.vibrate?.(40);
+    if (!this.save.flags.tipCaut) { this.save.flags.tipCaut = true; this.ui.toast(this.touch?.on ? 'The synthblade is charged. Tap CAUTERIZE.' : 'The synthblade is charged. Press C to Cauterize.', 'cyan'); }
+  }
+  chargeTick(dt) {
+    const p = this.player;
+    if (this.dialogueOpen || this.ui.isOpen || this.slow || this.state !== 'play') { p.chargeT = Math.max(p.chargeT || 0, this.time - 3); return; }
+    if (p.charge > 0 && this.time - (p.chargeT || 0) > 3) p.charge = Math.max(0, p.charge - 5 * dt);
+    // out of combat, the Warden's wounds close (8-10 HP/s after 4 s)
+    const quiet = this.time - (p.lastHurtT || -99) > 4 && this.time - (p.chargeT || -99) > 4 && !this.enemies.some((e) => !e.dead && e.aggro && e.pos.distanceTo(p.pos) < 16);
+    if (quiet && p.state !== 'dead' && p.hp < this.stats.hp) p.hp = Math.min(this.stats.hp, p.hp + 9 * dt);
+  }
+  cauterize() {
+    const p = this.player, cost = this.cauterizeCost();
+    if (p.state === 'dead') return;
+    if (p.charge < cost) { this.ui.toast('Not enough Charge. Land hits to build it.'); return; }
+    p.charge -= cost; p.chargeT = this.time;
+    const dir = this.lockTarget ? Math.atan2(this.lockTarget.pos.x - p.pos.x, this.lockTarget.pos.z - p.pos.z) : p.face;
+    p.face = dir;
+    const fwd = new THREE.Vector3(Math.sin(dir), 0, Math.cos(dir));
+    // a directed searing line: VFX along the cone
+    for (let i = 1; i <= 7; i++) this.fx.burst(p.pos.clone().addScaledVector(fwd, i).setY(1.1), 10, i % 2 ? 0x46f0e0 : 0xffd0a0, 3, 1.2, 0.45);
+    this.fx.bolt(p.pos.clone().setY(1.2), p.pos.clone().addScaledVector(fwd, 7.5).setY(1.1));
+    audio.nova(); this.shake(0.35); this.hitstop = 0.07;
+    let n = 0;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const to = e.pos.clone().sub(p.pos).setY(0), d = to.length();
+      if (d > 7.5 + e.def.radius || Math.abs(angleDiff(dir, Math.atan2(to.x, to.z))) > (d < 2 ? 1.2 : 0.55)) continue;
+      // 15-20% of a big body's max HP; ordinary Hollowed take a heavy searing hit
+      const sear = e.elite ? e.maxHp * 0.175 : Math.max(e.maxHp * 0.175, this.stats.dmgFinal * 2.2);
+      e.cauterized = true; e.cauterT = this.time; n++;
+      this.hitEnemy(e, { mult: sear / Math.max(1, this.stats.dmgFinal), poise: 8, nocrit: true }, 'arc');
+      this.fx.burst(e.pos.clone().setY(1.2), 30, 0xffd0a0, 4, 2, 0.6);
+      e.onCauterized?.();
+    }
+    this.save.flags.cauterized = (this.save.flags.cauterized || 0) + 1;
+    return n;
   }
   overload() {
     const p = this.player;
@@ -533,7 +582,7 @@ export class Game {
   onPerfectDodge(from) {
     const p = this.player, s = this.stats;
     p.perfectCd = 0.6; p.iframes = Math.max(p.iframes, 0.5); p.riposte = 1.6;
-    p.sta = Math.min(s.sta, p.sta + 20); p.charge = Math.min(100, p.charge + 15);
+    p.sta = Math.min(s.sta, p.sta + 20); this.addCharge(10);
     this.slowmo(1.1, 0.22, false, 'perfect');
     const at = p.pos.clone().setY(1.1);
     this.fx.ring(p.pos.clone(), 3.2, 0.35, 0x46f0e0, 0.25);
@@ -543,7 +592,8 @@ export class Game {
     if (!this.save?.flags?.tipRiposte && this.save) { this.save.flags.tipRiposte = true; this.ui.toast('Perfect dodge. Strike now for a guaranteed critical Riposte.', 'cyan'); }
     void from;
   }
-  onPlayerHurt(d) { this.ui.hurtFlash(d / this.stats.hp * 3); this.shake(0.25); this.player.hurtT = 0.2; this.fx.burst(this.player.pos.clone().setY(1.2), 8, 0x802030, 3, 1, 0.3); }
+  onPlayerHurt(d) { this.player.lastHurtT = this.time; this._onPlayerHurt(d); }
+  _onPlayerHurt(d) { this.ui.hurtFlash(d / this.stats.hp * 3); this.shake(0.25); this.player.hurtT = 0.2; this.fx.burst(this.player.pos.clone().setY(1.2), 8, 0x802030, 3, 1, 0.3); }
   onPlayerDeath() { audio.death(); this.lockTarget = null; setTimeout(() => this.ui.open('dead'), 1400); }
   respawn() {
     const p = this.player;
@@ -757,6 +807,7 @@ export class Game {
         stim: this.consume('KeyR'), joy: this.joy,
       };
       if (!block && this.consume('KeyF')) this.overload();
+      if (!block && this.consume('KeyC')) this.cauterize();
       if (!block && this.consume('KeyQ')) this.toggleLock();
       if (this.lockTarget && (this.lockTarget.dead || this.lockTarget.pos.distanceTo(p.pos) > 24)) this.lockTarget = null;
       p.update(dt, inp, this.camYaw);
@@ -791,6 +842,7 @@ export class Game {
       this.cacheMarker.visible = !this.save.flags.cache;
       this.prompt = this.nearForge ? '[E] Use the Forge (temper gear, install Cores, refill stims)' : this.nearCache ? '[E] Search the cache' : '';
       if (!paused && this.civs && this.inOpening()) this.skirmishUpdate(dt);
+      this.chargeTick(dt);
       if (!paused) this.progress();
       // play time counts wall-clock seconds (dt is clamped on slow frames), capped so a backgrounded tab doesn't count
       const now = performance.now(), wall = this.lastWall ? Math.min(1, (now - this.lastWall) / 1000) : 0; this.lastWall = now;

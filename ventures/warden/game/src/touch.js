@@ -14,7 +14,7 @@ export function detectTouch() {
 const BTN = [
   // id, label, class (layout slot)
   ['light', 'STRIKE', 'b-light'], ['heavy', 'HEAVY', 'b-heavy'], ['dodge', 'ROLL', 'b-dodge'],
-  ['lock', 'LOCK', 'b-lock'], ['stim', 'STIM', 'b-stim'], ['over', 'OVERLOAD', 'b-over'], ['use', 'USE', 'b-use'],
+  ['lock', 'LOCK', 'b-lock'], ['stim', 'STIM', 'b-stim'], ['over', 'OVERLOAD', 'b-over'], ['caut', 'CAUTERIZE', 'b-caut'], ['use', 'USE', 'b-use'],
 ];
 
 export class TouchControls {
@@ -35,7 +35,7 @@ export class TouchControls {
     document.body.appendChild(root);
     this.zone = root.querySelector('#tz'); this.stickEl = root.querySelector('#tstick'); this.knob = root.querySelector('#tknob');
     this.btnOver = root.querySelector('.b-over'); this.btnUse = root.querySelector('.b-use'); this.btnLock = root.querySelector('.b-lock');
-    this.btnStim = root.querySelector('.b-stim'); this.pts = root.querySelector('#tpts');
+    this.btnCaut = root.querySelector('.b-caut'); this.btnStim = root.querySelector('.b-stim'); this.pts = root.querySelector('#tpts');
     // movement + camera
     this.zone.addEventListener('pointerdown', (e) => this.down(e));
     addEventListener('pointermove', (e) => this.move(e), { passive: false });
@@ -67,6 +67,7 @@ export class TouchControls {
     if (id === 'lock') g.edge.KeyQ = true;
     if (id === 'stim') g.edge.KeyR = true;
     if (id === 'over') g.edge.KeyF = true;
+    if (id === 'caut') g.edge.KeyC = true;
     if (id === 'use' && !g.dialogueOpen) g.interact();
   }
   down(e) {
@@ -128,6 +129,7 @@ export class TouchControls {
     if (!sv) return;
     this.btnOver.classList.toggle('hidden', !g.perk('overload'));
     this.btnOver.classList.toggle('ready', g.perk('overload') && g.player.charge >= g.overloadCost());
+    this.btnCaut.classList.toggle('ready', g.player.charge >= g.cauterizeCost());
     this.btnUse.classList.toggle('hidden', !g.prompt);
     this.btnUse.querySelector('span').textContent = g.nearForge ? 'FORGE' : g.nearCache ? 'SEARCH' : 'USE';
     this.btnLock.classList.toggle('on', !!g.lockTarget);

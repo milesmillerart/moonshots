@@ -166,8 +166,8 @@ export class UI {
     $('#hp-fill').style.width = pct(p.hp, s.hp); $('#hp-txt').textContent = `${Math.ceil(p.hp)} / ${s.hp}`;
     $('#sta-fill').style.width = pct(p.sta, s.sta);
     $('#chg-fill').style.width = pct(p.charge, 100);
-    $('#chg').classList.toggle('ready', g.perk('overload') && p.charge >= g.overloadCost());
-    $('#chg').classList.toggle('locked', !g.perk('overload'));
+    $('#chg').classList.toggle('ready', p.charge >= g.cauterizeCost());
+    $('#chg').classList.remove('locked');
     const now = performance.now();
     if (now - this.lastHud > 150) {
       this.lastHud = now;
@@ -395,10 +395,10 @@ export class UI {
   }
   controlsHtml() {
     if (this.g.touch?.on) {
-      const tr = [['Left thumb', 'Move (push to the edge to sprint)'], ['Drag right side', 'Look around'], ['Tap right side / STRIKE', 'Light strike (hold STRIKE to keep the combo going)'], ['HEAVY', 'Heavy strike'], ['ROLL', 'Dodge roll (roll through an attack at the last instant for a Riposte)'], ['LOCK', 'Lock on to the nearest enemy'], ['STIM', 'Inject a stim (heal)'], ['OVERLOAD', 'Shock nova (Circuit perk)'], ['USE / FORGE', 'Appears near the Forge or a cache'], ['ARMORY · SKILLS · ❚❚', 'Gear, perks and pause (top right)']];
+      const tr = [['Left thumb', 'Move (push to the edge to sprint)'], ['Drag right side', 'Look around'], ['Tap right side / STRIKE', 'Light strike (hold STRIKE to keep the combo going)'], ['HEAVY', 'Heavy strike'], ['ROLL', 'Dodge roll (roll through an attack at the last instant for a Riposte)'], ['LOCK', 'Lock on to the nearest enemy'], ['STIM', 'Inject a stim (heal)'], ['CAUTERIZE', 'Spend 50 Charge on a searing line (lights up when ready)'], ['OVERLOAD', 'Shock nova (Circuit perk)'], ['USE / FORGE', 'Appears near the Forge or a cache'], ['ARMORY · SKILLS · ❚❚', 'Gear, perks and pause (top right)']];
       return `<div class="card"><div class="tabs"><b>Touch controls</b><button data-act="close" class="x">✕</button></div><table class="ctl">${tr.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}</table><p class="muted">Play in landscape. Keyboard and mouse also work.</p></div>`;
     }
-    const rows = [['W A S D', 'Move'], ['Shift', 'Sprint'], ['Mouse', 'Look (click the game to capture the mouse)'], ['Left click', 'Light strike (chain three for a combo)'], ['Right click', 'Heavy strike'], ['Space', 'Dodge roll (brief invulnerability)'], ['Q', 'Lock on to the nearest enemy'], ['R', 'Inject a stim (heal)'], ['F', 'Overload (Circuit perk)'], ['E', 'Interact / use the Forge'], ['I or Tab', 'Armory'], ['K', 'Skills'], ['Esc', 'Pause'], ['M', 'Mute']];
+    const rows = [['W A S D', 'Move'], ['Shift', 'Sprint'], ['Mouse', 'Look (click the game to capture the mouse)'], ['Left click', 'Light strike (chain three for a combo)'], ['Right click', 'Heavy strike'], ['Space', 'Dodge roll (brief invulnerability)'], ['Q', 'Lock on to the nearest enemy'], ['R', 'Inject a stim (heal)'], ['C', 'Cauterize: spend 50 Charge on a searing line that wounds stop healing'], ['F', 'Overload (Circuit perk, its own Charge cost)'], ['E', 'Interact / use the Forge'], ['I or Tab', 'Armory'], ['K', 'Skills'], ['Esc', 'Pause'], ['M', 'Mute']];
     return `<div class="card"><div class="tabs"><b>Controls</b><button data-act="close" class="x">✕</button></div><table class="ctl">${rows.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}</table></div>`;
   }
   onClick(e) {
