@@ -4,7 +4,7 @@
 export function makeGradePass(THREE, Q) {
   const shader = {
     uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: Q.grain ? 0.045 : 0.0 }, uVig: { value: 0.42 },
-      uLift: { value: new THREE.Vector3(0.006, 0.022, 0.028) }, uGain: { value: new THREE.Vector3(0.96, 1.0, 1.02) }, uSat: { value: 0.74 }, uContrast: { value: 1.08 } },
+      uLift: { value: new THREE.Vector3(0.004, 0.02, 0.034) }, uGain: { value: new THREE.Vector3(0.91, 0.99, 1.07) }, uSat: { value: 0.74 }, uContrast: { value: 1.08 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uGrain, uVig, uSat, uContrast; uniform vec3 uLift, uGain; varying vec2 vUv;
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }

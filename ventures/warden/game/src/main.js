@@ -24,7 +24,7 @@ try {
   throw e;
 }
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 0.9;
 renderer.shadowMap.type = THREE.PCFShadowMap; // r187: PCF with shadow.radius gives the soft look
 renderer.info.autoReset = false; // count the whole post chain per frame (perf table)
 const scene = new THREE.Scene();
@@ -48,6 +48,16 @@ if (Q.ao) {
   gtao.blendIntensity = 0.85;
   gtao.updateGtaoMaterial({ radius: 0.9, distanceExponent: 1.6, thickness: 1.2, scale: 1.1, samples: 12 });
   gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+  // AO only from solid surfaces: sprites, halos, light shafts, rain and other non-depth-writing effects would
+  // otherwise be drawn into GTAO's depth/normal pass and darken square patches around every lamp and neon.
+  gtao._overrideVisibility = function () {
+    const cache = this._visibilityCache;
+    this.scene.traverse((o) => {
+      if (!o.visible) return;
+      const m = o.material;
+      if (o.isPoints || o.isLine || o.isLine2 || o.isSprite || (m && !Array.isArray(m) && (m.transparent || m.depthWrite === false || m.blending === THREE.AdditiveBlending))) { o.visible = false; cache.push(o); }
+    });
+  };
   composer.addPass(gtao);
 }
 const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.7, 0.5, 0.9);

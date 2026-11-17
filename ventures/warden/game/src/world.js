@@ -5,6 +5,7 @@ import { canvas, mulberry32 } from './util.js';
 import { Q } from './quality.js';
 import { pbrMaterial, pbrMaps } from './pbr.js';
 import { Assets } from './assets.js';
+import { dressLanternStreet } from './dress.js';
 
 const R = mulberry32(9);
 const rr = (a, b) => a + R() * (b - a);
@@ -162,7 +163,7 @@ export function installHeightFog() {
     #endif
     gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
     float mist = (1.0 - exp(-vFogDepth * 0.075)) * exp(-max(vFogWorld.y, 0.0) * 0.55);
-    gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3(0.098, 0.124, 0.138), clamp(mist * 0.86, 0.0, 1.0) );
+    gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3(0.13, 0.16, 0.18), clamp(mist * 0.88, 0.0, 1.0) );
   #endif`;
 }
 
@@ -171,8 +172,8 @@ export function buildWorld(scene, renderer, opts = {}) {
   installHeightFog();
   const W = { lights: [], flicker: [], smoke: [], fogCards: [], signs: [], glows: [], update: null };
   colliders.length = 0;
-  scene.background = new THREE.Color(0x0a0f12);
-  scene.fog = new THREE.FogExp2(0x0c1215, 0.019); // teal-grey haze like the cover
+  scene.background = new THREE.Color(0x1a2227);
+  scene.fog = new THREE.FogExp2(0x1e282f, 0.027); // teal-grey haze like the cover
 
   // Environment for wet reflections: a dark dome with neon panels.
   const envScene = new THREE.Scene();
@@ -346,7 +347,7 @@ export function buildWorld(scene, renderer, opts = {}) {
     side: THREE.BackSide, fog: false, depthWrite: false,
     map: new THREE.CanvasTexture(canvas(4, 256, (g) => {
       const grd = g.createLinearGradient(0, 0, 0, 256);
-      grd.addColorStop(0, '#040507'); grd.addColorStop(0.42, '#0b0f16'); grd.addColorStop(0.5, '#1a2230'); grd.addColorStop(0.53, '#0c0e13'); grd.addColorStop(1, '#050608');
+      grd.addColorStop(0, '#11161a'); grd.addColorStop(0.3, '#1f272d'); grd.addColorStop(0.47, '#3a454c'); grd.addColorStop(0.5, '#44505a'); grd.addColorStop(0.56, '#1c2328'); grd.addColorStop(1, '#0a0c0e');
       g.fillStyle = grd; g.fillRect(0, 0, 4, 256);
     })),
   }));
@@ -381,6 +382,10 @@ export function buildWorld(scene, renderer, opts = {}) {
     W.glows.push({ p: new THREE.Vector3(x + side * 0.3, y, z), col: new THREE.Color(col), size: 1.6, streak: 0.9 });
     W.signs.push(m);
   });
+
+  // Arch bridges, pipes, cables, neon tubes and hooded figures after Don's Hallowmere mood reference.
+  const copper = pbrMaterial('rusty_metal_02', { tint: 0x8a5040, rough: 0.72, metal: 0.75, normal: 1.2 });
+  W.dress = dressLanternStreet(scene, { stone, rust: copper, W, colliders, mobile: !!opts.mobile });
 
   // Lamp posts down Lantern Street.
   const lampMat = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: new THREE.Color(1, 0.55, 0.25), emissiveIntensity: 3 });
@@ -549,8 +554,8 @@ function addAtmosphere(scene, W) {
   const streakGeo = new THREE.PlaneGeometry(1, 1); streakGeo.rotateX(-Math.PI / 2); streakGeo.translate(0, 0, -0.5);
   const items = [];
   for (const gl of W.glows) {
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: gl.col.clone().multiplyScalar(0.55), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-    s.position.copy(gl.p); s.scale.setScalar(gl.size * 2.6); scene.add(s);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: gl.col.clone().multiplyScalar(0.3 * (gl.halo ?? 1)), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    s.position.copy(gl.p); s.scale.setScalar(gl.size * 1.8); scene.add(s);
     if (gl.shaft && Q.shafts) { const m = new THREE.Mesh(shaftGeo, shaftMat); m.position.copy(gl.p); m.renderOrder = 2; scene.add(m); }
     let st = null;
     if (Q.streaks) {

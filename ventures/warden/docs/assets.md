@@ -2,6 +2,20 @@
 
 This is for Don. You make the models in Meshy and Mixamo, drop them in Drive, and the pipeline does the rest. Until a model arrives, the game keeps using its procedural (code-built) version, so nothing ever breaks while we swap things in.
 
+## Art targets
+- **Hallowmere mood target:** Don's `ref_mood_hallowmere_street_1.png`. The repo copy is `research/refs/ref_mood_hallowmere_street_1.jpg`. It shows:
+  - a narrow wet cobbled street with puddle reflections
+  - dark stone buildings with timber upper floors
+  - crenellated stone arch bridges receding into the fog
+  - big rusted copper/iron pipes with valves
+  - dangling cables
+  - hot-pink and teal neon tubes
+  - rain, heavy fog, a cool desaturated blue-grey base
+  - hooded, cloaked figures
+
+  Buildings, props and NPCs should fit this. `tools/art_check.py` compares the `hallowmere-street` view against it every night.
+- **Character target:** `warden-cover-with-blade.jpg` (the Warden, his armour and the Synthblade), plus `synthblade-concept-on/off.jpg` for the blade.
+
 ## 1. Where files go
 - In the Warden lore folder in Drive, create a subfolder named exactly **`models`**.
 - Put each **GLB** in it, plus one short doc per model with the same base name (a Google Doc or .txt). For example, `char_warden_base_v1.glb` and `char_warden_base_v1` (doc).

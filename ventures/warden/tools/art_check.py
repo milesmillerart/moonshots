@@ -2,10 +2,13 @@
 """Art check: fixed camera views of Warden plus side-by-sides against Don's Drive concept art, for the nightly routine
 and for before/after graphics passes.
 Usage: python3 tools/art_check.py [URL] [OUTDIR] [REFDIR] [--prefix=after] [--quality=high|medium|low] [--before=DIR] [--views=a,b]
+Primary references: Don's Hallowmere mood image ref_mood_hallowmere_street_1 (street views; repo copy in
+research/refs/) and warden-cover-with-blade.jpg (the character).
 Views (same camera every run, so nights can be compared):
+  hallowmere-street  1600x893 eye-level view up Lantern Street under the arch bridges (vs ref_mood_hallowmere_street_1)
   lantern-cover  portrait 765x1024, the Warden mid Lantern Street facing camera, Synthblade awakened (vs warden-cover-with-blade.jpg)
   warden-front   portrait close-up, awakened and dormant
-  street-north / street-south  1600x900 street views (fog, lamps, wet cobbles)
+  street-north / street-south  1600x900 street views over the Warden's shoulder (street-north also vs the mood ref)
   blade-awakened / blade-dormant  studio render of the in-game Synthblade (vs synthblade-concept-on/off.jpg)
 Writes PREFIX-<view>.png, compare-*.png and art_check.json (colour stats and a histogram similarity vs each reference;
 higher = closer palette). If --before=DIR holds an earlier run's PNGs, before|after|reference panels are made too.
@@ -30,6 +33,7 @@ VIEWS = [  # name, viewport, camera pos, look at, blade awake
     ("lantern-cover", (765, 1024), (0.0, 1.3, WZ + 4.0), (0.0, 1.22, WZ), 1),
     ("warden-front", (765, 1024), (0.0, 1.35, WZ + 3.0), (0.0, 1.05, WZ), 1),
     ("warden-front-dormant", (765, 1024), (0.0, 1.35, WZ + 3.0), (0.0, 1.05, WZ), 0),
+    ("hallowmere-street", (1600, 893), (-1.3, 1.75, WZ - 1.6), (0.9, 3.3, WZ - 30.0), 1),
     ("street-north", (1600, 900), (1.6, 2.3, WZ + 7.0), (0.0, 1.6, WZ - 25.0), 1),
     ("street-south", (1600, 900), (-1.8, 2.0, WZ - 4.0), (0.5, 1.3, WZ + 30.0), 1),
 ]
@@ -85,15 +89,22 @@ def main():
             if name == "street-north" and pg.evaluate("!!(window.__warden.perf)"): perf = pg.evaluate("window.__warden.perf()")
         E("g.player.forceAwake = null; g.cine = null;")
         b.close()
-    refs = {"lantern-cover": "warden-cover-with-blade.jpg", "warden-front": "warden-cover-with-blade.jpg",
+    refs = {"hallowmere-street": "ref_mood_hallowmere_street_1.png", "street-north": "ref_mood_hallowmere_street_1.png",
+            "lantern-cover": "warden-cover-with-blade.jpg", "warden-front": "warden-cover-with-blade.jpg",
             "blade-awakened": "synthblade-concept-on.jpg", "blade-dormant": "synthblade-concept-off.jpg"}
     summary = {"url": URL, "quality": QUAL or "default", "prefix": PRE, "time": time.strftime("%Y-%m-%d %H:%M %Z"), "perf": perf, "views": {}}
+    repo_refs = Path(__file__).resolve().parent.parent / "research" / "refs"
+    def ref_path(n):  # REFDIR first (Drive copies), then the repo copy (research/refs, saved as .jpg)
+        for c in (REF / n, repo_refs / n, repo_refs / (Path(n).stem + ".jpg")):
+            if c.exists(): return c
+        return None
     for name, path in shots.items():
         st, h = stats(Image.open(path)); entry = {"file": path.name, **st}
-        if name in refs and (REF / refs[name]).exists():
-            rst, rh = stats(Image.open(REF / refs[name]))
+        rp = ref_path(refs[name]) if name in refs else None
+        if rp:
+            rst, rh = stats(Image.open(rp))
             entry.update({"ref": refs[name], "refStats": rst, "paletteSimilarity": similarity(h, rh)})
-            ims, labels = [Image.open(REF / refs[name]), Image.open(path)], [f"Drive: {refs[name]}", f"in game ({PRE})"]
+            ims, labels = [Image.open(rp), Image.open(path)], [f"Drive: {refs[name]}", f"in game ({PRE})"]
             if BEFORE and (BEFORE / f"before-{name}.png").exists():
                 bim = Image.open(BEFORE / f"before-{name}.png"); bst, bh = stats(bim)
                 entry["before"] = {**bst, "paletteSimilarity": similarity(bh, rh)}
