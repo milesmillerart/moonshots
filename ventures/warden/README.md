@@ -26,6 +26,10 @@ Canon lives in `docs/lore.md` (synced from Don's Drive lore folder; it overrides
 - `tools/shots.py` headless Chromium smoke test + screenshots
 - `tools/save_test.py`, `tools/inventory_test.py`, `tools/skills_test.py`, `tools/mobile_test.py` save, Armory, skill tree and phone (touch) tests
 - `tools/rarity_test.py` (0.8 rarity migration, no Core promotion, defeat wording, blade states; `--mobile`), `tools/blade_shots.py` (Synthblade Dormant/Awakened close-ups), `tools/reference_compare.py` (side-by-side vs Don's Drive concept/cover art)
+- `tools/art_check.py` (0.9) fixed camera views + side-by-sides vs Don's refs (Hallowmere mood ref, cover, blade concepts) with a JSON palette summary, for the nightly routine; `--quality=`, `--before=DIR`, `--views=`
+- `tools/import_models.py` (0.9) imports GLBs from the Drive `models` folder inbox: optimize, phone version, budgets, manifest (see `docs/assets.md`)
+- `tools/assets_test.py` (0.9) GLB/skinned-model pipeline test with a CC0 robot fixture (`--mobile`)
+- `tools/three-bundle/` rebuilds the vendored three.js + addons bundle (`npm i && npm run bundle`)
 - `jobs/daily-improve.sh` nightly rebuild + deploy
 - `docs/roadmap.md` prioritized daily backlog, `docs/lore.md` canon (overrides `docs/bible.md`, the v0.4 snapshot)
 

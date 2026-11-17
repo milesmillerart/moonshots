@@ -1,6 +1,20 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.9",
+    "title": "The graphics foundation: real materials, Hallowmere's arches, and room for real 3D models",
+    "items": [
+      "Hallowmere's stone, cobbles, rusted iron, leather and armour plate now use real photo-scanned materials (CC0, from Poly Haven), and a night-street light probe for reflections.",
+      "Lantern Street is rebuilt after Don's Hallowmere mood art: crenellated stone arch bridges recede into the fog, with rusted copper pipes, valves and stacks on the walls, sagging cables, hot-pink and teal neon tubes, and hooded figures waiting in the haze.",
+      "Wet streets: dark mirror puddles, and the lamps and neon smear across the cobbles. The lamps now throw soft shafts of light through the fog.",
+      "A new image pipeline: ambient occlusion, tuned bloom, a cool colour grade toward the cover art (reds and teals kept vivid), a soft vignette and fine film grain.",
+      "Graphics quality setting in the pause menu: High (desktop default), Medium and Low (phone default). Phones use smaller textures, fewer lights and cheaper effects to stay smooth.",
+      "Under the hood: the game can now load rigged, animated 3D models (GLB, Mixamo-style animations) for the Warden, abominations, weapons, props and buildings. Anything not made yet keeps using the built-in model.",
+      "Your saves are untouched."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.8",
     "title": "The lore update: new rarity tiers, a true Synthblade, and Hallowmere in its place",
     "items": [

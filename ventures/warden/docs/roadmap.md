@@ -32,7 +32,14 @@ The map today is a few sites in the capital. Make the capital feel like a whole,
 - **More judgments**: one moral case per capital site. Each verdict changes the capital (NPCs, prices, who appears later).
 - **Contracts board**: daily bounties inside the capital (kill X, purge a street, hunt a named abomination) for scrap and Cores. A daily reason to come back.
 - **Enemy variety**: shielded Husks, a rooftop sniper, swarm events at the Gate; a second elite beside the Bellwright.
-- **Proposal (vision WI-006, needs Don's approval): a visual benchmark slice.** One street, one interior and one combat encounter in Hallowmere rebuilt toward the concept art (models, materials, lighting, post, VFX) with performance budgets per device tier, before more content is built. 0.8 already matched the Synthblade and Warden to the Drive art (`tools/reference_compare.py`).
+- ~~**Graphics foundation**~~ shipped 2026-11-16 (build 0.9). Details:
+  - GLB pipeline: `game/assets/manifest.json`, `src/assets.js` (skinned models, AnimationMixer, Mixamo clip mapping, procedural fallback, `materials` for untextured models), `tools/import_models.py` (Drive `models` inbox → gltf-transform meshopt/WebP, phone `.lo.glb`, budgets) and `docs/assets.md` for Don.
+  - CC0 PBR (Poly Haven) and HDRI; GTAO, bloom, grade, grain and vignette; wet puddles and streaks; lamp shafts.
+  - Quality tiers low/medium/high.
+  - Lantern Street dressed after `research/refs/ref_mood_hallowmere_street_1.jpg`.
+  - Tests: `tools/assets_test.py`, plus nightly `tools/art_check.py`.
+  - Next: Don's Meshy models (Warden, husk, Synthblade first), then the timber upper floors and balconies from the mood ref, plus real volumetric fog (froxels) on the high tier.
+- **Proposal (vision WI-006, needs Don's approval): a visual benchmark slice.** Partly started by 0.9: Lantern Street is the first benchmark street, measured nightly by `tools/art_check.py`. One street, one interior and one combat encounter in Hallowmere rebuilt toward the concept art (models, materials, lighting, post, VFX) with performance budgets per device tier, before more content is built. 0.8 already matched the Synthblade and Warden to the Drive art (`tools/reference_compare.py`).
 - **Proposal (vision WI-001/002, needs Don's approval): consequences from Mira Toll's case.** A small deterministic event ledger (who did what, who witnessed, who learns later) and Mira's Dread/Measure/Inquest verdict changing later NPCs, prices and access (Mira's family, Brann and his son, the Wall). This is the first slice of the Consequence Engine, with no AI dialogue.
 - **Polish of what exists**: puddle reflections, telegraphs, loot feel, performance, audio (Now list above).
 - **Collection: the Warden's Ledger**: codex of abominations, Cores, Exalted items, judgments.
@@ -65,6 +72,7 @@ Older buried societies, lost Ward archives. Design waits on Don. (Deferred: "the
 - 2026-11-16 build 0.6: Armory rebuilt (live 3D paper-doll, icons, compare, filters/sorts, lock, bulk salvage).
 - 2026-11-16 build 0.7: Skill tree rebuilt (constellation graph, node states, lit traces, inspect panel, hold-to-learn, unlock fx, Forge respec).
 - 2026-11-16 build 0.8: lore alignment (new rarity tiers + effect slots, no Core rarity promotion, Synthblade Dormant/Awakened channel, neutral defeat + checkpoint, Hallowmere as capital, placeholder titles removed).
+- 2026-11-16 build 0.9: graphics foundation (GLB/Mixamo asset pipeline, CC0 PBR + HDRI, GTAO/bloom/grade, wet streets, quality tiers, Lantern Street arches/pipes/neon after Don's mood art).
 
 ## Known gaps in the vertical slice (v0.1)
 - Animation is procedural (no skeletal rig or mocap), so poses read as stiff.

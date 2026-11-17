@@ -27,3 +27,4 @@ ventures/*/.cache/
 !ventures/*/game/data/
 # warden public/ is a build output (tools/build.py)
 ventures/warden/public/
+ventures/warden/tools/three-bundle/node_modules/
