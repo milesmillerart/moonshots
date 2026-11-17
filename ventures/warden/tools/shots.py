@@ -65,8 +65,8 @@ def main():
         assert res["kills"] >= 3, "wave A not cleared"
         settle(1)
         # pick up dropped loot
-        G("for (const l of g.loot) { g.player.pos.copy(l.m.position); l.t = 1; }"); settle(0.5)
-        G("for (const l of g.loot) { g.player.pos.copy(l.m.position); l.t = 1; }"); settle(0.5)
+        G("for (const l of g.loot) { g.player.pos.copy(l.m.position); l.t = 1; } g.debugSimulate(0.5);")
+        G("for (const l of g.loot) { g.player.pos.copy(l.m.position); l.t = 1; } g.debugSimulate(0.5);")
         # give a spread of gear to show rarity tiers, then open the armory
         G("""const I = window.__wardenItems; g.save.scrap += 400;
              for (const [s,r] of [['blade',4],['cuirass',3],['helm',2],['gauntlets',1],['mantle',0]]) g.save.bag.push(I.makeItem(s,r,3));
@@ -79,7 +79,7 @@ def main():
         pg.keyboard.press("Escape"); settle(0.5)
         if G("return g.ui.isOpen"): G("g.ui.close()")
         # forge: walk there, temper + socket
-        G("g.player.pos.set(14.2,0,-7.2); g.player.face = 2.2; g.camYaw = 2.2;"); settle(1)
+        G("g.player.pos.set(14.2,0,-7.2); g.player.face = 2.2; g.camYaw = 2.2; g.debugSimulate(0.2);")
         assert G("return g.nearForge"), "not near forge"
         pg.keyboard.press("e"); settle(0.8)
         bu = G("return g.save.equip.blade.uid")
@@ -106,18 +106,16 @@ def main():
         assert perks.get("keen_edge") == 1 and perks.get("overload") == 1
         G("g.ui.close()"); settle(0.3)
         # plaza wave + overload + boss fight shot
-        G("g.player.pos.set(0,0,10); g.player.face=Math.PI; g.camYaw=Math.PI;"); settle(2)
-        G("g.player.charge = 100; g.edge.KeyF = true;"); settle(0.5)
+        G("g.player.pos.set(0,0,10); g.player.face=Math.PI; g.camYaw=Math.PI; g.debugSimulate(0.3);")
+        G("g.player.charge = 100; g.edge.KeyF = true; g.debugSimulate(0.5);")
         G("""g.save.flags.waveA=g.save.flags.waveB=g.save.flags.waveC=true; for(const e of g.enemies) e.dispose(); g.enemies=[]; g.wave='C';
-             g.player.pos.set(0,0,-60); g.player.face=Math.PI; g.camYaw=Math.PI; g.camPitch=0.18;""")
-        settle(1.5)
-        G("g.debugAdvance && g.debugAdvance()"); settle(0.5)
-        G("if (g.boss) { g.boss.aggro = true; g.boss.pos.set(0,0,-67); }"); settle(2)
-        t0 = time.time()
-        while time.time() - t0 < 6:
+             g.player.pos.set(0,0,-60); g.player.face=Math.PI; g.camYaw=Math.PI; g.camPitch=0.18; g.debugSimulate(0.3);""")
+        G("g.debugAdvance && g.debugAdvance()"); G("g.debugSimulate(0.2);")
+        G("if (g.boss) { g.boss.aggro = true; g.boss.pos.set(0,0,-67); }")
+        for _ in range(8):
             G("""const p=g.player, e=g.boss; if(!e) return; g.camYaw=Math.atan2(e.pos.x-p.pos.x,e.pos.z-p.pos.z); p.hp=g.stats.hp; p.sta=g.stats.sta;
-                 if (e.pos.distanceTo(p.pos)>4.2) g.keys.KeyW=true; else { g.keys.KeyW=false; g.edge.light=true; }""")
-            settle(0.15)
+                 if (e.pos.distanceTo(p.pos)>4.2) g.keys.KeyW=true; else { g.keys.KeyW=false; g.edge.light=true; }
+                 g.debugSimulate(0.15);""")
         G("g.keys.KeyW=false")
         pg.screenshot(path=str(OUT / "10-boss.png"))
         # pause + changelog
