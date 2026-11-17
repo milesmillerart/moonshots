@@ -14,6 +14,10 @@ and iPhone SE landscape with real CDP touch taps. Grows with each 0.10.x milesto
 0.10.6 (THE CLOT): after the verdict the three Husk bodies fuse on camera (~9 s), banner, 600-750 HP mass with Slam/Spit,
   a shard splits at 50%, uncauterized shards rejoin, cauterized wounds cap its regen, defeat returns to the boss
   checkpoint, reload mid-fight resumes the fight, the Bellwright never auto-starts for new Wardens.
+0.10.7 (Fused Fragment): it lies where the Clot fell; USE / E takes it into the pack (not gear, not a Core); one
+  observation line + Brann; the east-pylon objective; survives reload and save export.
+0.10.8 (creation + handoff): name + starting affinity (Blade/Bulwark/Circuit spends the 1 point), Armory/Skills/Forge
+  unlock, deferred XP lands, trait applies, east-pylon objective live, no Bellwright.
   Checks: nameless new Warden ("Warden"), schema 5 + flags.opening 'act1', mid-open reloads resume at the last beat
   (case / skirmish / creation), creation names the Warden and opens the capital, legacy judged saves skip the cold open
   ('legacy'), a named-but-unjudged old save plays the cold open and keeps its name (no name field). Zero console errors.
@@ -50,6 +54,8 @@ def run(p, devname, tag):
     cdp = ctx.new_cdp_session(pg) if devname else None
     G = lambda js: pg.evaluate(f"(() => {{ const g = window.__warden.game; {js} }})()")
     def press(sel):  # tap on phones, click on desktop
+        try: pg.locator(sel).first.scroll_into_view_if_needed(timeout=3000)
+        except Exception: pass
         bb = pg.locator(sel).first.bounding_box(); assert bb, f"no box for {sel}"
         ok_vis = bb["y"] >= 0 and bb["y"] + bb["height"] <= vh + 1 and bb["x"] + bb["width"] <= vw + 1
         assert ok_vis, f"{sel} off screen {bb} in {vw}x{vh}"
@@ -106,6 +112,26 @@ def run(p, devname, tag):
         G("g.boss.hurt(99999, g.player.pos, 1, false)")
         time.sleep(1.0)
         ok(G("return g.save.flags.bossDown"), "the Clot dies")
+        # 0.10.7 the Fused Fragment
+        for _ in range(30):
+            if G("return !!g.fragMesh"): break
+            time.sleep(0.5)
+        ok(G("return !!g.fragMesh && g.loot.length === 0"), "a fragment is left where the Clot fell (no Core, no gear)")
+        if full:
+            boot(clear=False); press("#menu button[data-act=continue]"); time.sleep(2.0)
+            ok(G("return g.state === 'play' && !!g.fragMesh && g.inOpening()"), "reload before taking it puts the fragment back in the street")
+        G("g.player.pos.set(g.fragAt.x + 1.2, 0, g.fragAt.z); g.player.face = -Math.PI / 2"); time.sleep(0.8)
+        ok(G("return g.prompt").startswith("[E] Take the fragment"), "walking up to it offers 'Take the fragment'")
+        if full: pg.screenshot(path=str(OUT / f"{tag}-fragment.png"))
+        if full and SHOT and SHOTAT == "fragment" and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
+        if MOBILE: press("#touch .b-use")
+        else: pg.keyboard.press("e")
+        pg.wait_for_selector("#dialogue:not(.hidden)", timeout=30000)
+        txt = G("return document.querySelector('#dialogue').textContent")
+        ok("wrong color" in txt, "examining it: one observation line")
+        ok(advance_until("document.querySelector('#title.create-on')", 30), "Brann has no name for it; creation follows")
+        s0 = pg.evaluate("window.__wardenSave.readSlot(window.__warden.game.slot)")
+        ok([o["id"] for o in s0.get("pack", [])] == ["fused_fragment"] and s0["flags"].get("loot") and "east pylon" in G("return g.objective"), "the fragment is in the pack (saved) and the east-pylon objective is set")
     def kill_wave():
         G("for (const e of g.enemies) if (!e.dead) e.hurt(99999, g.player.pos, 999, false);")
     pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
@@ -183,11 +209,19 @@ def run(p, devname, tag):
     # 5b. reload at creation returns to creation
     boot(clear=False); press("#menu button[data-act=continue]")
     pg.wait_for_selector("#title.create-on #wname", timeout=60000); ok(True, "reload at character creation returns to creation")
+    ok(len(pg.query_selector_all("#title .aff [data-aff]")) == 3, "creation offers Blade / Bulwark / Circuit")
+    if SHOT and SHOTAT == "creation" and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
+    press("#title .aff [data-aff=circuit]")
     press("#wname"); pg.keyboard.type("Aldric Vane"); press("[data-act=oath]"); time.sleep(1.5)
     s = pg.evaluate("window.__wardenSave.readSlot(0)")
     ok(s["name"] == "Aldric Vane" and s["flags"]["created"] and s["flags"]["opening"] == "done" and G("return g.state") == "play", "Take the Oath names the Warden and opens the capital")
     ok("Statute Plaza" in G("return g.objective"), "objective points into the capital")
     ok(G("return g.save.trait") == "inquest" and not G("return g.save.flags.pendingTrait"), "the verdict's trait applies at the handoff")
+    st = G("return { perks: g.save.perks, points: g.save.points, aff: g.save.flags.affinity, lvl: g.save.level, xp: g.save.xp, dxp: g.save.flags.deferredXp || 0, obj: g.objective, bell: g.enemies.some(e => e.type === 'bellwright') }")
+    ok(st["perks"].get("capacitor") == 1 and st["aff"] == "circuit" and st["dxp"] == 0 and (st["xp"] > 0 or st["lvl"] > 1) and "east pylon" in st["obj"] and not st["bell"], f"handoff: affinity point spent, deferred XP lands, east-pylon objective live {st}")
+    G("g.ui.open('armory')"); time.sleep(0.6)
+    ok(G("return g.ui.isOpen") and "Fused Fragment" in G("return document.querySelector('#panel').textContent"), "Armory unlocks and lists the Fused Fragment as a story item, not gear")
+    G("g.ui.close()")
     boot(clear=False); press("#menu button[data-act=continue]"); time.sleep(2.0)
     ok(G("return g.state") == "play" and not G("return g.dialogueOpen") and not pg.query_selector("#title.create-on"), "after creation, Continue goes to the open world")
     # 6. legacy: a 0.9 (schema 4) Warden who judged Mira never replays the cold open

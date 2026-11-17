@@ -148,6 +148,8 @@ export class Game {
     this.spawnCivilians(f.ledger);
     if (!f.judged) { this.runVerdict(); return; }
     if (!f.bossDown) { this.hideCast(); if (f.merged) this.startClot(); else this.runMerge(); return; }
+    this.hideCast();
+    if (!f.loot) { this.player.pos.set(0, 0, 36); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI; this.afterClot(); return; }
     this.player.pos.set(0, 0, 24); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI;
     this.beginCreation();
   }
@@ -174,17 +176,22 @@ export class Game {
     if (document.pointerLockElement) document.exitPointerLock?.();
     this.ui.hud.classList.add('hidden'); this.touch?.root?.classList.add('hidden');
     const pend = this.save.flags.pendingTrait || this.save.trait;
-    this.ui.showCreation({ needName: !this.save.flags.named, trait: pend ? TRAITS[pend] : null }).then(({ name }) => {
+    const needAff = this.save.points >= 1 && !Object.keys(this.save.perks || {}).length;
+    this.ui.showCreation({ needName: !this.save.flags.named, trait: pend ? TRAITS[pend] : null, affinities: needAff ? COLD_OPEN.affinities : null }).then(({ name, affinity }) => {
       const f = this.save.flags;
+      const aff = needAff && COLD_OPEN.affinities.find((a) => a.id === affinity);
+      if (aff) { this.save.perks[aff.perk] = 1; this.save.points -= 1; f.affinity = aff.id; }
       if (f.pendingTrait) { this.save.trait = f.pendingTrait; delete f.pendingTrait; this.refreshStats(); this.player.hp = this.stats.hp; }
       if (!f.named) { this.save.name = (name || '').trim().slice(0, 20) || 'Kade'; f.named = true; }
       f.created = true; f.opening = 'done'; this.creating = false;
       this.clearCivilians(); this.syncOpening();
       if (f.deferredXp) { const x = f.deferredXp; f.deferredXp = 0; this.gainXp(x); }
       this.persist('created');
+      this.refreshStats(); this.player.hp = this.stats.hp;
       this.ui.hideTitle(); this.startPlay();
-      this.objective = 'Push north into <b>Statute Plaza</b>';
-      this.ui.toast(`Warden ${this.save.name}. Hallowmere is yours to keep. Push north.`, 'gold');
+      this.objective = this.save.pack?.length ? 'The east pylon is still dark. <b>Find what is changing.</b> The capital lies north through <b>Statute Plaza</b>' : 'Push north into <b>Statute Plaza</b>';
+      this.ui.toast(`Warden ${this.save.name}. The capital is open.`, 'gold');
+      setTimeout(() => this.ui.toast(this.touch?.on ? 'GEAR, SKILLS and the Forge are open to you now.' : 'The Armory [I], Skills [K] and the Forge are open to you now.', 'cyan'), 1400);
     });
   }
   continueGame(slot = Save.lastSlot()) {
@@ -402,7 +409,42 @@ export class Game {
     this.afterClot();
   }
   // 0.10.6: the street is safe; (0.10.7 adds the loot) then character creation
-  afterClot() { this.beginCreation(); }
+  afterClot() {
+    const f = this.save.flags, at = f.fragAt ? new THREE.Vector3(f.fragAt[0], 0, f.fragAt[1]) : new THREE.Vector3(0, 0, 28);
+    f.fragAt = [at.x, at.z]; this.persist('loot');
+    this.placeFragment(at);
+    this.objective = 'Something is left in the street. <b>Take it</b>';
+  }
+  // ---- 0.10.7: the Fused Fragment ----
+  placeFragment(at) {
+    if (this.fragMesh) this.scene.remove(this.fragMesh);
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x3a3540, roughness: 0.35, metalness: 0.4, emissive: new THREE.Color(0.42, 0.2, 0.55), emissiveIntensity: 0.55 });
+    const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0), mat); core.scale.set(0.8, 1.4, 0.7); g.add(core);
+    for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(new THREE.TetrahedronGeometry(0.09, 0), mat); c.position.set(Math.cos(i * 2.1) * 0.15, -0.08 + i * 0.07, Math.sin(i * 2.1) * 0.15); c.rotation.set(i, i * 2, 0); g.add(c); }
+    g.position.copy(at).setY(0.35); this.scene.add(g); this.fragMesh = g; this.fragMat = mat; this.fragAt = at.clone();
+  }
+  async takeFragment() {
+    const sv = this.save, f = sv.flags;
+    if (!this.fragMesh) return;
+    const gen = this.openGen = (this.openGen || 0) + 1, live = () => gen === this.openGen && this.state !== 'title';
+    this.scene.remove(this.fragMesh); this.fragMesh = null;
+    if (!sv.pack) sv.pack = [];
+    if (!sv.pack.some((o) => o.id === COLD_OPEN.fragment.id)) sv.pack.push({ id: COLD_OPEN.fragment.id, got: Date.now() });
+    f.loot = true; this.persist('loot');
+    this.state = 'story'; this.combatOn = false; this.keys = {};
+    if (document.pointerLockElement) document.exitPointerLock?.();
+    this.ui.hud.classList.add('hidden'); this.touch?.root?.classList.add('hidden');
+    const p = this.player;
+    this.cine = { pos: p.pos.clone().add(new THREE.Vector3(1.4, 1.7, 1.6)), look: p.pos.clone().setY(1.2), blend: true };
+    audio.ui?.();
+    this.ui.toast(`${COLD_OPEN.fragment.name}: in your pack`, 'gold');
+    await this.ui.say(COLD_OPEN.examine);
+    if (!live()) return;
+    this.objective = COLD_OPEN.objective;
+    this.cine = null; this.startPlay();
+    this.beginCreation();
+  }
   // legacy entry point (0.9 and older flows call this): the cold open now starts with the case
   runIntro() { return this.runCase(); }
 
@@ -870,6 +912,7 @@ export class Game {
     this.requestLock = () => { if (this.touch?.on) return; try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch {} };
   }
   interact() {
+    if (this.nearFrag) { this.takeFragment(); return; }
     if (this.nearForge) { this.save.stims = 3; this.ui.open('forge'); return; }
     if (this.nearCache) {
       this.save.flags.cache = true; this.cacheMarker.visible = false;
@@ -943,7 +986,9 @@ export class Game {
       this.nearForge = p.pos.distanceTo(POI.forge) < 3.6;
       this.nearCache = !this.save.flags.cache && p.pos.distanceTo(POI.cache) < 2.6;
       this.cacheMarker.visible = !this.save.flags.cache;
-      this.prompt = this.nearForge ? '[E] Use the Forge (temper gear, install Cores, refill stims)' : this.nearCache ? '[E] Search the cache' : '';
+      this.nearFrag = !!this.fragMesh && p.pos.distanceTo(this.fragAt) < 2.2;
+      if (this.fragMesh) { this.fragMesh.rotation.y += dt * 0.6; this.fragMat.emissiveIntensity = 0.45 + (Math.random() < 0.05 ? 0.5 : 0.1 * Math.sin(this.time * 3)); }
+      this.prompt = this.nearFrag ? '[E] Take the fragment' : this.nearForge ? '[E] Use the Forge (temper gear, install Cores, refill stims)' : this.nearCache ? '[E] Search the cache' : '';
       if (!paused && this.civs && this.inOpening()) this.skirmishUpdate(dt);
       if (!paused && this.clot && this.boss?.type === 'clot') this.clotUpdate(dt);
       this.chargeTick(dt);

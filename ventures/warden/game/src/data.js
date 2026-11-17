@@ -95,7 +95,7 @@ export const PERKS = [
   { id: 'last_rites', branch: 'bulwark', tier: 4, max: 1, name: 'Last Rites', desc: () => 'Once every 90 seconds, a killing blow leaves you standing at 1 health' },
   // Circuit
   { id: 'capacitor', branch: 'circuit', tier: 0, max: 2, name: 'Capacitor', desc: (r) => `Build Charge 35% faster per rank (now +${35 * r}%)` },
-  { id: 'overload', branch: 'circuit', tier: 1, max: 1, name: 'Overload', desc: () => 'Unlocks OVERLOAD [F]: spend full Charge to release a shock nova that damages and staggers' },
+  { id: 'overload', branch: 'circuit', tier: 1, max: 1, name: 'Overload', desc: () => 'Unlocks OVERLOAD [F]: spend 100 Charge to release a shock nova that damages and staggers' },
   { id: 'arc_edge', branch: 'circuit', tier: 2, max: 2, name: 'Arc Edge', desc: (r) => `Hits have a 10% chance per rank to arc lightning to a nearby enemy (now ${10 * r}%)` },
   { id: 'leech_protocol', branch: 'circuit', tier: 3, max: 1, name: 'Leech Protocol', desc: () => 'Kills restore 6% health' },
   { id: 'overclock', branch: 'circuit', tier: 4, max: 1, name: 'Overclock', desc: () => '+15% attack speed. Overload needs only half Charge' },
@@ -144,6 +144,19 @@ export const COLD_OPEN = {
       { who: 'Mira Toll', text: 'I did what I had to.' } ] },
   ],
   silent: 'Say nothing.',
+  // 0.10.7: the Fused Fragment (working name), a unique pack object; not a Core
+  fragment: { id: 'fused_fragment', name: 'Fused Fragment', note: 'Not a Core. It cannot be equipped, installed or tempered.',
+    look: 'Warm, and faintly humming. The light inside it is the wrong color for anything the Wall burns.' },
+  examine: [
+    { who: '', text: 'Warm, and faintly humming. The light inside it is the wrong color for anything the Wall burns.' },
+    { who: 'Gaoler Brann', text: 'Twenty years I have kept this gaol. The Ward has no name for that.' },
+  ],
+  objective: 'The east pylon is still dark. Take the fragment. <b>Find what is changing.</b>',
+  affinities: [
+    { id: 'blade', perk: 'keen_edge', name: 'Blade', desc: 'Keen Edge: +8% damage' },
+    { id: 'bulwark', perk: 'plated', name: 'Bulwark', desc: 'Plated: +15 maximum health' },
+    { id: 'circuit', perk: 'capacitor', name: 'Circuit', desc: 'Capacitor: build Charge 35% faster' },
+  ],
   verdictPrompt: [{ who: 'Gaoler Brann', text: 'The stretch is still dark, Warden. Code still says hand or head. Your verdict.' }],
   // the buttons carry only the sentence; ids map to the existing outcomes (STORY.choices[].after) and traits
   verdicts: [

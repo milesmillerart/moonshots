@@ -580,3 +580,14 @@ html.opening .tmenu [data-t=armory], html.opening .tmenu [data-t=skills], html.o
 #touch .b-caut.ready { border-color: #ffd0a0; color: #ffd0a0; box-shadow: 0 0 16px rgba(255, 190, 120, 0.55); animation: pulse 0.9s infinite alternate; }
 #chg.ready span::after { content: ' · CAUTERIZE [C]'; }
 html.touch #chg.ready span::after { content: ' · CAUTERIZE'; }
+/* 0.10.8 starting affinity */
+.naming .aff { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
+.naming .aff .al { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #8d877c; }
+.naming .aff button { display: flex; gap: 10px; align-items: baseline; text-align: left; padding: 7px 12px; background: rgba(8, 10, 14, 0.6); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--ink); }
+.naming .aff button b { min-width: 5.5em; letter-spacing: 0.08em; }
+.naming .aff button span { font-size: 12px; color: #a9a397; }
+.naming .aff button.on { border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 181, 71, 0.25); }
+.inv-keep { margin: 0 0 8px; padding: 8px 10px; border: 1px solid rgba(160, 64, 255, 0.35); background: rgba(40, 20, 60, 0.25); font-size: 12px; }
+.inv-keep b { color: #c9a6ff; letter-spacing: 0.06em; }
+.inv-keep p { margin: 3px 0 0; color: #a9a397; }
+@media (max-height: 520px) { .naming .aff { gap: 4px; margin: 2px 0 6px; } .naming .aff button { padding: 4px 10px; } .naming .ch { margin-bottom: 4px; } .naming .trait { margin: 0 0 4px; font-size: 12px; } }

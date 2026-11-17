@@ -84,6 +84,8 @@ export function migrate(raw) {
   s.bag = Array.isArray(s.bag) ? s.bag.filter(validItem).map(fixGear) : [];
   s.ground = Array.isArray(s.ground) ? s.ground.filter((g) => g && validItem(g.item) && Number.isFinite(g.x) && Number.isFinite(g.z)).map((g) => ({ ...g, item: fixGear(g.item) })) : [];
   if (s.trait != null && !['dread', 'measure', 'inquest'].includes(s.trait)) s.trait = null;
+  // 0.10.7 pack objects (story items, never gear): only known ids, one of each
+  s.pack = Array.isArray(s.pack) ? s.pack.filter((o, i, a) => o && o.id === 'fused_fragment' && a.findIndex((x) => x?.id === o.id) === i).map((o) => ({ id: o.id, got: num(o.got, Date.now()) })) : [];
   if (!Array.isArray(s.pos) || s.pos.length < 2 || !s.pos.every(Number.isFinite)) delete s.pos;
   if (s.hp != null) s.hp = num(s.hp, 0, 0);
   if (from < 4) s.migratedRarity = true; // 0.8: tiers renamed by position, Cores stop promoting rarity

@@ -1,7 +1,7 @@
 // Armory (build 0.6): paper-doll with a live Warden render + 6 slots, total stats, a sortable/filterable
 // pack grid with procedural icons, and an inspect panel with compare-vs-equipped deltas.
 // Touch first: tap selects, tap the selected item again (or the button) to equip; hover only previews.
-import { RARITIES, SLOTS, CORES, AFFIXES, TRAITS } from './data.js';
+import { RARITIES, SLOTS, CORES, AFFIXES, TRAITS, COLD_OPEN } from './data.js';
 import { itemName, tierOf, rarityNote, salvageValue, MAX_UPGRADE, computeStats, baseStat, powerOf, gearPower } from './items.js';
 import { itemIcon, slotIcon } from './icons.js';
 import { WardenPreview } from './preview.js';
@@ -73,7 +73,7 @@ export class Armory {
         </div>
         ${this.statsHtml(s)}
       </div>
-      <div class="inv-pack">${this.toolbarHtml()}
+      <div class="inv-pack">${this.toolbarHtml()}${(sv.pack || []).length ? `<div class="inv-keep" id="invkeep"><b>${esc(COLD_OPEN.fragment.name)}</b> · story item<p>${esc(COLD_OPEN.fragment.look)} ${esc(COLD_OPEN.fragment.note)}</p></div>` : ''}
         <div class="grid" id="invgrid">${this.gridHtml()}</div>
         ${this.footHtml()}
       </div>

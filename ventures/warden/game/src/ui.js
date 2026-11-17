@@ -100,7 +100,7 @@ export class UI {
     else if (this.slotMode && $('#title').classList.contains('slots-on')) this.renderSlots();
   }
   // Character creation (0.10), after the cold open: the same Warden who just fought, now named.
-  showCreation({ needName = true, trait = null } = {}) {
+  showCreation({ needName = true, trait = null, affinities = null } = {}) {
     return new Promise((resolve) => {
       const t = $('#title'); t.classList.remove('hidden', 'slots-on'); t.classList.add('naming-on', 'create-on');
       $('#menu').innerHTML = `
@@ -111,13 +111,16 @@ export class UI {
           <input id="wname" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Kade" />
           <p class="hint">The Ninth Ward will know you by this name. A real name, a title, anything you like.</p>`
           : `<p class="hint">Warden ${esc(this.g.save?.name || '')}. The Ninth Ward already knows your name.</p>`}
+          ${affinities ? `<div class="aff"><div class="al">Your starting affinity</div>${affinities.map((a, i) => `<button data-aff="${a.id}" class="${i === 0 ? 'on' : ''}"><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></button>`).join('')}</div>` : ''}
           <button data-act="oath" class="primary">Take the Oath</button>
         </div>`;
+      let affinity = affinities ? affinities[0].id : null;
+      $('#menu').querySelectorAll('[data-aff]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); affinity = b.dataset.aff; $('#menu').querySelectorAll('[data-aff]').forEach((x) => x.classList.toggle('on', x === b)); }));
       this.finishCreation = () => {
         const name = needName ? ($('#wname')?.value || '').trim().slice(0, 20) : null;
         this.finishCreation = null;
         t.classList.remove('naming-on', 'create-on');
-        resolve({ name });
+        resolve({ name, affinity });
       };
       const inp = $('#wname');
       if (inp) {
