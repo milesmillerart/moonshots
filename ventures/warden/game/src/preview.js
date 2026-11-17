@@ -52,14 +52,22 @@ export class WardenPreview {
   mount(host) {
     if (!this.ok || !host) return false;
     host.appendChild(this.canvas);
-    const w = Math.max(60, host.clientWidth), h = Math.max(80, host.clientHeight);
-    this.r.setPixelRatio(Math.min(devicePixelRatio || 1, this.low ? 1 : 1.5));
-    this.r.setSize(w, h, false); this.canvas.style.width = '100%'; this.canvas.style.height = '100%';
-    this.cam.aspect = w / h; this.cam.fov = w / h < 0.6 ? 34 : 30; this.cam.updateProjectionMatrix();
+    let last = 0;
+    const size = () => {
+      const w = Math.max(60, host.clientWidth), h = Math.max(80, host.clientHeight);
+      const k = w * 10000 + h; if (k === last) return; last = k;
+      this.r.setPixelRatio(Math.min(devicePixelRatio || 1, this.low ? 1 : 1.5));
+      this.r.setSize(w, h, false); this.canvas.style.width = '100%'; this.canvas.style.height = '100%';
+      this.cam.aspect = w / h; this.cam.fov = w / h < 0.6 ? 34 : 30; this.cam.updateProjectionMatrix();
+    };
+    size();
+    requestAnimationFrame(size);
+    this._ro?.disconnect();
+    if (typeof ResizeObserver === 'function') { this._ro = new ResizeObserver(size); this._ro.observe(host); }
     if (!this.running) { this.running = true; this.last = performance.now(); requestAnimationFrame((t) => this.loop(t)); }
     return true;
   }
-  stop() { this.running = false; }
+  stop() { this.running = false; this._ro?.disconnect(); }
   loop(t) {
     if (!this.running) return;
     if (!this.canvas.isConnected) { this.running = false; return; }

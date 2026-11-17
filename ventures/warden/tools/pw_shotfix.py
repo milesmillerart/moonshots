@@ -46,15 +46,11 @@ def _patch():
         iw, ih = int(info["iw"]), int(info["ih"])
         extra_w = max(0, int(info["ow"]) - iw)
         extra_h = max(0, int(info["oh"]) - ih)
+        # CSS pixels map 1:1 onto X11 under Xvfb. Do not scale by devicePixelRatio:
+        # a large virtual screen is not a HiDPI display, and multiplying by dpr
+        # cropped mostly the desktop background plus the browser chrome.
         x = int(info["sx"] + extra_w / 2)
         y = int(info["sy"] + extra_h)
-        # If device-pixel ratio is realized as larger X11 pixels, scale the box.
-        # Emulated mobile dpr is usually composited 1:1 into the window; only
-        # scale when the window is clearly larger than outerWidth.
-        scale = 1.0
-        if im.width >= int(info["ow"]) * 2 and info["dpr"] >= 2:
-            scale = float(info["dpr"])
-            x, y, iw, ih = int(x * scale), int(y * scale), int(iw * scale), int(ih * scale)
         x = max(0, min(x, im.width - 1))
         y = max(0, min(y, im.height - 1))
         x2 = max(x + 1, min(x + iw, im.width))

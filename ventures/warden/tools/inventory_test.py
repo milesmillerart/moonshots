@@ -34,10 +34,16 @@ V05 = """() => { const I = window.__wardenItems, strip = (it) => { delete it.got
 
 def nonblank(pg, sel):
     if not Image: return True
-    bb = pg.locator(sel).bounding_box()
-    png = pg.screenshot(clip={"x": bb["x"] + 4, "y": bb["y"] + 4, "width": bb["width"] - 8, "height": bb["height"] - 30})
-    st = ImageStat.Stat(Image.open(io.BytesIO(png)).convert("L"))
-    return st.stddev[0] > 6
+    def once():
+        bb = pg.locator(sel).bounding_box()
+        if not bb or bb["width"] < 16 or bb["height"] < 40:
+            return False
+        png = pg.screenshot(clip={"x": bb["x"] + 4, "y": bb["y"] + 4, "width": max(8, bb["width"] - 8), "height": max(8, bb["height"] - 30)})
+        st = ImageStat.Stat(Image.open(io.BytesIO(png)).convert("L"))
+        return st.stddev[0] > 6
+    if once(): return True
+    time.sleep(1.5)
+    return once()
 
 
 def fullscreen(pg, G):
