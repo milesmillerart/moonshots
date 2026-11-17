@@ -72,12 +72,13 @@ def desktop(p):
     assert nonblank(pg, "#dollhost"), "paper-doll render is blank"
     print("  OK I opens the Armory; live 3D paper-doll is rendering")
     fullscreen(pg, G)
-    froze = G("""const c = g.camera.position.clone(), p = g.player.pos.clone(), yaw = g.camYaw, face = g.player.face;
-      g.keys.KeyW = true; g.keys.ShiftLeft = true; g.camYaw += 0.5;
-      for (let i = 0; i < 12; i++) g.update(0.05);
-      g.keys.KeyW = false; g.keys.ShiftLeft = false;
-      return { player: g.player.pos.distanceTo(p) < 0.001, cam: g.camera.position.distanceTo(c) < 0.001, yawHeld: g.camYaw === yaw + 0.5, face: g.player.face === face, screen: g.ui.screen };""")
-    assert froze["player"] and froze["cam"] and froze["yawHeld"] and froze["face"] and froze["screen"] == "armory", froze
+    before = G("return { px: g.player.pos.x, pz: g.player.pos.z, cx: g.camera.position.x, cy: g.camera.position.y, cz: g.camera.position.z, yaw: g.camYaw, face: g.player.face }")
+    G("g.keys.KeyW = true; g.keys.ShiftLeft = true; g.camYaw += 0.5;")
+    time.sleep(0.8)
+    after = G("g.keys.KeyW = false; g.keys.ShiftLeft = false; return { px: g.player.pos.x, pz: g.player.pos.z, cx: g.camera.position.x, cy: g.camera.position.y, cz: g.camera.position.z, yaw: g.camYaw, face: g.player.face, screen: g.ui.screen }")
+    assert after["px"] == before["px"] and after["pz"] == before["pz"], (before, after)
+    assert after["cx"] == before["cx"] and after["cy"] == before["cy"] and after["cz"] == before["cz"], (before, after)
+    assert after["yaw"] == before["yaw"] + 0.5 and after["face"] == before["face"] and after["screen"] == "armory", (before, after)
     print("  OK Armory is a full-screen overlay; camera and player stay frozen while it is open")
     pw = pg.inner_text(".power b"); dmg = pg.inner_text(".sheet .st:first-child b")
     want = G("return Math.round(window.__wardenItems.computeStats(g.save).dmgFinal)")
