@@ -109,17 +109,59 @@ export class Game {
     for (const e of this.enemies) e.dispose(); this.enemies = [];
     for (const l of this.loot) this.scene.remove(l.m); this.loot = [];
     document.getElementById('banner').classList.remove('show'); this.ui.toasts.innerHTML = '';
+    this.openGen = (this.openGen || 0) + 1; this.ui.cancelSay?.(); this.cine = null; this.creating = false;
+    if (this.ui.finishCreation) { this.ui.finishCreation = null; document.getElementById('title').classList.remove('naming-on', 'create-on'); }
     this.started = false; this.combatOn = false; this.boss = null; this.hunts = false; this.wave = null; this.lockTarget = null; this.objective = '';
     this.boot();
   }
-  newGame(name, slot = 0) {
+  // 0.10: a new game goes straight into the cold open. The Warden is nameless ("Warden") until character creation.
+  newGame(name = '', slot = 0) {
     this.slot = slot;
     this.save = { schema: Save.SCHEMA, v: Save.SCHEMA, name, level: 1, xp: 0, points: 1, perks: {}, equip: starterGear(), bag: [], scrap: 0, stims: 3, trait: null,
-      flags: {}, created: Date.now(), kills: 0, playTime: 0, ground: [] };
+      flags: { opening: 'act1', named: !!name }, created: Date.now(), kills: 0, playTime: 0, ground: [] };
     this.refreshStats(); this.player.hp = this.stats.hp; this.player.sta = this.stats.sta;
     this.persist('new'); Save.requestPersist();
     this.ui.hideTitle();
     this.runIntro();
+  }
+  inOpening() { return Save.inOpening(this.save); }
+  // Tests and debugging: finish the cold open instantly (named, judged, created) and start the open world.
+  debugSkipOpening(name = 'Kade', trait = 'inquest') {
+    if (!this.save) this.newGame('', this.slot ?? 0);
+    this.openGen = (this.openGen || 0) + 1; this.ui.cancelSay?.(); this.cine = null; this.creating = false;
+    if (this.ui.finishCreation) { this.ui.finishCreation = null; this.ui.hideTitle(); }
+    document.getElementById('fade').style.opacity = '0';
+    const f = this.save.flags; this.save.name = name; this.save.trait = trait;
+    Object.assign(f, { opening: 'done', named: true, created: true, judged: true });
+    this.refreshStats(); this.persist('skip');
+    this.hideCast(); this.player.pos.copy(POI.judgment); this.player.face = Math.PI; this.player.state = 'move';
+    this.startPlay(); this.camYaw = Math.PI; this.camPitch = 0.22;
+    this.resumeProgress();
+  }
+  // Mid-open reload: pick up at the last beat checkpoint instead of restarting the whole cold open.
+  resumeOpening() {
+    const f = this.save.flags;
+    if (!f.judged) { this.runIntro(); return; }
+    this.hideCast();
+    if (!f.waveA) { this.player.pos.set(0, 0, 40); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI; this.spawnWave('A'); return; }
+    this.player.pos.set(0, 0, 24); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI;
+    this.beginCreation();
+  }
+  // Character creation, after the cold open (0.10.1: name only, if not already chosen). Then the capital opens.
+  beginCreation() {
+    if (this.creating) return;
+    this.creating = true; this.state = 'story'; this.combatOn = false; this.keys = {};
+    if (document.pointerLockElement) document.exitPointerLock?.();
+    this.ui.hud.classList.add('hidden'); this.touch?.root?.classList.add('hidden');
+    this.ui.showCreation({ needName: !this.save.flags.named }).then(({ name }) => {
+      const f = this.save.flags;
+      if (!f.named) { this.save.name = (name || '').trim().slice(0, 20) || 'Kade'; f.named = true; }
+      f.created = true; f.opening = 'done'; this.creating = false;
+      this.persist('created');
+      this.ui.hideTitle(); this.startPlay();
+      this.objective = 'Push north into <b>Statute Plaza</b>';
+      this.ui.toast(`Warden ${this.save.name}. Hallowmere is yours to keep. Push north.`, 'gold');
+    });
   }
   continueGame(slot = Save.lastSlot()) {
     if (slot == null) return;
@@ -129,7 +171,7 @@ export class Game {
     this.refreshStats(); this.player.hp = clamp(this.save.hp || this.stats.hp, 1, this.stats.hp); this.player.sta = this.stats.sta;
     this.ui.hideTitle();
     Save.requestPersist();
-    if (!this.save.flags.judged) { this.runIntro(); return; }
+    if (this.inOpening()) { this.resumeOpening(); return; }
     this.hideCast();
     const p = this.save.pos;
     if (p && walkable(p[0], p[1])) this.player.pos.set(p[0], 0, p[1]); else this.player.pos.copy(POI.respawn);
@@ -139,7 +181,7 @@ export class Game {
     for (const g of sv.ground || []) this.dropAt(new THREE.Vector3(g.x, 0, g.z), g.item, true);
     this.area = Save.areaAt(this.player.pos.x, this.player.pos.z);
     this.resumeProgress();
-    this.ui.toast(`Welcome back, Warden ${sv.name}. Hallowmere, ${sv.area || this.area}.`);
+    this.ui.toast(`Welcome back, ${Save.displayName(sv)}. Hallowmere, ${sv.area || this.area}.`);
   }
   // test/debug: load a save object directly into a slot
   importToSlot(slot, sv) { return Save.writeSlot(slot, sv); }
@@ -156,6 +198,7 @@ export class Game {
   async fade(on, ms = 500) { const f = document.getElementById('fade'); f.style.transition = `opacity ${ms}ms`; f.style.opacity = on ? '1' : '0'; await sleep(ms); }
 
   async runIntro() {
+    const gen = this.openGen = (this.openGen || 0) + 1, live = () => gen === this.openGen && this.state !== 'title';
     this.state = 'story'; this.started = true; this.combatOn = false;
     const p = this.player;
     p.pos.copy(POI.judgment); p.face = Math.PI; p.state = 'move';
@@ -164,31 +207,40 @@ export class Game {
     this.brann.position.set(1.7, 0, 44.6); this.brann.rotation.set(0, 0.4, 0); this.watch.position.set(-1.6, 0, 44.9);
     this.cine = { pos: new THREE.Vector3(0, 9, 20), look: new THREE.Vector3(0, 6, -30) };
     await this.fade(false, 900);
+    if (!live()) return;
     this.cine = { pos: new THREE.Vector3(2.5, 3.2, 36), look: new THREE.Vector3(0, 6, -40), drift: true };
     await this.ui.say(STORY.intro);
+    if (!live()) return;
     this.cine = { pos: new THREE.Vector3(3.6, 1.9, 48.8), look: new THREE.Vector3(0, 1.0, 45.0) };
     const k = await this.ui.say(STORY.judgment, STORY.choices);
+    if (!live()) return;
     const ch = STORY.choices[k];
     this.save.trait = ch.id; this.save.flags.judged = true; this.refreshStats(); this.persist('verdict');
     if (ch.id === 'dread') {
       p.startAttack('heavy'); p.sta = this.stats.sta;
       await sleep(420); audio.hit(true, true); this.fx.burst(new THREE.Vector3(0, 1.1, 45.3), 50, 0xff2050, 5, 2, 0.7); this.hitstop = 0.15;
+      if (!live()) return;
       this.mira.rotation.x = -1.5; this.mira.position.y = 0.3;
       await sleep(500);
+      if (!live()) return;
     }
     this.cine = { pos: new THREE.Vector3(-3.0, 1.7, 49.5), look: new THREE.Vector3(0, 1.5, 44) };
     await this.ui.say(ch.after);
+    if (!live()) return;
     this.ui.toast(`Verdict trait: ${ch.id === 'dread' ? 'Dread' : ch.id === 'measure' ? 'Measure' : 'Inquest'}`, 'gold');
     audio.bell(); this.shake(0.3);
     this.cine = { pos: new THREE.Vector3(0.5, 2.4, 50), look: new THREE.Vector3(0, 2.5, 20) };
     await this.ui.say(STORY.breach);
+    if (!live()) return;
     await this.fade(true, 300);
+    if (!live()) return;
     this.hideCast();
     this.cine = null;
     this.camYaw = Math.PI; this.camPitch = 0.22;
     this.startPlay();
     this.spawnWave('A');
     await this.fade(false, 500);
+    if (!live()) return;
     this.ui.toast(this.touch?.on ? 'Left thumb moves. Drag right to look. Tap STRIKE to fight.' : 'Click the game to capture the mouse. Esc to pause.');
   }
 
@@ -218,11 +270,12 @@ export class Game {
   progress() {
     const f = this.save.flags, p = this.player.pos;
     if (this.wave === 'A' && !this.waveAlive('A') && !f.waveA) {
-      f.waveA = true; this.persist('progress'); this.objective = 'Push north into <b>Statute Plaza</b>';
-      this.ui.toast('The street is clear. Push north.');
+      f.waveA = true; this.persist('progress');
+      if (this.inOpening()) { this.objective = ''; setTimeout(() => this.beginCreation(), 1600); }
+      else { this.objective = 'Push north into <b>Statute Plaza</b>'; this.ui.toast('The street is clear. Push north.'); }
       if (!f.starterCore) { f.starterCore = true; this.dropAt(new THREE.Vector3(0, 0, 21), makeCore('arc', 1)); this.ui.toast('An Arc Core fell from the Hollowed. Install Cores at the Forge.', 'cyan'); }
     }
-    if (f.waveA && !f.waveB && this.wave !== 'B' && p.z < 18) this.spawnWave('B');
+    if (f.waveA && !f.waveB && this.wave !== 'B' && p.z < 18 && !this.inOpening()) this.spawnWave('B');
     if (this.wave === 'B' && !this.waveAlive('B') && !f.waveB) {
       f.waveB = true; this.persist('progress'); this.ui.banner('STATUTE PLAZA HELD', 'Use the Forge (east side of the plaza) to temper gear');
       this.objective = 'Visit the <b>Forge</b>, then clear <b>Lantern Street</b> north';

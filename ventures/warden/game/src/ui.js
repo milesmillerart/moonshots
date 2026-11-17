@@ -36,9 +36,9 @@ export class UI {
     const slots = Save.listSlots(), last = Save.lastSlot(), any = slots.some(Boolean);
     const L = last != null ? slots[last] : null;
     $('#menu').innerHTML = `
-      ${L ? `<button data-act="continue" data-slot="${last}" class="primary">Continue <span class="sub">Warden ${esc(L.name)} · Level ${L.level} · ${esc(L.area || Save.chapterOf(L))}${L.playTime >= 1 ? ` · ${Save.fmtPlay(L.playTime)}` : ''}</span></button>` : ''}
+      ${L ? `<button data-act="continue" data-slot="${last}" class="primary">Continue <span class="sub">${esc(Save.displayName(L))} · Level ${L.level} · ${esc(Save.inOpening(L) ? Save.chapterOf(L) : (L.area || Save.chapterOf(L)))}${L.playTime >= 1 ? ` · ${Save.fmtPlay(L.playTime)}` : ''}</span></button>` : ''}
       ${any ? '<button data-act="slots">Wardens <span class="sub">Load, export or delete a save · 3 slots</span></button>' : ''}
-      <button data-act="new" class="${any ? '' : 'primary'}">${any ? 'New Warden' : 'Take the Oath'}</button>
+      <button data-act="new" class="${any ? '' : 'primary'}">${any ? 'New Warden' : 'Begin'}</button>
       <button data-act="import">Import save</button>
       <button data-act="news">What's new</button>
       <button data-act="controls">Controls</button>`;
@@ -58,7 +58,7 @@ export class UI {
       <div class="slots-h">${mode === 'new' ? 'Choose a slot for your new Warden' : 'Your Wardens'}</div>
       ${slots.map((s, n) => s ? `
         <div class="slotcard${mode === 'load' && n === Save.lastSlot() ? ' last' : ''}" data-slot="${n}">
-          <div class="si"><div class="sn"><span class="no">${n + 1}</span>Warden ${esc(s.name)} <span class="lv">Lv ${s.level}</span></div>
+          <div class="si"><div class="sn"><span class="no">${n + 1}</span>${esc(Save.displayName(s))} <span class="lv">Lv ${s.level}</span></div>
             <div class="sd">${esc(tr(s))} · ${esc(Save.chapterOf(s))}</div>
             <div class="sd">Hallowmere · ${esc(s.area || 'Lantern Street')}${s.playTime >= 1 ? ` · played ${Save.fmtPlay(s.playTime)}` : ''} · saved ${Save.fmtAgo(s.saved)}</div></div>
           <div class="sb">${mode === 'new'
@@ -81,12 +81,12 @@ export class UI {
     else if (a === 'slots') this.showSlots('load');
     else if (a === 'new') {
       const empty = Save.firstEmpty();
-      if (!Save.listSlots().some(Boolean)) this.showNaming(empty < 0 ? 0 : empty);
+      if (!Save.listSlots().some(Boolean)) this.g.newGame('', empty < 0 ? 0 : empty); // 0.10: no naming at the title
       else this.showSlots('new');
     } else if (a === 'slot-play') this.g.continueGame(n);
     else if (a === 'slot-new') {
       if (Save.readSlot(n) && wasArmed !== 'new' + n) { this.armed = 'new' + n; this.renderSlots(); return; }
-      this.showNaming(n);
+      this.g.newGame('', n);
     } else if (a === 'slot-del') {
       if (wasArmed !== 'del' + n) { this.armed = 'del' + n; this.renderSlots(); return; }
       Save.deleteSlot(n); this.toast(`Slot ${n + 1} deleted`);
@@ -95,26 +95,35 @@ export class UI {
     else if (a === 'slot-import' || a === 'import') { this.openImport(a === 'import' ? null : n); }
     else if (a === 'news') this.open('news');
     else if (a === 'controls') this.open('controls');
-    else if (a === 'oath') {
-      const name = ($('#wname').value || '').trim().slice(0, 20) || 'Kade';
-      this.g.newGame(name, this.nameSlot ?? 0);
+    else if (a === 'oath') { this.finishCreation?.(); return;
     } else if (a === 'back') { if ($('#title').classList.contains('slots-on') || !Save.listSlots().some(Boolean)) this.showTitle(); else this.showSlots(this.slotMode || 'load'); }
     else if (this.slotMode && $('#title').classList.contains('slots-on')) this.renderSlots();
   }
-  showNaming(slot = 0) {
-    this.nameSlot = slot;
-    $('#title').classList.remove('slots-on');
-    $('#menu').innerHTML = `
-      <div class="naming">
-        <label for="wname">Name your Warden <span class="muted">· slot ${slot + 1}</span></label>
-        <input id="wname" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Kade" />
-        <p class="hint">The Ninth Ward will know you by this name. A real name, a title, anything you like.</p>
-        <button data-act="oath" class="primary">Take the Oath</button>
-        <button data-act="back">Back</button>
-      </div>`;
-    if (this.g.touch?.on) $('#title').classList.add('naming-on');
-    const inp = $('#wname'); inp.focus();
-    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') $('[data-act="oath"]').click(); });
+  // Character creation (0.10), after the cold open: the same Warden who just fought, now named.
+  showCreation({ needName = true } = {}) {
+    return new Promise((resolve) => {
+      const t = $('#title'); t.classList.remove('hidden', 'slots-on'); t.classList.add('naming-on', 'create-on');
+      $('#menu').innerHTML = `
+        <div class="naming create">
+          <div class="ch">The street is quiet. For now.</div>
+          ${needName ? `<label for="wname">Name your Warden</label>
+          <input id="wname" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Kade" />
+          <p class="hint">The Ninth Ward will know you by this name. A real name, a title, anything you like.</p>`
+          : `<p class="hint">Warden ${esc(this.g.save?.name || '')}. The Ninth Ward already knows your name.</p>`}
+          <button data-act="oath" class="primary">Take the Oath</button>
+        </div>`;
+      this.finishCreation = () => {
+        const name = needName ? ($('#wname')?.value || '').trim().slice(0, 20) : null;
+        this.finishCreation = null;
+        t.classList.remove('naming-on', 'create-on');
+        resolve({ name });
+      };
+      const inp = $('#wname');
+      if (inp) {
+        if (!this.g.touch?.on) inp.focus();
+        inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') $('[data-act="oath"]').click(); });
+      }
+    });
   }
   // ---- dialogue -------------------------------------------------------------
   say(lines, choices = null) {
@@ -123,9 +132,9 @@ export class UI {
       const name = this.g.save?.name || 'Warden';
       const show = () => {
         const L = lines[i];
-        const who = L.who === 'Warden' ? `Warden ${name}` : L.who;
+        const who = L.who === 'Warden' ? (this.g.save?.name ? `Warden ${name}` : 'Warden') : L.who;
         const last = i === lines.length - 1;
-        this.dlg.innerHTML = `${who ? `<div class="who">${esc(who)}</div>` : ''}<div class="line ${who ? '' : 'narr'}">${esc(L.text.replaceAll('{name}', name))}</div>
+        this.dlg.innerHTML = `${who ? `<div class="who">${esc(who)}</div>` : ''}<div class="line ${who ? '' : 'narr'}">${esc(this.g.save?.name ? L.text.replaceAll('{name}', name) : L.text.replaceAll('Warden {name}', 'Warden').replaceAll('{name}', 'Warden'))}</div>
           ${last && choices ? `<div class="choices">${choices.map((c, k) => `<button data-c="${k}"><span class="k">${k + 1}</span>${esc(c.label)}</button>`).join('')}</div>` : `<div class="more">${this.g.touch?.on ? 'Tap to continue' : 'Click or press Space'} ▸</div>`}`;
         this.dlg.classList.remove('hidden');
       };
@@ -141,6 +150,7 @@ export class UI {
       const onClick = (e) => { const b = e.target.closest('[data-c]'); if (b) advance(+b.dataset.c); else if (!choices || i < lines.length - 1) advance(); };
       const cleanup = () => { removeEventListener('keydown', onKey, true); this.dlg.removeEventListener('click', onClick); this.g.dialogueOpen = false; };
       this.g.dialogueOpen = true;
+      this.cancelSay = () => { cleanup(); this.dlg.classList.add('hidden'); this.cancelSay = null; }; // abandon (skip/quit): never resolves
       addEventListener('keydown', onKey, true); this.dlg.addEventListener('click', onClick);
       this.g.debugAdvance = advance;
       show();
@@ -160,7 +170,7 @@ export class UI {
     const now = performance.now();
     if (now - this.lastHud > 150) {
       this.lastHud = now;
-      $('#pname').textContent = `Warden ${sv.name}`;
+      $('#pname').textContent = Save.displayName(sv);
       $('#plevel').textContent = `Level ${sv.level}`;
       $('#xp-fill').style.width = pct(sv.xp, g.xpNeed());
       $('#scrap').textContent = fmt(sv.scrap);
@@ -324,7 +334,7 @@ export class UI {
     const sv = this.exportSave; if (!sv) return '<div class="card center"><p>No save to export.</p><button data-act="close">Close</button></div>';
     const code = Save.exportCode(sv);
     this.exportText = code;
-    return `<div class="card xfer"><div class="tabs"><b>Export save · Warden ${esc(sv.name)}</b><button data-act="close" class="x">✕</button></div>
+    return `<div class="card xfer"><div class="tabs"><b>Export save · ${esc(Save.displayName(sv))}</b><button data-act="close" class="x">✕</button></div>
       <p class="muted">This code is your whole Warden: level, gear, Temper, Cores, perks, verdict and progress. Keep it in a notes app or email it to yourself. On any device, open Warden and choose <b>Import save</b> to bring this Warden back, even after clearing browser data.</p>
       <textarea id="expcode" readonly spellcheck="false">${esc(code)}</textarea>
       <div class="xb"><button data-act="copy" class="primary">${this.copied ? 'Copied ✓' : 'Copy code'}</button><button data-act="download">Download save file</button><button data-act="close">Done</button></div>
@@ -359,7 +369,7 @@ export class UI {
     sv.saved = Date.now();
     if (!Save.writeSlot(n, sv)) { this.importErr = 'Could not write the save: browser storage is full or blocked.'; this.render(); return false; }
     this.armed = null; this.screen = null; this.panel.classList.add('hidden'); this.panel.innerHTML = '';
-    this.toast(`Imported Warden ${sv.name} (Lv ${sv.level}) into slot ${n + 1}`, 'gold');
+    this.toast(`Imported ${Save.displayName(sv)} (Lv ${sv.level}) into slot ${n + 1}`, 'gold');
     this.showSlots('load');
     return true;
   }

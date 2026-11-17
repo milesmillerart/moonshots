@@ -7,7 +7,7 @@
 import { starterGear, slotCount } from './items.js';
 import { RENAMES } from './data.js';
 
-export const SCHEMA = 4;
+export const SCHEMA = 5;
 export const SLOTS = 3;
 const LEGACY_KEY = 'warden.save.v1', META_KEY = 'warden.meta';
 const slotKey = (n) => `warden.slot.${n}`;
@@ -64,12 +64,20 @@ export function migrate(raw) {
     (Array.isArray(s.ground) ? s.ground : []).forEach((g) => stamp(g?.item));
   }
   s.schema = SCHEMA; s.v = SCHEMA;
-  s.name = s.name.slice(0, 20) || 'Kade';
+  s.flags = obj(s.flags);
+  if (from < 5 || !['act1', 'legacy', 'done'].includes(s.flags.opening)) {
+    // 0.10 (schema 5): the cold open. Wardens who already judged Mira keep everything and never replay it ('legacy').
+    // Anyone else plays the new cold open; an older save already chose its name, so the naming step is skipped later.
+    if (s.flags.judged && s.flags.opening !== 'act1') s.flags.opening = 'legacy';
+    else { s.flags.opening = 'act1'; if (from < 5) s.flags.named = true; }
+  }
+  // A new cold-open Warden is nameless ("Warden") until character creation; everyone else defaults to Kade.
+  const unnamed = s.flags.opening === 'act1' && !s.flags.named && !s.flags.created;
+  s.name = s.name.slice(0, 20) || (unnamed ? '' : 'Kade');
   s.level = num(s.level, 1, 1, 999); s.xp = num(s.xp, 0, 0); s.points = num(s.points, 0, 0);
   s.scrap = num(s.scrap, 0, 0); s.stims = num(s.stims, 3, 0, 9); s.kills = num(s.kills, 0, 0);
   s.playTime = num(s.playTime, 0, 0); s.saved = num(s.saved, Date.now()); s.created = num(s.created, Date.now());
   s.perks = obj(s.perks); for (const k in s.perks) s.perks[k] = num(s.perks[k], 0, 0, 9);
-  s.flags = obj(s.flags);
   s.equip = obj(s.equip);
   if (!Object.keys(s.equip).length) s.equip = starterGear();
   for (const k in s.equip) { if (!validItem(s.equip[k])) delete s.equip[k]; else fixGear(s.equip[k]); }
@@ -187,8 +195,16 @@ export function areaAt(x, z) {
   if (z <= 13) return 'Statute Plaza';
   return 'South Lantern Street';
 }
+// "Warden Kade", or just "Warden" while a new Warden is still nameless in the cold open
+export const displayName = (s) => (s?.name ? `Warden ${s.name}` : 'Warden');
+export const inOpening = (s) => s?.flags?.opening === 'act1' && !s.flags.created;
 export function chapterOf(s) {
   const f = s.flags || {};
+  if (inOpening(s)) {
+    if (f.waveA) return 'The cold open · the street is clear';
+    if (f.judged) return 'The cold open · the breach';
+    return 'The cold open · the case';
+  }
   if (f.boss) return 'The capital holds · hunting abominations';
   if (f.waveC) return 'At the Grave Gate';
   if (f.waveB) return 'Plaza held · clearing Lantern Street';
