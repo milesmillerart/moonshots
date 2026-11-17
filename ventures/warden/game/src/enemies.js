@@ -27,7 +27,7 @@ export class Enemy {
 
   hurt(dmg, from, poiseDmg, crit) {
     if (this.dead) return;
-    this.hp -= dmg; this.flash = 0.12; this.aggro = true;
+    this.hp -= dmg; this.flash = 0.12; this.aggro = true; this.provokedT = 4;
     this.react = Math.min(1.4, (this.react > 0.3 ? this.react : 0) + 0.7 + poiseDmg * 0.12 + (crit ? 0.25 : 0)); this.reactSide = Math.random() < 0.5 ? -1 : 1;
     this.poise += poiseDmg;
     const away = this.pos.clone().sub(from).setY(0).normalize();
@@ -73,7 +73,10 @@ export class Enemy {
       if (Math.random() < 0.3) g.fx.burst(this.pos.clone().setY(1 + Math.random()), 1, 0xff6a2a, 1, 2, 0.4);
       if (this.hp <= 0) { this.die(); return true; }
     }
-    const toP = p.pos.clone().sub(this.pos); toP.y = 0;
+    // prey: the cold open's Husks go for the civilians / the watchman unless the Warden engages them
+    if (this.provokedT > 0) this.provokedT -= dt;
+    const prey = this.prey && !this.prey.dead ? this.prey : null;
+    const toP = (prey ? prey.pos : p.pos).clone().sub(this.pos); toP.y = 0;
     const dist = toP.length();
     const want = Math.atan2(toP.x, toP.z);
     if (!this.aggro && dist < (this.elite ? 26 : 17) && p.state !== 'dead' && g.combatOn) { this.aggro = true; audio.growl(this.elite ? 0.5 : 1); }
@@ -145,7 +148,8 @@ export class Enemy {
       if (T === 'husk' || (T === 'bellwright' && this.move === 'swipe')) {
         moveCircle(this.pos, fx * 2 * dt, fz * 2 * dt, this.def.radius);
         if (!this.hitDone && this.t > 0.05 && dist < this.def.range + 0.3 && Math.abs(angleDiff(this.face, want)) < 1.2) {
-          this.hitDone = true; p.takeHit(this.dmg, this.pos, T === 'bellwright' ? 9 : 4);
+          this.hitDone = true;
+          if (this.prey && !this.prey.dead) this.prey.hurt(this.dmg, this); else p.takeHit(this.dmg, this.pos, T === 'bellwright' ? 9 : 4);
         }
         if (this.t > 0.22) this.endAttack(T === 'bellwright' ? 0.9 : 1.3);
       } else if (T === 'skitter') {

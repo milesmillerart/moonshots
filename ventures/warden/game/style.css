@@ -570,3 +570,6 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
 #title.create-on .logo, #title.create-on .foot { display: none; }
 .naming.create { max-width: 440px; }
 .naming .ch { font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase; color: #e8ecf2; margin-bottom: 6px; }
+
+/* 0.10.3: the cold open hides gear, skills and XP until character creation */
+html.opening .tmenu [data-t=armory], html.opening .tmenu [data-t=skills], html.opening #hud .keys, html.opening #hud .bar.xp, html.opening #pts, html.opening #plevel { display: none !important; }

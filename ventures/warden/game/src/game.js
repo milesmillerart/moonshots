@@ -109,7 +109,8 @@ export class Game {
     for (const e of this.enemies) e.dispose(); this.enemies = [];
     for (const l of this.loot) this.scene.remove(l.m); this.loot = [];
     document.getElementById('banner').classList.remove('show'); this.ui.toasts.innerHTML = '';
-    this.openGen = (this.openGen || 0) + 1; this.ui.cancelSay?.(); this.cine = null; this.creating = false;
+    this.openGen = (this.openGen || 0) + 1; this.ui.cancelSay?.(); this.cine = null; this.creating = false; this.clearCivilians();
+    document.documentElement.classList.remove('opening');
     if (this.ui.finishCreation) { this.ui.finishCreation = null; document.getElementById('title').classList.remove('naming-on', 'create-on'); }
     this.started = false; this.combatOn = false; this.boss = null; this.hunts = false; this.wave = null; this.lockTarget = null; this.objective = '';
     this.boot();
@@ -133,7 +134,7 @@ export class Game {
     document.getElementById('fade').style.opacity = '0';
     const f = this.save.flags; this.save.name = name; this.save.trait = trait;
     Object.assign(f, { opening: 'done', named: true, created: true, judged: true });
-    this.refreshStats(); this.persist('skip');
+    this.refreshStats(); this.persist('skip'); this.clearCivilians();
     this.hideCast(); this.player.pos.copy(POI.judgment); this.player.face = Math.PI; this.player.state = 'move';
     this.startPlay(); this.camYaw = Math.PI; this.camPitch = 0.22;
     this.resumeProgress();
@@ -144,6 +145,7 @@ export class Game {
     if (!(f.caseDone || f.judged)) { this.runCase(); return; }
     this.placeCast('gaol');
     if (!f.waveA) { this.player.pos.set(0, 0, 40); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI; this.spawnWave('A'); return; }
+    this.spawnCivilians(f.ledger);
     if (!f.judged) { this.runVerdict(); return; }
     this.player.pos.set(0, 0, 24); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI;
     this.beginCreation();
@@ -174,6 +176,8 @@ export class Game {
       const f = this.save.flags;
       if (!f.named) { this.save.name = (name || '').trim().slice(0, 20) || 'Kade'; f.named = true; }
       f.created = true; f.opening = 'done'; this.creating = false;
+      this.clearCivilians(); this.syncOpening();
+      if (f.deferredXp) { const x = f.deferredXp; f.deferredXp = 0; this.gainXp(x); }
       this.persist('created');
       this.ui.hideTitle(); this.startPlay();
       this.objective = 'Push north into <b>Statute Plaza</b>';
@@ -209,8 +213,9 @@ export class Game {
     this.brann.position.set(5, 0, 46.5); this.brann.rotation.y = -1.2;
     if (this.cellProp) this.cellProp.visible = false;
   }
+  syncOpening() { document.documentElement.classList.toggle('opening', !!this.save && this.inOpening()); }
   startPlay() {
-    this.state = 'play'; this.started = true; this.combatOn = true;
+    this.state = 'play'; this.started = true; this.combatOn = true; this.syncOpening();
     this.ui.showHud(); this.camYaw = this.player.face;
   }
   async fade(on, ms = 500) { const f = document.getElementById('fade'); f.style.transition = `opacity ${ms}ms`; f.style.opacity = on ? '1' : '0'; await sleep(ms); }
@@ -317,7 +322,11 @@ export class Game {
     const L = this.save.level;
     const at = (type, x, z, lvl = L, aggro = false) => { const e = new Enemy(this, type, new THREE.Vector3(x, 0, z), lvl); e.aggro = aggro; e.wave = id; this.enemies.push(e); return e; };
     this.wave = id;
-    if (id === 'A') { at('husk', -2.5, 30, 1, true); at('husk', 2.5, 27, 1, true); at('husk', 0, 23, 1, true); this.objective = 'The Grave Gate is breached. Purge the Hollowed'; }
+    if (id === 'A') {
+      at('husk', -2.5, 30, 1, true); at('husk', 2.5, 27, 1, true); at('husk', 0, 23, 1, true);
+      if (this.inOpening()) { this.spawnCivilians(); this.objective = 'Hollowed in the street. <b>Protect the people</b>'; this.teach = { t: 0, step: 0 }; }
+      else this.objective = 'The Grave Gate is breached. Purge the Hollowed';
+    }
     if (id === 'B') { at('husk', -8, -3, L); at('husk', 9, 4, L); at('skitter', -4, -8, L); at('skitter', 5, -9, L); at('spitter', 0, -11, L); this.objective = 'Purge <b>Statute Plaza</b>'; }
     if (id === 'C') { at('husk', -3, -26, L); at('husk', 3, -31, L); at('spitter', 0, -42, L); at('skitter', -3, -46, L); at('skitter', 3, -48, L); at('husk', 0, -52, L); at('spitter', 4, -36, L); this.objective = 'Clear <b>Lantern Street</b> to the Grave Gate'; }
     if (id === 'BOSS') {
@@ -326,6 +335,83 @@ export class Game {
       this.objective = 'Slay <b>the Bellwright</b>';
     }
   }
+  // ---- 0.10.3 cold-open skirmish: three civilians and the watchman at the gaol ----
+  spawnCivilians(ledger = null) {
+    this.clearCivilians();
+    const defs = [
+      { id: 'vendor', label: 'The lantern-cart vendor', x: 3.8, z: 32.5, coat: 0x3a2e22, hood: true },
+      { id: 'laborer1', label: 'A laborer under the arch', x: -4.6, z: 35.2, coat: 0x26303a, hood: false },
+      { id: 'laborer2', label: 'A laborer under the arch', x: -3.3, z: 36.8, coat: 0x332a30, hood: true },
+    ];
+    const game = this;
+    this.civs = defs.map((d) => {
+      const m = buildPerson({ coat: d.coat, hood: d.hood }); m.position.set(d.x, 0, d.z); m.rotation.y = Math.atan2(-d.x, 26 - d.z);
+      this.scene.add(m);
+      const c = { ...d, m, pos: m.position, hp: 40, max: 40, state: 'safe', dead: false, warned: false,
+        hurt(dmg) {
+          if (c.dead) return; c.hp -= dmg; audio.hit?.(false, false); game.fx.burst(c.pos.clone().setY(1.2), 10, 0xff3050, 3, 1.5, 0.4);
+          if (!c.warned) { c.warned = true; game.ui.toast(`${c.label} is under attack!`, 'red'); }
+          if (c.hp <= 0) { c.dead = true; c.state = 'dead'; m.rotation.x = -1.5; m.position.y = 0.25; game.ui.toast(`${c.label} is dead.`, 'red'); }
+          else if (c.hp <= c.max * 0.5 && c.state === 'safe') { c.state = 'wounded'; m.rotation.x = 0.35; m.position.y = -0.15; }
+        } };
+      const st = ledger?.civilians?.[d.id];
+      if (st === 'dead') { c.dead = true; c.state = 'dead'; c.hp = 0; m.rotation.x = -1.5; m.position.y = 0.25; }
+      else if (st === 'wounded') { c.state = 'wounded'; c.hp = 20; m.rotation.x = 0.35; m.position.y = -0.15; }
+      return c;
+    });
+    if (!this.cart) {
+      const g = new THREE.Group();
+      const box = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.55, 0.8), new THREE.MeshStandardMaterial({ color: 0x3b2a1c, roughness: 0.85 })); box.position.y = 0.75; g.add(box);
+      for (const sx of [-0.5, 0.5]) { const w = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.05, 6, 14), new THREE.MeshStandardMaterial({ color: 0x1c1a18 })); w.position.set(sx, 0.3, 0.42); g.add(w); }
+      for (let i = 0; i < 3; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffb547, emissive: new THREE.Color(1, 0.62, 0.2), emissiveIntensity: 2.2 })); l.position.set(-0.4 + i * 0.4, 1.18, 0); g.add(l); }
+      g.position.set(4.9, 0, 32.2); g.rotation.y = 0.3; this.scene.add(g); this.cart = g;
+    }
+    this.cart.visible = true;
+    const w = this.watch;
+    this.watchman = { pos: w.position, dead: false, hurtFlag: !!ledger?.watchmanHurt, cd: 1, hurt: (dmg) => {
+      if (!this.watchman.hurtFlag) { this.watchman.hurtFlag = true; this.ui.toast('The watchman is hurt, but he holds the gaol approach.', 'red'); }
+      this.fx.burst(w.position.clone().setY(1.3), 8, 0xff3050, 3, 1.5, 0.4); void dmg; } };
+  }
+  clearCivilians() {
+    if (this.civs) for (const c of this.civs) this.scene.remove(c.m);
+    this.civs = null; this.watchman = null; this.teach = null;
+    if (this.cart) this.cart.visible = false;
+  }
+  skirmishUpdate(dt) {
+    const p = this.player.pos, w = this.watchman;
+    const husks = this.enemies.filter((e) => !e.dead && e.wave === 'A');
+    husks.forEach((e, i) => {
+      if (e.provokedT > 0 || e.pos.distanceTo(p) < 4.5) { e.prey = null; return; }
+      if (i === 0 && husks.length > 1 && w && e.pos.distanceTo(w.pos) < 16) { e.prey = w; return; }
+      let best = null, bd = 18;
+      for (const c of this.civs) { if (c.dead) continue; const d = e.pos.distanceTo(c.pos); if (d < bd) { bd = d; best = c; } }
+      e.prey = best;
+    });
+    // the watchman's polearm keeps one approach (never a killing blow)
+    if (w && (w.cd -= dt) <= 0) {
+      const near = husks.find((e) => e.pos.distanceTo(w.pos) < 2.6 && e.hp > 12);
+      if (near) { w.cd = 1.7; near.hurt(7, w.pos.clone(), 1, false); near.provokedT = 0; this.watch.rotation.y = Math.atan2(near.pos.x - w.pos.x, near.pos.z - w.pos.z); }
+      else w.cd = 0.3;
+    }
+    // soft gate: the opening stays at the gaol and this stretch of street
+    if (p.z < 19) { p.z = 19; if (!this._gateT || this.time - this._gateT > 4) { this._gateT = this.time; this.ui.toast('Gaoler Brann: "Warden! The people here, not the Gate!"'); } }
+    // contextual teaching: move / light / heavy, then dodge, then stamina
+    const T = this.teach, touch = !!this.touch?.on;
+    if (T) {
+      T.t += dt;
+      if (T.step === 0 && T.t > 1.2) { T.step = 1; this.ui.toast(touch ? 'Left thumb moves. STRIKE for a light attack, HEAVY for a heavy one.' : 'WASD to move. Left click for a light attack, right click for a heavy one.'); }
+      if (T.step === 1 && husks.some((e) => e.state === 'windup' && e.pos.distanceTo(p) < 4 && !e.prey)) { T.step = 2; this.ui.toast(touch ? 'ROLL through an attack as it lands.' : 'Space to roll through an attack as it lands.'); }
+      if (T.step >= 1 && !T.sta && this.player.sta < this.stats.sta * 0.35) { T.sta = true; this.ui.toast('Strikes and rolls spend stamina, the green bar. Ease off and it refills.'); }
+    }
+  }
+  closeSkirmish() {
+    const f = this.save.flags, cs = this.civs || [];
+    const civilians = Object.fromEntries(cs.map((c) => [c.id, c.state]));
+    f.ledger = { ...(f.ledger || {}), civiliansDead: cs.filter((c) => c.dead).length, civilians, watchmanHurt: !!this.watchman?.hurtFlag,
+      present: ['brann', 'watchman', 'mira', ...cs.filter((c) => !c.dead).map((c) => c.id)] };
+    for (const e of this.enemies) e.prey = null;
+    this.teach = null;
+  }
   waveAlive(id) { return this.enemies.some((e) => e.wave === id && !e.dead); }
   progress() {
     const f = this.save.flags, p = this.player.pos;
@@ -333,7 +419,8 @@ export class Game {
       f.waveA = true; this.persist('progress');
       if (this.inOpening()) { this.objective = ''; setTimeout(() => { if (!this.inOpening() || this.state !== 'play') return; if (!f.judged) this.runVerdict(); else this.beginCreation(); }, 1600); }
       else { this.objective = 'Push north into <b>Statute Plaza</b>'; this.ui.toast('The street is clear. Push north.'); }
-      if (!f.starterCore) { f.starterCore = true; this.dropAt(new THREE.Vector3(0, 0, 21), makeCore('arc', 1)); this.ui.toast('An Arc Core fell from the Hollowed. Install Cores at the Forge.', 'cyan'); }
+      if (this.civs) this.closeSkirmish();
+      if (!f.starterCore && !this.inOpening()) { f.starterCore = true; this.dropAt(new THREE.Vector3(0, 0, 21), makeCore('arc', 1)); this.ui.toast('An Arc Core fell from the Hollowed. Install Cores at the Forge.', 'cyan'); }
     }
     if (f.waveA && !f.waveB && this.wave !== 'B' && p.z < 18 && !this.inOpening()) this.spawnWave('B');
     if (this.wave === 'B' && !this.waveAlive('B') && !f.waveB) {
@@ -475,7 +562,8 @@ export class Game {
     }
     const scrap = Math.round(randi(e.def.scrap[0], e.def.scrap[1]) * (1 + 0.1 * (e.level - 1)) * (1 + s.scrapPct / 100));
     sv.scrap += scrap; this.fx.number(e.pos.clone().setY(2), `+${scrap} scrap`, 'scrap');
-    this.gainXp(Math.round(e.def.xp * (1 + 0.15 * (e.level - 1))));
+    const xp = Math.round(e.def.xp * (1 + 0.15 * (e.level - 1)));
+    if (this.inOpening()) sv.flags.deferredXp = (sv.flags.deferredXp || 0) + xp; else this.gainXp(xp);
     if (this.perk('verdict')) { p.sta = Math.min(s.sta, p.sta + 25); p.hp = Math.min(s.hp, p.hp + s.hp * 0.04); }
     if (this.perk('leech_protocol')) p.hp = Math.min(s.hp, p.hp + s.hp * 0.06);
     // loot
@@ -485,7 +573,7 @@ export class Game {
       this.dropAt(e.pos.clone().add(new THREE.Vector3(0, 0, 1.4)), makeCore(null, 2));
       sv.flags.boss = true; this.persist('boss');
       setTimeout(async () => { this.ui.banner('HALLOWMERE HOLDS', 'For tonight'); await this.ui.say(STORY.victory); this.hunts = true; this.objective = 'Hunt the abominations. Temper your gear at the <b>Forge</b>.'; }, 1500);
-    } else {
+    } else if (!this.inOpening()) {
       const r = Math.random();
       if (r < 0.26) this.dropAt(e.pos.clone(), randomGear(sv.level, 0));
       else if (r < 0.34) this.dropAt(e.pos.clone(), makeCore(null, Math.random() < 0.15 ? 2 : 1));
@@ -696,6 +784,7 @@ export class Game {
       this.nearCache = !this.save.flags.cache && p.pos.distanceTo(POI.cache) < 2.6;
       this.cacheMarker.visible = !this.save.flags.cache;
       this.prompt = this.nearForge ? '[E] Use the Forge (temper gear, install Cores, refill stims)' : this.nearCache ? '[E] Search the cache' : '';
+      if (!paused && this.civs && this.inOpening()) this.skirmishUpdate(dt);
       if (!paused) this.progress();
       // play time counts wall-clock seconds (dt is clamped on slow frames), capped so a backgrounded tab doesn't count
       const now = performance.now(), wall = this.lastWall ? Math.min(1, (now - this.lastWall) / 1000) : 0; this.lastWall = now;

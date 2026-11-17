@@ -211,6 +211,7 @@ export class UI {
   // ---- panels ---------------------------------------------------------------
   get isOpen() { return !!this.screen; }
   open(name) {
+    if (['armory', 'skills', 'forge'].includes(name) && this.g.save && this.g.inOpening?.()) return; // unlock at character creation
     this.screen = name; this.panel.classList.remove('hidden'); this.sel = null; this.hover = null;
     if (document.pointerLockElement) document.exitPointerLock();
     this.render(); audio.ui();

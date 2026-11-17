@@ -4,6 +4,9 @@ and iPhone SE landscape with real CDP touch taps. Grows with each 0.10.x milesto
 0.10.1 (flow restructure): no naming at the title -> cold open -> character creation -> open world.
 0.10.2 (the gaol and the case): arrival lines, Brann + Mira's case, up to three optional questions one at a time
   (zero-question and all-three paths both reach the alarm), no verdict before the skirmish; the verdict comes after it.
+0.10.3 (skirmish): three Husks, three civilians (vendor + two laborers) and the watchman; ignored civilians get hurt,
+  protected ones live; ledger (civiliansDead, civilians, watchmanHurt, present); no Core/gear drops or XP in the opening;
+  Armory/Skills hidden; soft gate keeps the Warden at the gaol stretch.
   Checks: nameless new Warden ("Warden"), schema 5 + flags.opening 'act1', mid-open reloads resume at the last beat
   (case / skirmish / creation), creation names the Warden and opens the capital, legacy judged saves skip the cold open
   ('legacy'), a named-but-unjudged old save plays the cold open and keeps its name (no name field). Zero console errors.
@@ -92,12 +95,32 @@ def run(p, devname, tag):
     ok(advance_until("g.state === 'play' && !g.dialogueOpen", 50), "zero questions: the alarm interrupts and the skirmish starts")
     st = G("return { trait: g.save.trait, alive: g.enemies.filter(e => !e.dead).length, judged: !!g.save.flags.judged, caseDone: g.save.flags.caseDone, asked: g.save.flags.asked }")
     ok(st["trait"] is None and st["alive"] == 3 and not st["judged"] and st["caseDone"] and st["asked"] == [], f"skirmish: three Husks, no verdict yet {st}")
+    st = G("return { civs: (g.civs || []).map(c => c.id), watch: !!g.watchman, gear: getComputedStyle(document.querySelector('#hud .keys')).display }")
+    ok(st["civs"] == ["vendor", "laborer1", "laborer2"] and st["watch"], f"three civilians and the watchman are in the street {st}")
+    G("g.ui.open('armory')"); ok(not G("return g.ui.isOpen"), "Armory / Skills stay locked during the cold open")
+    G("g.player.pos.z = 8"); time.sleep(1.0); ok(G("return g.player.pos.z") >= 18.9, "soft gate keeps the Warden off the road north")
+    G("g.player.pos.set(0, 0, 46.5)")
     # 4. mid-skirmish reload resumes the skirmish (no replay of the case)
     boot(clear=False); press("#menu button[data-act=continue]"); time.sleep(2.5)
     st = G("return { state: g.state, dlg: g.dialogueOpen, alive: g.enemies.filter(e => !e.dead).length }")
     ok(st["state"] == "play" and not st["dlg"] and st["alive"] == 3, f"reload during the skirmish resumes the skirmish {st}")
-    # 5. clear the street -> back to the case for the verdict -> character creation
-    kill_wave()
+    # 5. ignore the civilians, then clear the street -> back to the case for the verdict -> character creation
+    # ignore them: the Husks go for the civilians and the watchman
+    G("g.player.pos.set(8, 0, 47)"); hurt = False
+    for _ in range(120):
+        st = G("return { prey: g.enemies.filter(e => !e.dead).map(e => e.prey ? (e.prey.id || 'watch') : 'warden'), hp: (g.civs || []).map(c => c.hp) }")
+        if any(h < 40 for h in st["hp"]): hurt = True; break
+        G("for (const e of g.enemies) if (!e.dead && e.prey) { const t = e.prey.pos; if (e.pos.distanceTo(t) > 3) e.pos.lerp(t, 0.3); }")  # fast-forward the walk on slow GPUs
+        time.sleep(0.5)
+    ok(hurt and "watch" in st["prey"] and "warden" not in st["prey"], f"left alone, the Husks attack the civilians and the watchman {st}")
+    for _ in range(80):
+        if G("return (g.civs || []).some(c => c.dead)"): break
+        time.sleep(0.5)
+    ok(G("return (g.civs || []).some(c => c.dead)"), "an ignored civilian dies (not a fail state)")
+    kill_wave(); time.sleep(0.8)
+    led = G("return g.save.flags.ledger")
+    ok(led and led["civiliansDead"] >= 1 and led["civiliansDead"] == sum(1 for v in led["civilians"].values() if v == "dead") and "brann" in led["present"], f"ledger records the civilians {led}")
+    ok(G("return g.loot.length") == 0 and G("return g.save.xp") == 0 and (G("return g.save.flags.deferredXp") or 0) > 0, "no Core or gear drops and no level-up in the opening (XP deferred)")
     ok(advance_until("document.querySelector('#dialogue .choices')", 60), "the street clears and the Warden returns to the case")
     labels = G("return [...document.querySelectorAll('#dialogue .choices button')].map(b => b.textContent)")
     ok(len(labels) == 3, f"the verdict is offered only now: {labels}")
@@ -149,12 +172,16 @@ def run(p, devname, tag):
         else: time.sleep(0.5)
     ok(G("return g.state") == "play" and any("I did what I had to" in t for t in seen), "all three asked: answers shown, then the alarm and the skirmish")
     ok(G("return g.save.flags.asked") == ["dark", "brother", "how"], "questions recorded in the ledger")
-    kill_wave()
+    kill_wave(); time.sleep(0.8)
+    led = G("return g.save.flags.ledger")
+    ok(led["civiliansDead"] == 0 and all(v == "safe" for v in led["civilians"].values()), f"protected, every civilian lives {led}")
     ok(advance_until("document.querySelector('#dialogue .choices')", 60), "…verdict after the skirmish"); press("#dialogue .choices button[data-c='1']")
     pg.wait_for_selector("#title.create-on [data-act=oath]", timeout=60000)
     ok(not pg.query_selector("#wname"), "creation skips the name field for a Warden who already chose one")
     press("[data-act=oath]"); time.sleep(1.0)
     ok(G("return g.save.name") == "Sera Quill" and G("return g.save.flags.created"), "name kept, capital opens")
+    ok(G("return g.save.xp > 0 || g.save.level > 1") and not G("return g.save.flags.deferredXp") and not G("return g.civs"), "deferred XP lands at creation; the street is cleared")
+    G("g.ui.open('armory')"); ok(G("return g.ui.isOpen"), "Armory unlocks after character creation"); G("g.ui.close()")
     b.close()
     print("  console errors:", len(errors))
     for e in errors: print("   ", e)
