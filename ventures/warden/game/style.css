@@ -88,6 +88,13 @@ button[disabled] { opacity: 0.35; cursor: default; }
 
 /* ---- panels ---- */
 .panel { position: fixed; inset: 4vh 4vw; background: var(--panel); border: 1px solid var(--line); z-index: 25; padding: 18px 22px; overflow: auto; backdrop-filter: blur(6px); }
+/* Armory, Forge and Skills cover the street so the Warden no longer turns behind the panel. */
+.panel.armory, .panel.forge, .panel.skills {
+  inset: 0;
+  border: none;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) calc(22px + env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) calc(22px + env(safe-area-inset-left, 0px));
+}
+.panel.forge { background: #080a0e; }
 .panel.pause, .panel.dead, .panel.news, .panel.controls { inset: 0; background: rgba(3, 4, 6, 0.6); display: grid; place-items: center; border: none; }
 .card { background: var(--panel); border: 1px solid var(--line); padding: 28px; width: min(520px, 92vw); max-height: 86vh; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
 .card.news { width: min(720px, 92vw); }
@@ -219,7 +226,7 @@ html.touch .dmg { font-size: 15px; } html.touch .dmg.crit { font-size: 20px; }
   .choices { margin-top: 10px; gap: 6px; }
   .choices button { padding: 10px 12px; font-size: 13px; }
   .panel { inset: calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left)); padding: 10px 12px; }
-  .panel.armory, .panel.forge, .panel.skills { display: flex; flex-direction: column; overflow: hidden; }
+  .panel.armory, .panel.forge, .panel.skills { display: flex; flex-direction: column; overflow: hidden; inset: 0; border: none; padding: calc(10px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px)); }
   .tabs { margin-bottom: 8px; padding-bottom: 6px; flex: none; }
   .tabs button { padding: 9px 12px; font-size: 11px; }
   .tabs .x { font-size: 18px; padding: 6px 14px; }
@@ -317,7 +324,7 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
 }
 
 /* ---- Armory 0.6: paper-doll, pack grid, inspect + compare ---- */
-.panel.armory { display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(ellipse at 22% 40%, rgba(255, 42, 85, 0.07), transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(70, 240, 224, 0.05), transparent 50%), rgba(6, 8, 11, 0.95); }
+.panel.armory { display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(ellipse at 22% 40%, rgba(255, 42, 85, 0.07), transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(70, 240, 224, 0.05), transparent 50%), #06080b; }
 .inv { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(330px, 0.95fr) minmax(0, 1.35fr) minmax(300px, 0.9fr); gap: 18px; }
 .inv > div { min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #333 transparent; }
 .inv-doll { display: flex; flex-direction: column; gap: 10px; }
@@ -431,7 +438,7 @@ html.touch #saved { font-size: 10px; margin-top: 4px; }
 }
 
 /* ---- skill tree (0.7) ---- */
-.panel.skills { display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(ellipse at 10% 50%, rgba(255, 42, 85, 0.08), transparent 55%), radial-gradient(ellipse at 90% 80%, rgba(70, 240, 224, 0.06), transparent 50%), rgba(5, 7, 11, 0.95); }
+.panel.skills { display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(ellipse at 10% 50%, rgba(255, 42, 85, 0.08), transparent 55%), radial-gradient(ellipse at 90% 80%, rgba(70, 240, 224, 0.06), transparent 50%), #05070b; }
 .sk { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
 .sk-head { display: flex; align-items: center; gap: 22px; flex: none; }
 .sk-pts { display: flex; align-items: center; gap: 12px; padding: 6px 18px 6px 10px; border: 1px solid var(--line); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); background: rgba(255, 255, 255, 0.02); }

@@ -80,14 +80,14 @@ export class Player {
 
     if (this.state === 'dead') { this.animate(dt, 0); return; }
 
-    // stamina regen
-    if (this.state !== 'attack' && this.state !== 'dodge' && this.staDelay <= 0) {
-      this.sta = Math.min(s.sta, this.sta + 32 * (1 + s.regen / 100) * dt * (inp.sprint && moving ? 0.2 : 1));
+    // stamina regen: full rate while idle or walking; none while sprinting. Post-spend delay still applies.
+    const sprint = this.state === 'move' && inp.sprint && moving && this.sta > 5;
+    if (this.state !== 'attack' && this.state !== 'dodge' && this.staDelay <= 0 && !sprint) {
+      this.sta = Math.min(s.sta, this.sta + 32 * (1 + s.regen / 100) * dt);
     }
     if (this.stimT > 0) { this.stimT -= dt; this.hp = Math.min(s.hp, this.hp + s.hp * 0.45 * dt / 1.2); }
 
     if (this.state === 'move') {
-      const sprint = inp.sprint && moving && this.sta > 5;
       const analog = inp.joy && inp.joy.m != null && !sprint ? Math.max(0.4, Math.min(1, inp.joy.m * 1.15)) : 1;
       const speed = (sprint ? 6.6 : 4.3) * (this.stimT > 0 ? 0.6 : 1) * analog;
       if (sprint) { this.sta -= 14 * dt; this.staDelay = 0.3; }
@@ -190,6 +190,7 @@ export class Player {
     g.ui.toast('Stim injected');
   }
   takeHit(dmg, from, knock = 4) {
+    if (this.game.dialogueOpen) return false;
     if (this.state === 'dodge' && this.t < 0.24 && this.perfectCd <= 0) { this.game.onPerfectDodge(from); return false; }
     if (this.iframes > 0 || this.state === 'dead') return false;
     const s = this.stats;

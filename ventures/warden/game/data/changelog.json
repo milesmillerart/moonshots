@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-11-17",
+    "build": "0.10.1.1",
+    "title": "Hotfix: stamina while walking, a full-screen Armory, and a pause during dialogue",
+    "items": [
+      "Stamina comes back while you stand still or walk. It only stops regenerating while you are sprinting. After a swing, a dodge or a sprint there is still a short delay before it starts filling again.",
+      "The Armory is now a full-screen overlay, so the Warden in the street no longer turns behind it. Looking around and moving are frozen until you close it.",
+      "When a dialogue box is open, including the Bellwright's introduction at the Grave Gate, abominations hold still and cannot hurt you until you close it."
+    ]
+  },
+  {
     "date": "2026-11-16",
     "build": "0.10.1",
     "title": "The cold open begins: you meet the Ninth Ward before you name your Warden",

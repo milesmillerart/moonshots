@@ -71,7 +71,7 @@ export class TouchControls {
   }
   down(e) {
     e.preventDefault(); audio.init();
-    const g = this.g; if (g.state !== 'play') return;
+    const g = this.g; if (g.state !== 'play' || g.ui.isOpen || g.dialogueOpen) return;
     const leftSide = e.clientX < innerWidth * 0.42;
     if (leftSide && !this.stick) {
       this.stick = { id: e.pointerId, x: e.clientX, y: e.clientY };

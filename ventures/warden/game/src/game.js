@@ -556,7 +556,7 @@ export class Game {
       this.camYaw -= e.movementX * s;
       this.camPitch = clamp(this.camPitch + e.movementY * s * (this.settings.invertY ? -1 : 1), -0.35, 1.15);
     });
-    cv.addEventListener('wheel', (e) => { this.camDist = clamp(this.camDist + Math.sign(e.deltaY) * 0.4, 2.6, 7.5); }, { passive: true });
+    cv.addEventListener('wheel', (e) => { if (this.ui.isOpen || this.dialogueOpen || this.state !== 'play') return; this.camDist = clamp(this.camDist + Math.sign(e.deltaY) * 0.4, 2.6, 7.5); }, { passive: true });
     document.addEventListener('pointerlockchange', () => {
       if (!document.pointerLockElement && this.state === 'play' && !this.ui.isOpen && !this.dialogueOpen && this.player.state !== 'dead') this.ui.open('pause');
     });
@@ -578,7 +578,7 @@ export class Game {
     this.dtReal = dtReal;
     this.time += dtReal;
     const t = this.time;
-    const paused = this.ui.isOpen && this.state === 'play';
+    const paused = (this.ui.isOpen || this.dialogueOpen) && this.state === 'play';
     let dt = paused ? 0 : dtReal;
     if (this.hitstop > 0) { this.hitstop -= dtReal; dt *= 0.06; }
     let worldScale = 1;
@@ -665,6 +665,7 @@ export class Game {
     this.lockTarget = best;
   }
   updateCamera(dt, t) {
+    if (this.state === 'play' && (this.ui.isOpen || this.dialogueOpen) && !this.cine) return;
     const cam = this.camera, p = this.player;
     const wantFov = this.slow ? (this.slow.kind === 'final' ? 49 : 53) : 58;
     this.fov += (wantFov - this.fov) * (1 - Math.exp(-(this.slow ? 10 : 4) * dt));

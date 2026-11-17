@@ -39,6 +39,14 @@ def nonblank(pg, sel):
     st = ImageStat.Stat(Image.open(io.BytesIO(png)).convert("L"))
     return st.stddev[0] > 6
 
+
+def fullscreen(pg, G):
+    box = pg.evaluate("""() => { const p = document.querySelector('#panel'); const r = p.getBoundingClientRect();
+      const cs = getComputedStyle(p); return { x: r.x, y: r.y, w: r.width, h: r.height, vw: innerWidth, vh: innerHeight,
+        inset: cs.inset || (cs.top+' '+cs.right+' '+cs.bottom+' '+cs.left), bg: cs.backgroundColor }; }""")
+    assert box["x"] <= 1 and box["y"] <= 1 and abs(box["w"] - box["vw"]) <= 2 and abs(box["h"] - box["vh"]) <= 2, box
+    return box
+
 def start(pg, G):
     pg.goto(URL, wait_until="load"); pg.wait_for_function(READY, timeout=180000)
     pg.evaluate("localStorage.clear()"); ids = pg.evaluate(V05)
@@ -63,6 +71,14 @@ def desktop(p):
     assert pg.locator("#dollhost canvas").count() == 1, "no paper-doll canvas"
     assert nonblank(pg, "#dollhost"), "paper-doll render is blank"
     print("  OK I opens the Armory; live 3D paper-doll is rendering")
+    fullscreen(pg, G)
+    froze = G("""const c = g.camera.position.clone(), p = g.player.pos.clone(), yaw = g.camYaw, face = g.player.face;
+      g.keys.KeyW = true; g.keys.ShiftLeft = true; g.camYaw += 0.5;
+      for (let i = 0; i < 12; i++) g.update(0.05);
+      g.keys.KeyW = false; g.keys.ShiftLeft = false;
+      return { player: g.player.pos.distanceTo(p) < 0.001, cam: g.camera.position.distanceTo(c) < 0.001, yawHeld: g.camYaw === yaw + 0.5, face: g.player.face === face, screen: g.ui.screen };""")
+    assert froze["player"] and froze["cam"] and froze["yawHeld"] and froze["face"] and froze["screen"] == "armory", froze
+    print("  OK Armory is a full-screen overlay; camera and player stay frozen while it is open")
     pw = pg.inner_text(".power b"); dmg = pg.inner_text(".sheet .st:first-child b")
     want = G("return Math.round(window.__wardenItems.computeStats(g.save).dmgFinal)")
     assert int(dmg) == want, (dmg, want); print(f"  OK stat sheet matches game math (damage {dmg}), Power {pw}")
@@ -160,7 +176,8 @@ def mobile(p, devname, tag):
     for sel in [".power", "#dollhost", ".eslot[data-slot=helm]", ".eslot[data-slot=mantle]", ".chips [data-v=all]", ".tb .scycle", ".rchips [data-v='4']", ".pfoot .forge-btn", "[data-act=close]"]:
         onscreen(sel)
     assert nonblank(pg, "#dollhost"), "doll blank"
-    pg.screenshot(path=str(OUT / f"{tag}-01-overview.png")); print("  OK GEAR opens Armory; doll, slots, filters, sorts, footer all on screen")
+    fullscreen(pg, G)
+    pg.screenshot(path=str(OUT / f"{tag}-01-overview.png")); print("  OK GEAR opens Armory full-screen; doll, slots, filters, sorts, footer all on screen")
     sov = ids["bag"][0]
     tap(f".tile[data-item='{sov}']"); time.sleep(0.4)
     assert G("return g.ui.armory.sel") == sov and G("return g.save.equip.blade.uid") != sov, "first tap should only select"
