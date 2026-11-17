@@ -121,6 +121,32 @@ export const TRAITS = {
   inquest: { name: 'Inquest', desc: '+6% critical chance. Nothing hides from you.' },
 };
 
+// 0.10 cold open (Opening Act v0.1 + implementation spec). Working text; Don can rewrite any line without changing the flow.
+export const COLD_OPEN = {
+  arrival: [
+    { who: '', text: 'THE NINTH WARD. HALLOWMERE, ITS CAPITAL.' },
+    { who: '', text: 'Rain without end, a wall of humming pylons, a code of law older than the wall, and one Warden.' },
+  ],
+  caseLines: [
+    { who: 'Gaoler Brann', text: 'Warden. Caught this one stripping a power cell out of the east pylon. That stretch of the Wall is dark now.' },
+    { who: 'Gaoler Brann', text: 'Code says hand or head for theft from the Wall.' },
+    { who: 'Mira Toll', text: "My brother's lung-pump died. Three days he's breathed through a wet rag. I'd do it again." },
+  ],
+  questions: [
+    { id: 'dark', label: 'How long has that stretch been dark?', lines: [
+      { who: 'Gaoler Brann', text: 'We caught her with the cell still in her hands. That stretch has been dark ever since, and it is dark now.' } ] },
+    { id: 'brother', label: 'Your brother. Where is he now?', lines: [
+      { who: 'Mira Toll', text: 'Here in the capital. Still breathing through that rag, because the pump is still dead.' } ] },
+    { id: 'how', label: 'How did you get the cell out?', lines: [
+      { who: 'Mira Toll', text: 'I did what I had to.' } ] },
+  ],
+  silent: 'Say nothing.',
+  alarm: [
+    { who: '', text: 'A scream cuts through the rain, close, down the street. Then the gaol bell, ringing hard.' },
+    { who: 'Gaoler Brann', text: 'Hollowed, in the street! The dark stretch let them through.' },
+  ],
+};
+
 export const STORY = {
   intro: [
     { who: '', text: 'THE NINTH WARD. HALLOWMERE, ITS CAPITAL.' },

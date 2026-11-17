@@ -1,6 +1,17 @@
 [
   {
     "date": "2026-11-16",
+    "build": "0.10.2",
+    "title": "The gaol and the case: Mira Toll's crime, in her own words",
+    "items": [
+      "The opening now begins with your Warden walking the rain-soaked street to the gaol, with two short lines to set the scene.",
+      "Gaoler Brann lays out the case: Mira Toll pulled a power cell from the east pylon, and that stretch of the Wall is still dark. Mira tells you why. The stolen cell sits on a crate beside her.",
+      "You can ask up to three questions, one at a time, or say nothing at all. Neither choice is wrong.",
+      "You don't give a verdict yet. Before you can, the alarm sounds and the Hollowed are in the street. You return to the case once the street is clear."
+    ]
+  },
+  {
+    "date": "2026-11-16",
     "build": "0.10.1",
     "title": "The cold open begins: you meet the Ninth Ward before you name your Warden",
     "items": [

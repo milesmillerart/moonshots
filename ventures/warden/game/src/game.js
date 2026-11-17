@@ -8,7 +8,7 @@ import { FX } from './fx.js';
 import { UI } from './ui.js';
 import { TouchControls, detectTouch } from './touch.js';
 import { audio } from './audio.js';
-import { STORY, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
+import { STORY, COLD_OPEN, RARITIES, CORES, PERKS, TIER_REQ } from './data.js';
 import { computeStats, starterGear, randomGear, makeItem, makeCore, itemName, tierOf, upgradeCost, salvageValue, MAX_UPGRADE } from './items.js';
 import { angleDiff, clamp, damp, dampAngle, rand, randi, pick } from './util.js';
 
@@ -122,7 +122,7 @@ export class Game {
     this.refreshStats(); this.player.hp = this.stats.hp; this.player.sta = this.stats.sta;
     this.persist('new'); Save.requestPersist();
     this.ui.hideTitle();
-    this.runIntro();
+    this.runCase();
   }
   inOpening() { return Save.inOpening(this.save); }
   // Tests and debugging: finish the cold open instantly (named, judged, created) and start the open world.
@@ -141,11 +141,28 @@ export class Game {
   // Mid-open reload: pick up at the last beat checkpoint instead of restarting the whole cold open.
   resumeOpening() {
     const f = this.save.flags;
-    if (!f.judged) { this.runIntro(); return; }
-    this.hideCast();
+    if (!(f.caseDone || f.judged)) { this.runCase(); return; }
+    this.placeCast('gaol');
     if (!f.waveA) { this.player.pos.set(0, 0, 40); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI; this.spawnWave('A'); return; }
+    if (!f.judged) { this.runVerdict(); return; }
     this.player.pos.set(0, 0, 24); this.player.face = Math.PI; this.startPlay(); this.camYaw = Math.PI;
     this.beginCreation();
+  }
+  // Brann, Mira (restrained) and the watchman at the gaol checkpoint, with the stolen cell on a crate.
+  placeCast(stage) {
+    this.mira.visible = this.brann.visible = this.watch.visible = true;
+    this.mira.position.set(0, 0, 45.0); this.mira.rotation.set(0, 0, 0);
+    this.brann.position.set(1.7, 0, 44.6); this.brann.rotation.set(0, 0.4, 0); this.watch.position.set(-1.6, 0, 44.9); this.watch.rotation.set(0, 0, 0);
+    if (stage === 'gaol') { this.watch.position.set(-2.6, 0, 40.5); this.watch.rotation.set(0, Math.PI, 0); }
+    if (!this.cellProp) {
+      const g = new THREE.Group();
+      const crate = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: 0x2a2420, roughness: 0.9 }));
+      crate.position.y = 0.3; g.add(crate);
+      const cell = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.42, 12), new THREE.MeshStandardMaterial({ color: 0x1a2a2c, emissive: new THREE.Color(0.1, 0.8, 0.75), emissiveIntensity: 0.6, metalness: 0.7, roughness: 0.4 }));
+      cell.rotation.z = Math.PI / 2; cell.position.y = 0.72; g.add(cell);
+      g.position.set(2.9, 0, 45.6); this.scene.add(g); this.cellProp = g;
+    }
+    this.cellProp.visible = true;
   }
   // Character creation, after the cold open (0.10.1: name only, if not already chosen). Then the capital opens.
   beginCreation() {
@@ -190,6 +207,7 @@ export class Game {
     if (this.save.trait === 'dread') { this.mira.visible = true; this.mira.rotation.set(-1.5, 0, 0); this.mira.position.set(0, 0.3, 45); }
     else this.mira.visible = false;
     this.brann.position.set(5, 0, 46.5); this.brann.rotation.y = -1.2;
+    if (this.cellProp) this.cellProp.visible = false;
   }
   startPlay() {
     this.state = 'play'; this.started = true; this.combatOn = true;
@@ -197,22 +215,74 @@ export class Game {
   }
   async fade(on, ms = 500) { const f = document.getElementById('fade'); f.style.transition = `opacity ${ms}ms`; f.style.opacity = on ? '1' : '0'; await sleep(ms); }
 
-  async runIntro() {
+  // 0.10.2 Beat 1: arrival, the case, up to three optional questions, then the alarm (no verdict yet).
+  async runCase() {
     const gen = this.openGen = (this.openGen || 0) + 1, live = () => gen === this.openGen && this.state !== 'title';
     this.state = 'story'; this.started = true; this.combatOn = false;
-    const p = this.player;
-    p.pos.copy(POI.judgment); p.face = Math.PI; p.state = 'move';
-    this.mira.visible = this.watch.visible = this.brann.visible = true;
-    this.mira.position.set(0, 0, 45.0); this.mira.rotation.set(0, 0, 0);
-    this.brann.position.set(1.7, 0, 44.6); this.brann.rotation.set(0, 0.4, 0); this.watch.position.set(-1.6, 0, 44.9);
-    this.cine = { pos: new THREE.Vector3(0, 9, 20), look: new THREE.Vector3(0, 6, -30) };
+    const p = this.player, f = this.save.flags;
+    this.placeCast('case');
+    p.pos.set(0, 0, 64); p.face = Math.PI; p.state = 'move'; this.camYaw = Math.PI;
+    // arrival: the Warden walks the wet street to the gaol while two lines set the scene (~10 s)
+    const look = new THREE.Vector3(0, 1.4, 60);
+    this.cine = { pos: new THREE.Vector3(3.4, 2.2, 46.0), look };
+    this.storyInp = { joy: { x: 0, y: -1, m: 0.45 } };
+    let walking = true;
+    const walk = (async () => { while (walking && live() && p.pos.z > 49.6) { look.set(p.pos.x, 1.4, p.pos.z - 1); await sleep(50); } this.storyInp = null; })();
     await this.fade(false, 900);
     if (!live()) return;
-    this.cine = { pos: new THREE.Vector3(2.5, 3.2, 36), look: new THREE.Vector3(0, 6, -40), drift: true };
-    await this.ui.say(STORY.intro);
+    await this.ui.say(COLD_OPEN.arrival);
     if (!live()) return;
+    while (live() && p.pos.z > 49.7) await sleep(100);
+    walking = false; await walk; this.storyInp = null; p.vel?.set?.(0, 0, 0);
+    if (!live()) return;
+    // the case at the gaol checkpoint
     this.cine = { pos: new THREE.Vector3(3.6, 1.9, 48.8), look: new THREE.Vector3(0, 1.0, 45.0) };
-    const k = await this.ui.say(STORY.judgment, STORY.choices);
+    const asked = [];
+    let lines = COLD_OPEN.caseLines;
+    for (;;) {
+      const left = COLD_OPEN.questions.filter((q) => !asked.includes(q.id));
+      if (!left.length) { await this.ui.say(lines); if (!live()) return; break; }
+      const choices = [...left.map((q) => ({ id: q.id, label: q.label })), { id: 'silent', label: COLD_OPEN.silent }];
+      const k = await this.ui.say(lines, choices);
+      if (!live()) return;
+      const c = choices[k];
+      if (c.id === 'silent') break;
+      asked.push(c.id);
+      this.cine = asked.length % 2 ? { pos: new THREE.Vector3(-2.2, 1.8, 48.4), look: new THREE.Vector3(0.6, 1.1, 45.0) } : { pos: new THREE.Vector3(3.6, 1.9, 48.8), look: new THREE.Vector3(0, 1.0, 45.0) };
+      lines = COLD_OPEN.questions.find((q) => q.id === c.id).lines;
+    }
+    f.asked = asked;
+    // the interruption
+    audio.bell(); this.shake(0.3);
+    this.cine = { pos: new THREE.Vector3(0.5, 2.4, 50), look: new THREE.Vector3(0, 2.0, 28) };
+    await this.ui.say(COLD_OPEN.alarm);
+    if (!live()) return;
+    f.caseDone = true; this.persist('case');
+    await this.fade(true, 300);
+    if (!live()) return;
+    this.placeCast('gaol');
+    this.cine = null; p.pos.set(0, 0, 46.5); p.face = Math.PI;
+    this.camYaw = Math.PI; this.camPitch = 0.22;
+    this.startPlay();
+    this.spawnWave('A');
+    await this.fade(false, 500);
+    if (!live()) return;
+    this.ui.toast(this.touch?.on ? 'Left thumb moves. Drag right to look. Tap STRIKE to fight.' : 'Click the game to capture the mouse. Esc to pause.');
+  }
+  // Return to the unresolved case once the street is clear (0.10.2: the 0.9 verdict choices, reworked in 0.10.4).
+  async runVerdict() {
+    const gen = this.openGen = (this.openGen || 0) + 1, live = () => gen === this.openGen && this.state !== 'title';
+    this.state = 'story'; this.combatOn = false; this.keys = {};
+    if (document.pointerLockElement) document.exitPointerLock?.();
+    this.ui.hud.classList.add('hidden'); this.touch?.root?.classList.add('hidden');
+    const p = this.player;
+    await this.fade(true, 400);
+    if (!live()) return;
+    this.placeCast('case'); p.pos.copy(POI.judgment); p.face = Math.PI; p.state = 'move'; p.vel?.set?.(0, 0, 0);
+    this.cine = { pos: new THREE.Vector3(3.6, 1.9, 48.8), look: new THREE.Vector3(0, 1.0, 45.0) };
+    await this.fade(false, 500);
+    if (!live()) return;
+    const k = await this.ui.say(STORY.judgment.filter((l) => l.who !== 'Mira Toll').slice(1), STORY.choices);
     if (!live()) return;
     const ch = STORY.choices[k];
     this.save.trait = ch.id; this.save.flags.judged = true; this.refreshStats(); this.persist('verdict');
@@ -227,22 +297,12 @@ export class Game {
     this.cine = { pos: new THREE.Vector3(-3.0, 1.7, 49.5), look: new THREE.Vector3(0, 1.5, 44) };
     await this.ui.say(ch.after);
     if (!live()) return;
-    this.ui.toast(`Verdict trait: ${ch.id === 'dread' ? 'Dread' : ch.id === 'measure' ? 'Measure' : 'Inquest'}`, 'gold');
-    audio.bell(); this.shake(0.3);
-    this.cine = { pos: new THREE.Vector3(0.5, 2.4, 50), look: new THREE.Vector3(0, 2.5, 20) };
-    await this.ui.say(STORY.breach);
-    if (!live()) return;
-    await this.fade(true, 300);
-    if (!live()) return;
     this.hideCast();
-    this.cine = null;
-    this.camYaw = Math.PI; this.camPitch = 0.22;
-    this.startPlay();
-    this.spawnWave('A');
-    await this.fade(false, 500);
-    if (!live()) return;
-    this.ui.toast(this.touch?.on ? 'Left thumb moves. Drag right to look. Tap STRIKE to fight.' : 'Click the game to capture the mouse. Esc to pause.');
+    this.cine = null; this.startPlay();
+    this.beginCreation();
   }
+  // legacy entry point (0.9 and older flows call this): the cold open now starts with the case
+  runIntro() { return this.runCase(); }
 
   // ---- waves & objectives --------------------------------------------------
   resumeProgress() {
@@ -271,7 +331,7 @@ export class Game {
     const f = this.save.flags, p = this.player.pos;
     if (this.wave === 'A' && !this.waveAlive('A') && !f.waveA) {
       f.waveA = true; this.persist('progress');
-      if (this.inOpening()) { this.objective = ''; setTimeout(() => this.beginCreation(), 1600); }
+      if (this.inOpening()) { this.objective = ''; setTimeout(() => { if (!this.inOpening() || this.state !== 'play') return; if (!f.judged) this.runVerdict(); else this.beginCreation(); }, 1600); }
       else { this.objective = 'Push north into <b>Statute Plaza</b>'; this.ui.toast('The street is clear. Push north.'); }
       if (!f.starterCore) { f.starterCore = true; this.dropAt(new THREE.Vector3(0, 0, 21), makeCore('arc', 1)); this.ui.toast('An Arc Core fell from the Hollowed. Install Cores at the Forge.', 'cyan'); }
     }
@@ -609,7 +669,7 @@ export class Game {
       if (this.lockTarget) this.camYaw = dampAngle(this.camYaw, Math.atan2(this.lockTarget.pos.x - p.pos.x, this.lockTarget.pos.z - p.pos.z), 6, dtReal);
       this.edge = {};
     } else if (this.state === 'story') {
-      p.update(dt, {}, this.camYaw);
+      p.update(dt, this.storyInp || {}, this.camYaw);
     } else if (this.state === 'title') {
       p.model.rotation.y = 0; p.t += dtReal; p.titleMode = true; p.capeAndBlade(dtReal, 1.5 + Math.sin(t * 0.7), 0.2); p.titleMode = false;
     }

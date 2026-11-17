@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """0.10 cold-open test: plays the opening headless on desktop (1600x900) or, with --mobile, on iPhone 13, Pixel 7
 and iPhone SE landscape with real CDP touch taps. Grows with each 0.10.x milestone.
-0.10.1 (flow restructure): no naming at the title -> cold open (case, verdict, Wave A) -> character creation -> open world.
+0.10.1 (flow restructure): no naming at the title -> cold open -> character creation -> open world.
+0.10.2 (the gaol and the case): arrival lines, Brann + Mira's case, up to three optional questions one at a time
+  (zero-question and all-three paths both reach the alarm), no verdict before the skirmish; the verdict comes after it.
   Checks: nameless new Warden ("Warden"), schema 5 + flags.opening 'act1', mid-open reloads resume at the last beat
   (case / skirmish / creation), creation names the Warden and opens the capital, legacy judged saves skip the cold open
   ('legacy'), a named-but-unjudged old save plays the cold open and keeps its name (no name field). Zero console errors.
-Usage: python3 tools/opening_test.py [URL] [OUTDIR] [--mobile] [--shot=PATH]"""
+Usage: python3 tools/opening_test.py [URL] [OUTDIR] [--mobile] [--shot=PATH] [--shotat=case|creation]"""
 import sys, time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -15,7 +17,8 @@ opt = dict(a[2:].split("=", 1) if "=" in a else (a[2:], True) for a in sys.argv[
 MOBILE = bool(opt.get("mobile"))
 URL = (args[0] if args else "http://127.0.0.1:8765/").rstrip("/") + "/"
 OUT = Path(args[1] if len(args) > 1 else "/workspace/warden-010/opening"); OUT.mkdir(parents=True, exist_ok=True)
-SHOT = opt.get("shot")
+SHOT = opt.get("shot"); SHOTAT = opt.get("shotat", "case")
+VERDICT_WORDS = ("death", "Execute", "sentence", "Mark her", "Ward key", "verdict")
 ARGS = ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"]
 READY = "window.__warden && window.__wardenItems && document.querySelector('#menu button')"
 
@@ -68,27 +71,42 @@ def run(p, devname, tag):
     ok(s["schema"] == 5 and s["flags"]["opening"] == "act1" and s["name"] == "" and not s["flags"].get("named"), "new save: schema 5, opening 'act1', nameless")
     who = G("return [...document.querySelectorAll('#dialogue .who, #dialogue .line')].map(e => e.textContent).join(' | ')")
     ok("Warden {name}" not in who and "Warden Kade" not in who, f"the Warden is addressed only as 'Warden' ({who[:80]})")
+    ok("NINTH WARD" in who, "arrival opens on the establishing line")
+    time.sleep(2.0); z = G("return g.player.pos.z")
+    ok(z < 63.5 and G("return g.state") == "story", f"the Warden walks toward the gaol during the arrival (z={z:.1f})")
     # 2. mid-case reload resumes the case
     boot(clear=False)
     sub = pg.inner_text("#menu button[data-act=continue]")
     ok("cold open" in sub.lower() and "Warden ·" in sub, f"Continue shows the nameless Warden in the cold open: {sub!r}")
     press("#menu button[data-act=continue]")
     pg.wait_for_selector("#dialogue:not(.hidden)", timeout=60000); ok(True, "reload during the case resumes the case")
-    # 3. verdict (0.10.1 keeps the old scene), then the skirmish
-    ok(advance_until("document.querySelector('#dialogue .choices')"), "dialogue advances to the verdict")
-    press("#dialogue .choices button[data-c='2']")
-    ok(advance_until("g.state === 'play' && !g.dialogueOpen", 50), "verdict leads into the skirmish")
-    st = G("return { trait: g.save.trait, alive: g.enemies.filter(e => !e.dead).length, judged: g.save.flags.judged }")
-    ok(st["trait"] == "inquest" and st["alive"] == 3 and st["judged"], f"skirmish: three Husks {st}")
+    # 3. the case: optional questions (no verdict yet); take none -> the alarm -> the skirmish
+    ok(advance_until("document.querySelector('#dialogue .choices')", 60), "the case reaches the optional questions")
+    labels = G("return [...document.querySelectorAll('#dialogue .choices button')].map(b => b.textContent)")
+    ok(len(labels) == 4 and "Say nothing" in labels[-1] and not any(w in " ".join(labels) for w in VERDICT_WORDS), f"three questions + 'Say nothing.', no sentence offered: {labels}")
+    told = G("return document.querySelector('#dialogue').textContent")
+    ok("hand or head" in told or "lung-pump" in told, "the case is on screen (Brann's charge / Mira's confession)")
+    if SHOT and SHOTAT == "case" and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
+    pg.screenshot(path=str(OUT / f"{tag}-case.png"))
+    press("#dialogue .choices button[data-c='3']")
+    ok(advance_until("g.state === 'play' && !g.dialogueOpen", 50), "zero questions: the alarm interrupts and the skirmish starts")
+    st = G("return { trait: g.save.trait, alive: g.enemies.filter(e => !e.dead).length, judged: !!g.save.flags.judged, caseDone: g.save.flags.caseDone, asked: g.save.flags.asked }")
+    ok(st["trait"] is None and st["alive"] == 3 and not st["judged"] and st["caseDone"] and st["asked"] == [], f"skirmish: three Husks, no verdict yet {st}")
     # 4. mid-skirmish reload resumes the skirmish (no replay of the case)
     boot(clear=False); press("#menu button[data-act=continue]"); time.sleep(2.5)
     st = G("return { state: g.state, dlg: g.dialogueOpen, alive: g.enemies.filter(e => !e.dead).length }")
     ok(st["state"] == "play" and not st["dlg"] and st["alive"] == 3, f"reload during the skirmish resumes the skirmish {st}")
-    # 5. clear the street -> character creation
+    # 5. clear the street -> back to the case for the verdict -> character creation
     kill_wave()
-    pg.wait_for_selector("#title.create-on #wname", timeout=60000); time.sleep(1.2)
+    ok(advance_until("document.querySelector('#dialogue .choices')", 60), "the street clears and the Warden returns to the case")
+    labels = G("return [...document.querySelectorAll('#dialogue .choices button')].map(b => b.textContent)")
+    ok(len(labels) == 3, f"the verdict is offered only now: {labels}")
+    press("#dialogue .choices button[data-c='2']")
+    ok(advance_until("document.querySelector('#title.create-on #wname')", 50), "the verdict leads to character creation")
+    ok(G("return g.save.trait") == "inquest" and G("return g.save.flags.judged"), "verdict recorded")
+    time.sleep(1.2)
     ok(G("return g.state") != "play" and not G("return g.save.flags.created"), "clearing the street opens character creation")
-    if SHOT and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
+    if SHOT and SHOTAT == "creation" and tag in ("desktop", "iphone13"): pg.screenshot(path=SHOT if tag == "desktop" else SHOT.replace(".png", "-phone.png")); print("  saved", SHOT)
     pg.screenshot(path=str(OUT / f"{tag}-creation.png"))
     # 5b. reload at creation returns to creation
     boot(clear=False); press("#menu button[data-act=continue]")
@@ -117,8 +135,22 @@ def run(p, devname, tag):
     boot(clear=False); press("#menu button[data-act=continue]")
     pg.wait_for_selector("#dialogue:not(.hidden)", timeout=60000)
     ok(G("return g.save.flags.opening") == "act1" and G("return g.save.flags.named") is True, "named unjudged old save starts the cold open")
-    ok(advance_until("document.querySelector('#dialogue .choices')"), "…and reaches the verdict"); press("#dialogue .choices button[data-c='1']")
-    ok(advance_until("g.state === 'play' && !g.dialogueOpen", 50), "…and the skirmish"); kill_wave()
+    # all three questions, one at a time; after the third answer the alarm comes on its own
+    for n in range(3):
+        ok(advance_until("document.querySelector('#dialogue .choices')", 60), f"…question menu {n + 1} ({4 - n} options)")
+        cnt = G("return document.querySelectorAll('#dialogue .choices button').length"); assert cnt == 4 - n, cnt
+        press("#dialogue .choices button[data-c='0']")
+    seen = []
+    for _ in range(40):
+        if G("return g.state === 'play' && !g.dialogueOpen"): break
+        assert not pg.query_selector("#dialogue .choices"), "no further choice after the third answer"
+        seen.append(G("return document.querySelector('#dialogue').textContent"))
+        if pg.query_selector("#dialogue:not(.hidden) .more"): press("#dialogue")
+        else: time.sleep(0.5)
+    ok(G("return g.state") == "play" and any("I did what I had to" in t for t in seen), "all three asked: answers shown, then the alarm and the skirmish")
+    ok(G("return g.save.flags.asked") == ["dark", "brother", "how"], "questions recorded in the ledger")
+    kill_wave()
+    ok(advance_until("document.querySelector('#dialogue .choices')", 60), "…verdict after the skirmish"); press("#dialogue .choices button[data-c='1']")
     pg.wait_for_selector("#title.create-on [data-act=oath]", timeout=60000)
     ok(not pg.query_selector("#wname"), "creation skips the name field for a Warden who already chose one")
     press("[data-act=oath]"); time.sleep(1.0)
